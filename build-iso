@@ -2698,7 +2698,7 @@ _yes_no_() {
 show_stages() {
     echo -e "${bold_co}The stages of processsing:$nc\n"
     while read num title; do
-        printf " $bold_co%2d$nc: $text_co%s$nc\n" "$num" "$title"
+        printf " $bold_co%2d$nc. $text_co%s$nc\n" "$num" "$title"
     done <<Extract_Stages
 $(sed -r -n "s/^\s*enter_stage\s*([0-9]+)\s*\"[!]?([^\"]+)\".*/\1 \2/p" $0)
 Extract_Stages
@@ -2717,9 +2717,9 @@ Stages_Blurb
 }
 
 show_parts() {
-    echo -e "${bold_co}The parts within stage-3:$nc\n"
+    echo -e "${bold_co}The parts within stage-4:$nc\n"
     while read num title; do
-        printf " $bold_co%2d$nc: $text_co%s$nc\n" "$num" "$title"
+        printf " $bold_co%2d$nc. $text_co%s$nc\n" "$num" "$title"
     done <<Extract_Parts
 $(sed -r -n 's=^\s.*do_part\s+([0-9]+)\s+"[!]?([^"]+)".*=\1 \2=p' $0)
 Extract_Parts
