@@ -21,33 +21,43 @@ there is an error condition then the penalty for stopping the
 program, fixing the error, and then restarting the program is
 minimized.
 
-The 8 stages of processing are:
+The 10 stages of processing are:
+  0. Gather inputs and set defaults
+  1. Make directories and symlinks
+  2. Run debootstrap
+  3. Prepare chroot
+  4. Inside of chroot
+  5. Finalize and clean the chroot
+  6. Prepare iso directory
+  7. Create squashfs file
+  8. Create iso file
+  9. Clean up and prepare to start over
 
-  0: Gather inputs and set defaults
-  1: Run debootstrap
-  2: Prepare chroot
-  3: Inside of chroot
-  4: Prepare squashfs and iso directories
-  5: Create squashfs file
-  6: Create iso file
-  7: Clean up and prepare to start over
-
-The most complicated stage is "3: Inside the chroot".  This is
+The most complicated stage is "4: Inside the chroot".  This is
 also the most time consuming stage because this is when *.deb
-packages get installed.  So Stage 3 is broken up into 12 parts:
+packages get installed.  So Stage 4 is broken up into parts:
 
-  0: Update repos and do apt-get update
-  1: Search for complete kernel name
-  2: Update locales
-  3: Install basic applications
-  4: Install pesky applications
-  5: Install antiX applications
-  6: Install kernel & headers
-  7: Install latest antiX debs
-  8: Update runlevels based on flavour
-  9: Manual configuration
- 10: Update Timezone, hostname, and user accounts
- 11: Update SLiM defaults
+  0: Read PARTIAL file to skip parts done
+  1: Update repos and do apt-get update
+  2: Search for complete kernel name
+  3: Define locales
+  4: Install basic packages
+  5: Install kernel & headers
+  6: Update locales
+  7: Install pesky packages
+  8: Install antiX packages
+  9: Run first apt-get -f install
+ 10: Install latest antiX debs
+ 11: Remove some packages
+ 12: Add some packages
+ 13: Reinstall some packages
+ 14: Update runlevels based on flavour
+ 15: Get Latest Flash
+ 16: Manual configuration
+ 17: Update Timezone, hostname, and user accounts
+ 18: Run second apt-get -f install
+ 19: Update SLiM defaults
+ 20: Apply Theme
 
 These parts are not automatically skipped if they have already
 been performed but the most time consuming parts (installing
@@ -78,13 +88,12 @@ It is called the script directory and that is where it expects
 to find the Template/ directory and where it creates creates
 other directories, symlinks and files.
 
-
-
 Variables in the DEFAULTS file
 ------------------------------
 If needed information is missing from the DEFAULTS file then
 the user will be prompted for it in Stage 0.
 
+```
   ADD_BORDER_OPTS  Use these options when adding border to live image
      APT_GET_OPTS  Options sent to apt-get.  Don't change.
             CACHE  Enable caches by name.  Only "debootstrap" available ATM.
@@ -107,6 +116,7 @@ the user will be prompted for it in Stage 0.
       RESPIN_FLAV  See Custom Flavours below
         TIME_ZONE  Timezone for the iso
   X_TERM_EMULATOR  Default X teminal emulator.
+```
 
 Custom Flavours
 ---------------
@@ -114,7 +124,9 @@ You are allowed to create your own flavour names just by making
 a subdirectory of Template/ and copying files into it.  Your
 new flavour MUST be based on one of the existing flavours:
 
+```
     core, or base, or full
+```
 
 The reason for this is these existing names are connected with
 repos names and the names of certain antiX Debian packages.
