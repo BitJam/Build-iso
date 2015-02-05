@@ -1,0 +1,78 @@
+#!/live/bin/sh
+
+for param in $(cat /proc/cmdline); do
+    case "$param" in
+               bootdir=*|bdir=*) ;;
+    bootlabel=*|blabel=*|blab=*) ;;
+             bootuuid=*|buuid=*) ;;
+               bootdev=*|bdev=*) ;;
+                        retry=*) ;;
+
+            persistdir=*|pdir=*) ;;
+ persistlabel=*|plabel=*|plab=*) ;;
+          persistuuid=*|puuid=*) ;;
+            persistdev=*|pdev=*) ;;
+        persistretry=*|pretry=*) ;;
+
+   cryptlabel=*|clabel=*|clab=*) ;;
+            cryptuuid=*|cuuid=*) ;;
+              cryptdev=*|cdev=*) ;;
+
+                      fromiso=*) ;;
+                        fromiso) ;;
+
+                         scan=*) ;;
+                         from=*) ;;
+
+                      persist=*) ;;
+                        persist) ;;
+
+                        sqext=*) ;;
+                       sqname=*) ;;
+                           sq=*) ;;
+
+           verbose=*|verb=*|v=*) ;;
+                           db++) ;;
+                            db+) ;;
+                            db-) ;;
+                           bp=*) ;;
+                           pk=*) ;;
+
+             check|md5|checkmd5) ;;
+                 hico|highcolor) ;;
+                  loco|lowcolor) ;;
+                   noco|nocolor) ;;
+                          nodeb) ;;
+                         noxtra) ;;
+
+                        toram=*) ;;
+                          toram) ;;
+
+                     noremaster) ;;
+                       rollback) ;;
+                         lang=*) ;;
+                          ascii) ;;
+
+                         load=*) ;;
+                          nolog) ;;
+                        noclear) ;;
+
+                      gfxsave=*) ;;
+                        checkfs) ;;
+                      nocheckfs) ;;
+                     noautoload) ;;
+
+                    image_dir=*) ;;
+                   image_name=*) ;;
+                       fromhd=*) ;;
+
+    # Our Live params:
+    aX=*|amnt|amnt=*|antiX=*|automount|automount=*|confont=*|conkeys=*);;
+    desktop=*|dpi=*|drvr=*|dummy|fstab=*|hostname=*|kbd=*|kbopt=*|kbvar=*);;
+    lang=*|lean|mean|mirror=*|mount=*|noRox|nodbus|noloadkeys|noprompt);;
+    nosplash|password|password=*|prompt|pw|pw=*|tz=*|ubp=*|ushow=*);;
+    uverb=*|xdrvr=*|xorgconf|xres=*|Xtralean);;
+
+                              *) printf "$param "
+    esac
+done

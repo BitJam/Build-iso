@@ -1,0 +1,7 @@
+default 0
+timeout 10
+color cyan/blue white/blue
+foreground ffffff
+background 003f7d
+gfxmenu /boot/grub/message
+

@@ -1,0 +1,17 @@
+# Defaults for distro-defaults
+# sourced by various packages
+# installed at /etc/default/distro by the maintainer scripts
+#
+# This is a POSIX shell fragment
+
+# specify distribution name
+DISTRO="antiX"
+DISTRO_VERSION="13"
+DISTRO_CODENAME="Luddite"
+
+# For fromiso install: 
+# ISO_FILE="$DISTRO_NAME/$DISTRO_NAME.iso"
+
+# The directory and fname of the squashfs *file*
+# SQFILE_PATH="$DISTRO_NAME"     # also holds /deb and /etc subdirs
+# SQFILE_NAME="$DISTRO_NAME"

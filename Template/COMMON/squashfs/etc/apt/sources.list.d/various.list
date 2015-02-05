@@ -1,0 +1,14 @@
+# opera
+#deb http://deb.opera.com/opera/ stable non-free
+
+# virtualbox
+#deb http://download.virtualbox.org/virtualbox/debian wheezy contrib
+
+# liquorix kernels
+deb http://liquorix.net/debian/ sid main future
+
+# latest (beta) iceweasel
+#deb http://mozilla.debian.net/ experimental iceweasel-beta 
+
+# MATE
+#deb http://repo.mate-desktop.org/debian wheezy main

@@ -1,0 +1,58 @@
+#!/bin/sh
+
+ME=${0##*/}
+FILE=/live/config/usb2-disabled.echi
+DRY_RUN=
+VERBOSE=
+
+usage() {
+    local ret=${1:-0}
+    cat <<Usage
+usage: $ME [option] [-f file]
+Re-enable usb2 buses that were disabled by /init on the Live system.
+
+Options:
+    -f --file <file>  Read buses from <file> instead of $FILE
+    -h --help         show this help
+    -l --list         Only list what would be done but don't do it.
+    -v --verbose      Be verbose when enabling busses
+Usage
+    exit $ret
+}
+
+die() {
+    echo "$ME fatal error: $*"
+    exit 2
+}
+
+main() {
+    local arg
+    while [ $# -gt 0 ]; do
+        arg=$1
+        shift
+        case $arg in
+            -f|--file)
+                [ $# -gt 1 ] || die "Expected a parameter after $arg"
+                FILE=$1
+                shift;;
+            -h|--help) usage;;
+            -l|--list) DRY_RUN=true; $VERBOSE=true;;
+         -v|--verbose) VERBOSE=true;;
+                    *) die "Unknown argument <$arg>";;
+        esac
+        break
+    done
+    [ $# -gt 0 ] && die "Extra command line parameters: $*"
+
+    [ -r $FILE ] || die "Cannot find or cannot read file: <$FILE>"
+
+    [ -z "$DRY_RUN" -a $UID -ne 0 ] && die "This program must be run as root"
+
+    local id
+    for id in $(cat $FILE); do
+        [ "$VERBOSE" ] && echo "echo $id > $FILE"
+        [ "$DRY_RUN" ] || echo $id > $FILE
+    done
+}
+
+main "$@"

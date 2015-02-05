@@ -1,0 +1,27 @@
+#!/bin/sh
+
+load_first="
+    tpm_bios
+    tpm
+
+    scsi_mod
+    libata
+    libahci
+
+    hid
+    usb_common
+    usbcore
+    ehci_hcd
+"
+
+for m in $load_first; do
+    echo $m
+    modprobe $m
+done
+
+list=$(find /lib/modules/$(uname -r)/live  -name "*.ko" | sed -e 's=.*/==' -e 's/\.ko$//')
+
+for m in $list; do
+    echo $m
+    modprobe $m
+done

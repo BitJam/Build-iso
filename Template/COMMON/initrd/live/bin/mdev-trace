@@ -1,0 +1,10 @@
+#!/live/bin/sh
+PATH=/live/bin
+
+trace=/mdev.trace
+
+echo              >> $trace
+echo "Params: $*" >> $trace
+env | sort        >> $trace
+
+exec /live/bin/mdev-hotplug "$@"

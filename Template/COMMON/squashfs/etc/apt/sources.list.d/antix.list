@@ -1,0 +1,5 @@
+# Use with Debian Wheezy repository. Set as default for antiX-13.2.
+deb http://antix.daveserver.info/stable stable main dev   
+
+# Use with Debian Testing (or Sid) repositories.
+#deb http://antix.daveserver.info/testing testing main dev 

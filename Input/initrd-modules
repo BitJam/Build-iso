@@ -1,0 +1,44 @@
+aufs
+block
+btrfs
+# cdrom
+ext4
+# fat
+fusbh200-hcd
+fuse
+# hid
+hid-generic
+# i2c-core
+isofs
+# jbd2
+jfs
+loop
+# mbcache
+msdos
+nls-cp437
+nls-utf8
+ntfs
+ohci-pci
+pcie-aspm
+printk
+pstore
+reiserfs
+sd-mod
+sg
+squashfs
+sr-mod
+udf
+ufshcd-pci
+uhci-hcd
+# usb-common
+usb-storage
+# usbcore
+usbhid
+usbmon
+vfat
+whc-rc
+whci-hcd
+xcbc
+xfs
+xhci-hcd
+xhci-pci

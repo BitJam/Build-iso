@@ -1,0 +1,17 @@
+# sudoers file.
+ 
+%users ALL=(root) NOPASSWD: /sbin/halt 
+
+%users ALL=(root) NOPASSWD: /sbin/reboot  
+
+%users ALL=(root) NOPASSWD: /sbin/blkid 
+
+%users ALL=(root) NOPASSWD: /sbin/fdisk.distrib 
+
+%users ALL=(root) NOPASSWD: /usr/bin/ceni 
+
+%users ALL=(root) NOPASSWD: /usr/bin/rox 
+
+%users ALL=(root) NOPASSWD: /usr/local/bin/persist-config
+
+%users ALL=(root) NOPASSWD: /usr/local/bin/persist-save

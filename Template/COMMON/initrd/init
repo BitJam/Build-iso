@@ -1,0 +1,3023 @@
+#!/bin/sh
+#
+# general startup script
+# (C) 2009-2013 BitJam for antiX <antiX@operamail.com>
+# Inspired by the work of  Klaus Knopper
+#
+# License: GPLv3 or later
+#
+# SUFFIX NOTE: _MP     absolute mountpoint
+#              _NAME   filename with no path
+#              _PATH   relative path but no filename
+#              _FILE   relative path with filename
+#              _FULL   absolute mountpoint and path and filename
+#              _DIR    varies
+
+           VERSION="5.11.08"
+      VERSION_DATE="Sun Dec 22 17:20:20 MST 2013"
+         DEVELOPER="BitJam"
+         DEV_EMAIL="http://antix.freeforums.org"
+
+         LOW_COLOR=""
+
+        RETRY_TIME=15
+PERSIST_RETRY_TIME=10
+
+           RW_MODE="ro"
+            DISTRO="Linux"
+            PRINTK=0
+
+          LIVE_DIR="/live"
+         FINAL_DIR="/live"
+          LIVE_BIN="$LIVE_DIR/bin"
+
+          AUFS_DIR="aufs"
+
+       EXTRA_FILES="deb xtra"
+       MIN_SYS_RAM=80
+      MIN_AUFS_RAM=80
+
+       DISTRO_FILE="/init.conf"
+           LOG_DIR="/var/log/live"
+          LOG_FILE="$LOG_DIR/bootstrap.log"
+           VID_DIR="/etc/live/version"
+          VID_FILE="$VID_DIR/linuxfs.ver"
+          MAKE_OLD="rootfs xtra deb"
+           MOD_DIR="/lib/modules/$(uname -r)"
+ DISABLED_USB_FILE="$OUTPUT_DIR/usb-disabled"
+
+         FROM_TYPE="usb,cd"
+     FROM_TYPE_ALL="usb,cd,hd"
+          TOP_DIRS="bin boot etc lib lib64 opt root run sbin tmp usr var"
+      TOP_BIN_DIRS="bin lib lib64 sbin usr"
+
+     MAX_MOUNT_CNT=30
+       RETRY_DELAY=50               # in hundredths of a second
+           VERBOSE=5
+
+# Log msg statements to $LOG_FILE, First store them in $LOG variable.
+            LOG=""
+
+set_live_dirs() {
+    local dir=$1
+
+           BOOT_MP="$dir/boot-dev"
+        ISO_DEV_MP="$dir/iso-dev"
+       ISO_FILE_MP="$dir/iso-file"
+          TORAM_MP="$dir/to-ram"
+       AUFS_RAM_MP="$dir/aufs-ram"
+           AUFS_MP="$dir/$AUFS_DIR"
+         ROOTFS_MP="$dir/persist-root"
+        PERSIST_MP="$dir/persist-dev"
+           SQFS_MP="$dir/linux"         # where the linuxfs file gets *mounted*
+      WRAP_FILE_MP="$dir/wrapper"
+        OUTPUT_DIR="$dir/config"
+        LOCALE_DIR="$dir/locale"
+        CUSTOM_DIR="$dir/custom"
+   GFX_SAVE_SCRIPT="$dir/bin/gfxsave.sh"
+}
+
+
+hbar="======================================================================"
+tbar="----------------------------------------------------------------------"
+
+main() {
+
+    local black blue green cyan red purple brown lt_gray dk_gray lt_blue
+    local lt_green lt_cyan lt_red magenta yellow white rev_red nc
+    local cheat_co cmd_co dev_co err_co from_co to_co head_co
+    local hi_co mp_co m_co nc_co num_co ok_co
+
+    PATH=$LIVE_BIN
+    HOME=/
+    TERM=linux
+    PWD=/
+
+    set_live_dirs $LIVE_DIR
+
+    # Don't allow interrupts to ruin our day
+    #       HUP INT QUIT SEGV TERM
+    trap "" 1   2   3    11   15
+
+    umask 022
+
+    system_mount ""
+    make_nodes /dev
+
+    #mkdir -p /dev/mapper
+    #number=$(grep device-mapper /proc/misc | awk '{print $1}')
+    #mknod /dev/mapper/control c 10 $number
+
+    FREE_MEM=$(mem_info MemFree)
+
+    custom_code $DISTRO_FILE
+    custom_code 0 "before reading boot parameters"
+
+    read_cmdline_params
+
+    set_colors "$NO_COLOR" "$LO_COLOR"
+
+    echo "$PRINTK" > /proc/sys/kernel/printk
+
+    [ "$NO_CLEAR" ] || printf "\e[1J"       # Clear and reset screen
+    vmsg 6 "=== $0 bootstrap =================================================="
+    local t0=$(cut -d" " -f22 /proc/$$/stat)
+    vmsg 6 "started at %s seconds" $(nq $(get_seconds $t0))
+
+    select_breakpoints
+
+    breakpoint 1 "before starting mdev"
+
+    start_mdev $DO_AUTOLOAD
+
+    echo "$0 dev mounted" > /dev/kmsg
+
+    read_xlat init $LANG
+
+    do_welcome "$DISTRO" "$DISTRO_VERSION" "$DISTRO_CODENAME" "$VERSION" "$VERSION_DATE"
+
+    show_bootcodes "$UNKNOWN_BOOTCODES"
+    show_int_errors "$INT_ERRORS"
+
+    : ${SQFILE_FILE:=$DEFAULT_SQFILE}
+    : ${BOOT_DIR:=${SQFILE_FILE%/*}}
+    : ${SQFILE_NAME:=${SQFILE_FILE##*/}}
+
+    [ "$SQFILE_EXT" ] && SQFILE_NAME="$SQFILE_NAME.$SQFILE_EXT"
+    SQFILE_FILE="$BOOT_DIR/$SQFILE_NAME"
+    SQFILE_FILE=${SQFILE_FILE#/}
+
+    load_kernel_modules "$DO_AUTOLOAD" "$NO_LOAD" "$MODULE_LIST"
+
+    # Wait and only do this in the find_files() loop so the usb report
+    # will always work
+    #[ "$NO_EHCI" ] && disable_hcd ehci
+
+    breakpoint 2 "after loading modules"
+
+    #[ "$CRYPT_DEV" -o "$CRYPT_LABEL" -o "$CRYPT_UUID" ] && setup_crypt
+
+    breakpoint 3 "before looking for linuxfs file"
+
+    find_linuxfs_file
+
+    breakpoint 4 "after mounting boot device"
+
+    prepare_persistence
+
+    RW_MODE=rw
+    mount_persist_device "$PERSIST_FILES"
+
+    stop_mdev
+    [ "$LIST_MODULES" ] && list_modules
+
+    breakpoint 5 "after mounting persist device"
+
+    fsck_boot_dev "$SQFILE_DEV" "$SQFILE_MP" "$SQFS_MP" "$SQFILE_FULL"  "$WRAP_FILE_MP"
+
+    mount -o remount,rw $SQFILE_DEV 2>/dev/null
+    dir_has_param "$SQFILE_MP" rw || REMASTERABLE=
+
+    [ "$REMASTERABLE" ] && do_remaster "$SQFILE_MP/$SQFILE_PATH"
+
+    ORIG_SQFILE_MP=$SQFILE_MP    # This is (not currently) used by others eject cd
+
+    # Check md5 of files in directory containing linuxfs file
+    # "fromiso" causes us to check md5sums in two places
+    [ "$CHECK_MD5" ] && check_md5 $SQFILE_DIR
+
+    [ "$TO_RAM" ] && copy_to_ram $TORAM_MP
+
+    mount_linuxfs "$SQFS_MP" "$SQFILE_FULL" "$WRAP_FILE_MP"
+
+    breakpoint 6 "after mounting linuxfs file"
+
+    check_kernel_version $SQFS_MP
+
+    fsck_persist_dev "$PERSIST_FILES" "$PERSIST_DEVICE" "$PERSIST_MP"
+
+    #dir_has_param "$PERSIST_MP" rw && mount -o remount,rw $PERSIST_MP
+
+    [ "$WANT_ROOTFS" ] && remaster_rootfs "$PERSIST_MP" "$PERSIST_FULL_PATH"
+
+    mount_aufs_ram "$AUFS_RAM_MP" "$MIN_AUFS_RAM" "$FREE_MEM"
+
+    mount_and_copy_rootfs
+
+    [ "$STATIC_ROOT" ] && log_cmd umount $AUFS_RAM_MP
+
+    mount_aufs "$AUFS_MP" "$SQFS_MP" "$AUFS_RAM_MP" "$ROOTFS_MP"
+
+    NEW_ROOT=$AUFS_MP
+
+    breakpoint 7 "after mounting aufs"
+
+    [ "$GFX_SAVE" ] && update_gfx_menu "$GFX_SAVE_SCRIPT" "$GFX_SAVE" "$BOOT_MP/boot"
+
+    [ "$WANT_HOMEFS" ] && copy_homefs $PERSIST_FULL_PATH
+
+    mount_persist_file "homefs" $NEW_ROOT/home "home" "$WANT_HOMEFS" "$NEED_HOMEFS"
+
+    breakpoint 8 "after mounting homefs"
+
+    [ "$DO_XTRA"       ] && copy_xtra    $DEFAULT_DIR
+    [ "$DO_DEB"        ] && install_debs $DEFAULT_DIR
+    [ "$DO_AUTO_LOGIN" ] && auto_login   "$AUTO_LOGIN_PROG" "$AUTO_LOGIN_TERMS"
+    [ "$DO_FANCY"      ] && fancy_prompt "$FANCY_PROMPT"
+
+    write_output_files     $OUTPUT_DIR
+    old_write_output_files $OUTPUT_DIR
+
+    breakpoint 9 "before prepare switch_root"
+
+    [ -z "${FINAL_DIR##/*}" ] || FINAL_DIR="/$FINAL_DIR"
+
+    prepare_switch_root $NEW_ROOT $LIVE_DIR $FINAL_DIR
+
+    local t1=$(get_time)
+    local dt=$((t1 - t0))
+
+    vmsg 6
+    vmsg 4 "The %s bootstrap took %s seconds." $(pq $0) $(nq $(get_seconds $dt))
+    vmsg 6 $hbar
+
+    write_log_files $LOG_FILE
+
+    breakpoint 10 "right before starting init"
+
+    if find_init_prog "$INIT_PROG" $NEW_ROOT; then
+
+        vmsg 4 "Running %s instead of %s" $white$INIT_PROG$m_co $white/sbin/init$m_co
+        vmsg 5 "${hi_co}Please exit shells normally to allow for a clean umount."
+
+        system_mount $NEW_ROOT
+
+        CHROOT_BIN=$FINAL_DIR/bin
+        chroot $NEW_ROOT $CHROOT_BIN/setsid $CHROOT_BIN/cttyhack $INIT_PROG
+
+        breakpoint 11 "after init= chroot"
+        safe_shutdown poweroff ask
+
+    else
+        vmsg 6 "$_Starting_init_process_"
+        exec $LIVE_BIN/switch_root -c /dev/console $NEW_ROOT /sbin/init "$@"
+    fi
+}
+
+
+###############################################################################
+# Getting started
+###############################################################################
+
+system_mount() {
+    local dir=$1
+
+    mkdir -p $dir/proc $dir/sys $dir/dev/pts
+
+    mount -t proc   proc   $dir/proc
+    mount -t sysfs  sys    $dir/sys
+    mount -t devpts devpts $dir/dev/pts
+}
+
+make_nodes() {
+    local dir=$1
+    mkdir -p $dir
+
+    [ -e $dir/console ] || mknod $dir/console c 5 1
+    [ -e $dir/null    ] || mknod $dir/null    c 1 3
+    [ -e $dir/tty0    ] || mknod $dir/tty0    c 4 0
+}
+
+#------------------------------------------------------------------------------
+# Function read_cmdline_params
+#
+# Gather all boot parameters.
+#------------------------------------------------------------------------------
+read_cmdline_params()
+{
+    local ev param value
+
+    # unset almost all env variables
+    for ev in $(printenv | sed 's/=.*//'); do
+        case $ev in
+            HOME|PATH|PWD|TERM) continue;;
+        esac
+        unset $ev
+    done
+
+    for param in $(cat /proc/cmdline); do
+        value=${param#*=}
+
+        case "$param" in
+               bootdir=*|bdir=*) BOOT_DIR=$value                                 ;;
+    bootlabel=*|blabel=*|blab=*) BOOT_LABEL=$value                               ;;
+             bootuuid=*|buuid=*) BOOT_UUID=$value                                ;;
+               bootdev=*|bdev=*) BOOT_DEV=$value                                 ;;
+                  try=*|retry=*) valid_int RETRY_TIME $param                     ;;
+
+            persistdir=*|pdir=*) PERSIST_PATH=${value#/}                         ;;
+ persistlabel=*|plabel=*|plab=*) PERSIST_LABEL=$value ;  SET_PERSIST=true        ;;
+          persistuuid=*|puuid=*) PERSIST_UUID=$value  ;  SET_PERSIST=true        ;;
+            persistdev=*|pdev=*) PERSIST_DEV=$value   ;  SET_PERSIST=true        ;;
+        persistretry=*|pretry=*) valid_int PERSIST_RETRY_TIME $param             ;;
+
+#  cryptlabel=*|clabel=*|clab=*) CRYPT_LABEL=$value ;;
+#           cryptuuid=*|cuuid=*) CRYPT_UUID=$value  ;;
+#             cryptdev=*|cdev=*) CRYPT_DEV=$value   ;;
+
+                      fromiso=*) ISO_FILE=${value/#}                             ;;
+                        fromiso) FROM_ISO=true                                   ;;
+
+#                        scan=*) FROM_TYPE=$value     ; ALWAYS_SCAN=true         ;;
+                         from=*) FROM_TYPE=$value     ; ALWAYS_SCAN=true         ;;
+
+                      persist=*) PERSIST=$PERSIST,$value                         ;;
+                        persist) PERSIST=$PERSIST,root,home                      ;;
+
+                        sqext=*) SQFILE_EXT=$value                               ;;
+                       sqname=*) SQFILE_NAME=${value#/}                          ;;
+                           sq=*) SQFILE_FILE=$value                              ;;
+
+           verbose=*|verb=*|v=*) valid_int VERBOSE $param                        ;;
+                           bp=*) BREAK_POINTS=$BREAK_POINTS,$value               ;;
+                           pk=*) PRINTK=$value                                   ;;
+
+             check|md5|checkmd5) CHECK_MD5=true                                  ;;
+                 hico|highcolor) LOW_COLOR=                                      ;;
+                  loco|lowcolor) LOW_COLOR=true                                  ;;
+                   noco|nocolor) NO_COLOR=true                                   ;;
+
+                          nodeb) DO_DEB=                                         ;;
+                          dodeb) DO_DEB=true                                     ;;
+
+                         noxtra) DO_XTRA=                                        ;;
+                         doxtra) DO_XTRA=true                                    ;;
+
+                            db+) DO_AUTO_LOGIN=true; DO_FANCY=true; DB_PLUS=true ;;
+
+            fancyprompt|fprompt) DO_FANCY=true                                   ;;
+               autologin|alogin) DO_AUTO_LOGIN=true                              ;;
+
+                          toram) TO_RAM=true                                     ;;
+
+                     noremaster) NO_REMASTER=true                                ;;
+                       rollback) ROLLBACK=true                                   ;;
+                         lang=*) LANG=$value                                     ;;
+
+                        noclear) NO_CLEAR=true                                   ;;
+                      gfxsave=*) GFX_SAVE=$value                                 ;;
+
+                        checkfs) FORCE_FSCK=true                                 ;;
+                      nocheckfs) DO_FSCK=                                        ;;
+
+                         load=*) MODULE_LIST=$MODULE_LIST,$value                 ;;
+             noautoload|noaload) DO_AUTOLOAD=                                    ;;
+                         noload) DO_AUTOLOAD=     ; NO_LOAD=true                 ;;
+                 autoload|aload) DO_AUTOLOAD=true                                ;;
+
+                         init=*) INIT_PROG=$value                                ;;
+
+                  nousb2|noehci) NO_EHCI=true                                    ;;
+                       usbdebug) USB_REPORT=true                                 ;;
+
+               livedir=*|ldir=*) FINAL_DIR=$value                                ;;
+
+        #----- Some known parameters -------------------------
+
+        [sS1-6]|BOOT_IMAGE=*);;
+        video.use_bios_initial_backlight=*);;
+        video.brightness_switch_enabled=*);;
+
+        # Most kernel parameters from version 3.8
+        acpi=*|acpi_rsdp=*|acpi_apic_instance=*|acpi_backlight=*);;
+        acpi.debug_layer=*|acpi.debug_level=*|acpi_irq_balance);;
+        acpi_irq_nobalance|acpi_irq_isa=*|acpi_irq_pci=*|acpi_no_auto_ssdt);;
+        acpi_os_name=*|acpi_osi=*|acpi_pm_good|acpi_sci=*|acpi_serialize);;
+        acpi_skip_timer_override|acpi_sleep=*|acpi_use_timer_override);;
+        acpi_enforce_resources=*|add_efi_memmap|agp=*|ALSA|alignment=*);;
+        align_va_addr=*|amd_iommu=*|amd_iommu_dump=*|amijoy.map=*);;
+        analog.map=*|apc=*|apic=*|autoconf=*|show_lapic=*|apm=*|arcrimi=*);;
+        ataflop=*|atarimouse=*|atkbd.extra=*|atkbd.reset=*|atkbd.set=*);;
+        atkbd.scroll=*|atkbd.softraw=*|atkbd.softrepeat=*|baycom_epp=*);;
+        baycom_par=*|baycom_ser_fdx=*|baycom_ser_hdx=*|boot_delay=*);;
+        bootmem_debug|bttv.card=*|bttv.radio=*|bttv.pll=*|bttv.tuner=*);;
+        bulk_remove=*|c101=*|cachesize=*|ccw_timeout_log|cgroup_disable=*);;
+        checkreqprot|cio_ignore=*|clock=*|clocksource=*|clearcpuid=*|cma=*);;
+        cmo_free_hint=*|coherent_pool=*|code_bytes|com20020=*|com90io=*);;
+        com90xx=*|condev=*|conmode=*|console=*|consoleblank=*);;
+        coredump_filter=*|cpuidle.off=*|cpcihp_generic=*|crashkernel=*);;
+        cs89x0_dma=*|cs89x0_media=*|dasd=*|db9.dev[23]=*|ddebug_query=*|debug);;
+        debug_locks_verbose=*|debug_objects|no_debug_objects);;
+        debug_guardpage_minorder=*|debugpat|decnet.addr=*);;
+        default_hugepagesz=*|dhash_entries=*|digi=*|digiepca=*|disable=*);;
+        disable_ddw|disable_ipv6=*|disable_mtrr_cleanup|disable_mtrr_trim);;
+        disable_timer_pin_1|dma_debug=*|dma_debug_entries=*);;
+        dma_debug_driver=*|drm_kms_helper.edid_firmware=*|dscc4.setup=*);;
+        dyndbg|dyndbg=*|module.dyndbg|module.dyndbg=*|earlycon=*);;
+        earlyprintk=*|ekgdboc=*|edd=*|eisa_irq_edge=*|elanfreq=*|elevator=*);;
+        elfcorehdr=*|enable_mtrr_cleanup|enable_timer_pin_1|enforcing);;
+        erst_disable|ether=*|evm=*|failslab=*|fail_page_alloc=*);;
+        fail_make_request=*|floppy=*|force_pal_cache_flush|ftrace=*);;
+        ftrace_dump_on_oops|ftrace_dump_on_oops=*|ftrace_filter=*);;
+        ftrace_notrace=*|ftrace_graph_filter=*|gamecon.map[23]=*|gamma=*);;
+        gart_fix_e820=*|gcov_persist=*|gpt|grcan.enable0=*|grcan.enable1=*);;
+        grcan.select=*|grcan.txsize=*|grcan.rxsize=*|hashdist=*|hcl=*|hd=*);;
+        hest_disable|highmem=*|highres=*|hisax=*|hlt|hpet=*|hugepages=*);;
+        hugepagesz=*|hvc_iucv=*|hvc_iucv_allow=*|keep_bootcon|i2c_bus=*);;
+        i8042.debug|i8042.direct|i8042.dumbkbd|i8042.noaux|i8042.nokbd);;
+        i8042.noloop|i8042.nomux|i8042.nopnp|i8042.notimeout|i8042.reset);;
+        i8042.unlock|i810=*|i8k.ignore_dmi|i8k.force|i8k.power_status);;
+        i8k.restricted|i915.invert_brightness=*|icn=*|ide-core.nodma=*);;
+        ide-pci-generic.all-generic-ide|idle=*|ignore_loglevel);;
+        ihash_entries=*|ima_appraise=*|ima_appraise_tcb|ima_audit=*);;
+        ima_hash=*|ima_tcb|init=*|initcall_debug|initrd=*|inport.irq=*);;
+        intel_iommu=*|intel_idle.max_cstate=*|intremap=*|iomem=*|iommu=*);;
+        io7=*|io_delay=*|ip=*|ip2=*|irqfixup|irqpoll|isapnp=*|isolcpus=*);;
+        iucv=*|js=*|keepinitrd|kernelcore=*|kgdbdbgp=*|kgdboc=*|kgdbwait);;
+        kmac=*|kmemleak=*|kstack=*|kvm.ignore_msrs=*|kvm.mmu_audit=*);;
+        kvm-amd.nested=*|kvm-amd.npt=*|kvm-intel.ept=*);;
+        kvm-intel.emulate_invalid_guest_state=*|kvm-intel.flexpriority=*);;
+        kvm-intel.nested=*|kvm-intel.unrestricted_guest=*|kvm-intel.vpid=*);;
+        l2cr=*|l3cr=*|lapic|lapic=*|lapic_timer_c2_ok|libata.dma=*);;
+        libata.ignore_hpa=*|libata.noacpi|libata.force=*|memblock=*);;
+        load_ramdisk=*|lockd.nlm_grace_period=*|lockd.nlm_tcpport=*);;
+        lockd.nlm_timeout=*|lockd.nlm_udpport=*|logibm.irq=*|loglevel=*);;
+        log_buf_len=*|logo.nologo|lp=*|lpj=*|ltpc=*|machvec=*|machtype=*);;
+        max_addr=*|maxcpus=*|max_loop=*|mce|mce=*|md=*);;
+        mdacon=*|mem=*|memchunk=*|memmap=*|memory_corruption_check=*);;
+        memory_corruption_check_size=*|memory_corruption_check_period=*);;
+        memtest=*|meye.*=*|mfgpt_irq=*|mfgptfix|mga=*|min_addr=*|mini2440=*);;
+        mminit_loglevel=*|module.sig_enforce|mousedev.tap_time=*);;
+        mousedev.xres=*|mousedev.yres=*|movablecore=*|MTD_Partition=*);;
+        MTD_Region=*|mtdparts=*|multitce=*|onenand.bdry=*|mtdset=*);;
+        mtouchusb.raw_coordinates=*|mtrr_chunk_size=*|mtrr_gran_size=*);;
+        mtrr_spare_reg_nr=*|n2=*|netdev=*|nf_conntrack.acct=*|nfsaddrs=*);;
+        nfsroot=*|nfsrootdebug|nfs.callback_tcpport=*|nfs.cache_getent=*);;
+        nfs.cache_getent_timeout=*|nfs.idmap_cache_timeout=*);;
+        nfs.enable_ino64=*|nfs.max_session_slots=*);;
+        nfs.nfs4_disable_idmapping=*|nfs.nfs4_unique_id=*);;
+        nfs.send_implementation_id|nfsd.nfs4_disable_idmapping=*);;
+        objlayoutdriver.osd_login_prog=*|nmi_debug=*|nmi_watchdog=*);;
+        netpoll.carrier_timeout=*|no387|no_console_suspend|noaliencache);;
+        noalign|noapic|noautogroup|nobats|nocache|noclflush|nodelayacct);;
+        nodisconnect|nodsp|noefi|noexec|nosmap|nosmep|noexec32|nofpu|nofxsr);;
+        noxsave|eagerfpu=*|nohlt|no-hlt|no_file_caps|nohalt|nohz=*|noiotrap);;
+        noirqdebug|no_timer_check|noisapnp|noinitrd|nointremap|nointroute);;
+        nojitter|no-kvmclock|no-kvmapf|no-steal-acc|nolapic|nolapic_timer);;
+        noltlbs|nomca|nomce|nomfgpt|nonmi_ipi|nomodule|nopat|norandmaps);;
+        noreplace-paravirt|noreplace-smp|noresidual|nordrand|noresume);;
+        no-scroll|nosbagart|nosep|nosmp|nosoftlockup|nosync|notsc|nousb);;
+        nowatchdog|nowb|nox2apic|cpu0_hotplug|nptcg=*|nr_cpus=*|nr_uarts=*);;
+        numa_balancing=*|numa_zonelist_order=*|ohci1394_dma=*);;
+        olpc_ec_timeout=*|omap_mux=*|oprofile.timer=*|oprofile.cpu_type=*);;
+        oops=*|OSS|panic=*|parkbd.port=*|parkbd.mode=*|parport=*);;
+        parport_init_mode=*|pause_on_oops=*|pcbit=*|pcd.|pci=*|pcie_aspm=*);;
+        pcie_hp=*|pcie_ports=*|pcie_pme=*|pcmv=*|pd.|pdcchassis=*);;
+        percpu_alloc=*|pf.|pg.|pirq=*|plip=*|pmtmr=*|pnp.debug=*|pnpacpi=*);;
+        pnpbios=*|pnp_reserve_irq=*|pnp_reserve_dma=*|pnp_reserve_io=*);;
+        pnp_reserve_mem=*|ports=*|print-fatal-signals=*);;
+        printk.always_kmsg_dump=*|printk.time=*|processor.max_cstate=*);;
+        processor.nocst|profile=*|prompt_ramdisk=*|psmouse.proto=*);;
+        psmouse.rate=*|psmouse.resetafter=*|psmouse.resolution=*);;
+        psmouse.smartscroll=*|pstore.backend=*|pt.|pty.legacy_count=*|quiet);;
+        r128=*|raid=*|ramdisk_blocksize=*|ramdisk_size=*|rcu_nocbs=*);;
+        rcu_nocb_poll|rcutree.blimit=*|rcutree.fanout_leaf=*);;
+        rcutree.qhimark=*|rcutree.qlowmark=*|rcutree.rcu_cpu_stall_suppress=*);;
+        rcutree.rcu_cpu_stall_timeout=*|rcutree.jiffies_till_first_fqs=*);;
+        rcutree.jiffies_till_next_fqs=*|rcutorture.fqs_duration=*);;
+        rcutorture.fqs_holdoff=*|rcutorture.fqs_stutter=*);;
+        rcutorture.irqreader=*|rcutorture.n_barrier_cbs=*);;
+        rcutorture.nfakewriters=*|rcutorture.nreaders=*);;
+        rcutorture.onoff_holdoff=*|rcutorture.onoff_interval=*);;
+        rcutorture.shuffle_interval=*|rcutorture.shutdown_secs=*);;
+        rcutorture.stall_cpu=*|rcutorture.stall_cpu_holdoff=*);;
+        rcutorture.stat_interval=*|rcutorture.stutter=*);;
+        rcutorture.test_boost=*|rcutorture.test_boost_duration=*);;
+        rcutorture.test_boost_interval=*|rcutorture.test_no_idle_hz=*);;
+        rcutorture.torture_type=*|rcutorture.verbose=*|rdinit=*|reboot=*);;
+        relax_domain_level=*|reserve=*|reservetop=*|reservelow=*);;
+        reset_devices|resume=*|resume_offset=*|resumedelay=*|resumewait);;
+        hibernate=*|retain_initrd|rhash_entries=*|riscom8=*|ro|root=*);;
+        rootdelay=*|rootflags=*|rootfstype=*|rootwait|rw|S|sa1100ir|sbni=*);;
+        sched_debug|skew_tick=*|security=*|selinux=*|apparmor=*|serialnumber);;
+        shapers=*|show_msr=*|simeth=*|simscsi=*|slram=*|slab_max_order=*);;
+        slub_debug|slub_debug=*|slub_max_order=*|slub_min_objects=*);;
+        slub_min_order=*|slub_nomerge|smart2=*|smsc-ircc2.nopnp);;
+        smsc-ircc2.ircc_cfg=*|smsc-ircc2.ircc_sir=*|smsc-ircc2.ircc_fir=*);;
+        smsc-ircc2.ircc_irq=*|smsc-ircc2.ircc_dma=*);;
+        smsc-ircc2.ircc_transceiver=*|softlockup_panic=*|sonypi.*=*);;
+        specialix=*|spia_io_base=*|spia_fio_base=*|spia_pedr=*|spia_peddr=*);;
+        stacktrace|stacktrace_filter=*|sti=*|sti_font=*|stifb=*);;
+        sunrpc.min_resvport=*|sunrpc.max_resvport=*|sunrpc.pool_mode=*);;
+        sunrpc.tcp_slot_table_entries=*|sunrpc.udp_slot_table_entries=*);;
+        swapaccount|swapaccount=*|swiotlb=*|switches=*|sysfs.deprecated=*);;
+        sysrq_always_enabled|tdfx=*|test_suspend=*|thash_entries=*);;
+        thermal.act=*|thermal.crt=*|thermal.nocrt=*|thermal.off=*);;
+        thermal.psv=*|thermal.tzp=*|threadirqs|topology=*|tp720=*);;
+        tpm_suspend_pcr=*|trace_buf_size=*|trace_event=*|trace_options=*);;
+        transparent_hugepage=*|tsc=*|turbografx.map[23]=*|udbg-immortal);;
+        uhash_entries=*|uhci-hcd.ignore_oc=*|unknown_nmi_panic);;
+        usbcore.authorized_default=*|usbcore.autosuspend=*);;
+        usbcore.usbfs_snoop=*|usbcore.blinkenlights=*);;
+        usbcore.old_scheme_first=*|usbcore.usbfs_memory_mb=*);;
+        usbcore.use_both_schemes=*|usbcore.initial_descriptor_timeout=*);;
+        usbhid.mousepoll=*|usb-storage.delay_use=*|usb-storage.quirks=*);;
+        user_debug=*|userpte=*|vdso=*|vdso32=*|vector=*|video=*);;
+        virtio_mmio.device=*|vga=*|vmalloc=*|vmhalt=*|vmpanic=*|vmpoff=*);;
+        vsyscall=*|vt.cur_default=*|vt.default_blu=*|vt.default_grn=*);;
+        vt.default_red=*|vt.default_utf8=*|vt.global_cursor_default=*);;
+        watchdog|x2apic_phys|x86_mrst_timer=*|xd=*|xd_geo=*|xen_emul_unplug=*);;
+        xirc2ps_cs=*);;
+
+        vga=*|nomodeset|*.modeset=*|acpi_enforce_resources=*);;
+        nosplash|splash=*|fbcon=*);;
+
+        #----------------------------------------------------------------------
+        # NOTE: see /live/custom/$DISTRO/1.sh for distro specific boot codes
+        #----------------------------------------------------------------------
+
+        *) UNKNOWN_BOOTCODES="$UNKNOWN_BOOTCODES $param"
+        esac
+    done
+}
+
+valid_int() {
+    local var=$1 val=${2#*=} name=${2%%=*} param=$2
+
+    case $val in
+                      "")                   return ;;
+        [0-9]|[0-9][0-9]) eval $var=\$val;  return ;;
+
+    esac
+    INT_ERRORS="$INT_ERRORS $param"
+}
+
+start_mdev() {
+    local no_auto=$1
+
+    # disable module autoload
+    [ -z "$no_auto" -a -w /etc/mdev.conf ] && sed -r -i 's/^(\$MODALIAS)/# \1/' /etc/mdev.conf
+
+    # Set up file for recording sequence of kernel events sent to mdev
+    echo > /dev/mdev.seq
+    echo $LIVE_BIN/mdev > /proc/sys/kernel/hotplug
+    #echo $LIVE_BIN/mdev-trace > /proc/sys/kernel/hotplug
+    mdev -s
+}
+
+stop_mdev() { echo > /proc/sys/kernel/hotplug; }
+
+list_modules() {
+    local mod list cnt=0
+    for mod in $(lsmod | cut -d" " -f1); do
+        list="$list $mod"
+        cnt=$((cnt +  1))
+    done
+    [ "$list" ] || return
+    pvmsg 5 $cnt "loaded $num_co%n$m_co module%s:$white$list"
+}
+
+select_breakpoints() {
+    case "$BREAK_POINTS" in
+        *\?*|*ask*)
+            echo
+            echo "${m_co}Remaining $hi_co$0$m_co breakpoints:$nc_co"
+            echo
+            grep "^\s*breakpoint [1-9a-z].\? " $0 | sed "s/^\s*breakpoint \(.\)/  \1)/" | sed 's/"//g' | sort
+            echo
+            echo "${m_co}Use \"a\" to set all breakpoints$nc_co"
+            echo
+            echo -n "${ok_co}Enter breakpoint(s) separated by commas$m_co: $nc_co"
+            setsid cttyhack > /dev/null
+            read BREAK_POINTS;;
+    esac
+}
+
+mem_info() {
+    local info amt kb
+    while read info amt kb; do
+        [ ! "$info" = "$1:" ] && continue
+        echo $((amt / 1024))
+        return;
+    done </proc/meminfo
+}
+
+read_xlat() {
+    local prog=$1  lang=$2
+    local xdir=$LOCALE_DIR/xlat
+    local fdir=$LOCALE_DIR/fonts
+
+    local xlat=$xdir/en/$prog.xlat
+    [ -r $xlat ] && . $xlat
+
+    [ "$lang" ] || return
+
+    lang=$(echo $lang | sed 's/_.*//')
+
+    xlat=$xdir/$lang/$prog.xlat
+    [ -r "$xlat" ] || return
+    . $xlat
+    vmsg 7 "$_Translating_to_x_in_y_" $lang utf-8
+
+    local font=$fdir/$lang
+    [ -e "$font" ] && log_cmd setfont $font -C $(tty)
+}
+
+do_welcome() {
+    local distro=$1  d_version=$2  d_codename=$3  version=$4  v_date=$5
+    local welcome_name
+
+    welcome_name="$distro"
+    [ "$d_version" ]  && welcome_name="$welcome_name-$d_version"
+    [ "$d_codename" ] && welcome_name="$welcome_name${hi_co} $d_codename"
+    vmsg 2 "$_Welcome_ %s" "${hi_co}$welcome_name${m_co}!"
+
+    # Get total ramsize, and available real ram in MB. We need this later.
+
+    local total_mem=$(mem_info MemTotal)
+    local used_mem=$((total_mem - FREE_MEM))
+
+    if [ "$VERBOSE" -ge 6 ]; then
+
+        vmsg 1 "$white  $(busybox | head -n 1)"
+
+        [ -x /bin/ntfs-eg ] && vmsg 1 "$white  $(ntfs-3g --version 2>&1)"
+
+        vmsg 1 "$m_co          $0 version:$white $version"
+        vmsg 1 "$m_co            $0 built:$white $v_date"
+
+    fi
+
+    # Print meminfo.
+    local mem_format="${m_co}%25s: $num_co%5d${m_co} M"
+    vmsg 6 "$mem_format" "$_Total_Memory_" $total_mem
+    vmsg 6 "$mem_format" "$_Free_Memory_"  $FREE_MEM
+    vmsg 6 "$mem_format" "$_Used_Memory_"  $used_mem
+
+    local cpu_format="%25s: %s"
+    vmsg 6  "$cpu_format" "$_Linux_kernel_" "${white}$(uname -r)"
+    vmsg 6 "$cpu_format"  "arch"            "${white}$(uname -m)"
+
+    vmsg 6  "$cpu_format" "$_CPU_"   "$white`cpu_param "model name" unknown`"
+    vmsg 6  "$cpu_format" "$_cores_" "$num_co`cpu_param "cpu cores" 1`"
+    vmsg 6  "$cpu_format" "$_cache_" "$white`cpu_param "cache size" unknown`"
+
+    # show_modules
+}
+
+show_bootcodes() {
+    local unknown=$1
+
+    vmsg 5 "Current bootcodes:"
+    vmsg 5 "    $white $(cat /proc/cmdline)"
+
+    [ -n "$unknown"  -a -n "$CHECK_BOOTCODES" ] || return
+
+    vmsg 4
+    vmsg 4 "$warn_co$_unknown_boot_code_"
+    vmsg 4 "$_not_serious_"
+    for CODE in $unknown; do
+        vmsg 4 "$hi_co    $CODE"
+    done
+    vmsg 4
+
+}
+
+show_int_errors() {
+    local param name value params=$1
+    for param in $params; do
+        name=${param%%=*}
+        value=${param#*=}
+        warn "Parameter %s should be small integer values.  Ignoring %s" \
+            $(pqw $name) $(pqw $param)
+    done
+}
+
+cpu_param() {
+    local result=$(grep "^$1" /proc/cpuinfo | head -n 1 | sed 's/.*\t: //')
+    [ "$result" ] || result=$2
+    echo "$result"
+}
+
+disable_hcd() {
+    local type=$1
+    local dir=/sys/bus/pci/drivers/${type}_hcd
+    local symlink kmsg=/dev/kmsg
+    for symlink in $(find $dir -name "0*" | sed 's=.*/=='); do
+        echo $symlink >> $DISABLED_USB_FILE.$type
+        msg "disable %s bus: %s" $(nq $type) $(pq $symlink)
+        [ -e $kmsg ] && echo "$0 disabled $type: $symlink" >> $kmsg
+        echo $symlink > $dir/unbind
+    done
+}
+
+load_kernel_modules() {
+    local module  autoload=$1  no_load=$2  list=$3  file=$CUSTOM_DIR/$DISTRO/modules.load
+
+    if [ -r $file -a -z "$no_load" ]; then
+        msg "loading modules from %s" "$from_co$file$nc"
+        for module in $(grep -v "^\s*#" $file | sed 's/\s*#.*//' ); do
+            load_module $module 7
+        done
+    fi
+
+    [ "$autoload" ] && autoload_modules
+
+    for module in $(echo $list | sed 's/,/ /g'); do
+        load_module $module 5
+    done
+}
+
+autoload_modules() {
+    local alias  module  count
+    msg "Loading hardware specific modules"
+    for alias in $(find /sys/devices -name modalias | xargs cat | sort -u); do
+        $LIVE_BIN/modprobe -q $alias &>/dev/null
+    done
+}
+
+count_loaded_modules() {
+    local count=$(lsmod | wc | awk '{print $1}')
+    if [ "$count" = "0" ]; then
+        msg "no modules were found."
+        return
+    fi
+
+    msg "Loaded $num_co$count$m_co modules:"
+    msg -n "    "
+    for module in $($LIVE_BIN/lsmod | cut -d' ' -f1 | sort); do
+        msg -n "$white $module"
+    done
+    msg ""
+}
+
+show_modules() {
+    local modules module
+    modules="$(lspci -k | cut -d" " -f5,6,7,8,9 | grep "[a-zA-Z0-9]" | sed 's/ /_/g' | sort -u)"
+    echo "$modules" | grep -q "[a-zA-Z0-9]" || return
+
+    vmsg 5 "$_Hardware_kernel_modules_:"
+    vmsg 5 -n "   "
+
+    for module in $modules; do
+        vmsg 5 -n "$white $module"
+    done
+    vmsg 5 $nc_co
+}
+
+load_module() {
+    local name=$1  level=${2:-7}
+
+    vmsg $level "$_Loading_module_$dev_co $name"
+    log_cmd modprobe $name
+}
+
+setup_crypt() {
+    msg "$_Looking_for_crypt_ ..."
+
+    # FIXME: convert retry to final_try or retry_time
+    find_crypt_device "$RETRY_TIME" || fatal "$_Could_not_find_crypt_."
+
+    # No labels on encrypted partitions so bump the partition number if using label
+    if [ "$CRYPT_LABEL" -a -z "$CRYPT_DEV" ]; then
+        NEXT_DEVICE="$(next_device $DEVICE_LIST)" || fatal "$_Could_not_find_crypt_after_: $DEVICE_LIST"
+        DEVICE_LIST="$NEXT_DEVICE"
+    fi
+
+    [ "$DEVICE_LIST" ] || fatal "$_Strange_could_not_find_crypt_."
+    CRYPT_DEVICE="$DEVICE_LIST"
+
+    msg "$_Found_crypt_: $CRYPT_DEVICE"
+
+    if cryptsetup isLuks $CRYPT_DEVICE; then
+        cryptsetup luksOpen $CRYPT_DEVICE boot
+    else
+        cryptsetup create   boot $CRYPT_DEVICE
+    fi
+
+    PERSIST_DEV=/dev/mapper/boot
+
+    [ "$BOOT_DEV" -o "$BOOT_LABEL" -o "$BOOT_UUID" ] || BOOT_DEV=/dev/mapper/boot
+
+    for module in dm-crypt dm-mod serpent sha256 blowfish aes; do
+        load_module $module
+    done
+}
+
+###############################################################################
+# Find the squashfs file
+###############################################################################
+
+#------------------------------------------------------------------------------
+# Function: is_removable <device>
+#
+# Return true if <device> is a block-device on a usb bus.   Else return false.
+# Not used.  See is_usb_or_removable() below.
+#------------------------------------------------------------------------------
+is_removable() {
+    local dev=$1
+    local short_dev=${dev##*/}
+    local base_dev=${short_dev%%[0-9]*}
+    local f=/sys/block/$base_dev/removable
+    [ -r $f ] || return 1
+    [ "$(cat $f)" = 1 ]
+    return $?
+}
+
+#------------------------------------------------------------------------------
+# Function: is_usb_or_removable <device>
+#
+# Return true if <device> is on a usb bus or if it's removable.  Otherwise
+# return false.
+# Cache results in $IS_USB and $IS_NOT_USB to improve performance.
+#------------------------------------------------------------------------------
+is_usb_or_removable() {
+    local dev=$1
+    local short_dev=${dev##*/}
+    local base_dev=${short_dev%%[0-9]*}
+    # Cache results of expensive operation below
+
+    case ",$IS_USB," in
+        *,$base_dev,*)  return 0;;
+    esac
+
+    case ",$IS_NOT_USB," in
+        *,$base_dev,*)  return 1;;
+    esac
+
+    if _is_usb_or_removable $base_dev; then
+        IS_USB=$IS_USB,$base_dev
+        return 0
+    fi
+
+    IS_NOT_USB=$IS_NOT_USB,$base_dev
+    return 1
+}
+
+_is_usb_or_removable() {
+    local base_dev=$1
+    local rfile=/sys/block/$base_dev/removable
+
+    [ -r $rfile ] && [ "$(cat $rfile)" = 1 ] && return 0
+
+    local link=/sys/block/$base_dev/device
+    path=$(readlink -f $link)
+    [ "$path" = "$link" ] && return 1
+
+    while [ ${#path} -gt 0 ]; do
+        local subsystem=$path/subsystem
+        path=${path%/*}
+        [ -L $subsystem ] || continue
+        local type=$(basename $(readlink -f $subsystem))
+        [ "$type" = usb ] && return 0
+    done
+
+    return 1
+}
+
+#------------------------------------------------------------------------------
+# Function: from_filter <device-list>
+#
+# Filter and order devices in list according to types listed in $FROM_TYPE.
+# Output goes into FILTERED_LIST so we can give error messages from within.
+# Return true if there is at least one item in the FILTERED_LIST otherwise
+# return false.  Error out if there is an invalid from= type.
+#------------------------------------------------------------------------------
+from_filter() {
+
+    FILTERED_LIST=
+
+    local from_type invalid_scan
+    case ",$FROM_TYPE," in
+        *,all,*) from_type=$FROM_TYPE_ALL;;
+              *) from_type=$FROM_TYPE;;
+    esac
+
+    # First segregate devices by type
+    local dev cd_devs hd_devs usb_devs other_devs
+    for dev in "$@"; do
+        [ -b "$dev" ] || continue
+        case "$dev" in
+            /dev/sr[0-9]*|/dev/scd[0-9]*)
+                cd_devs="$cd_devs $dev" ;;
+
+            /dev/hd*)
+                hd_devs="$hd_devs $dev" ;;
+
+            /dev/sd*)
+                if is_usb_or_removable $dev; then
+                    usb_devs="$usb_devs $dev"
+                else
+                    hd_devs="$hd_devs $dev"
+                fi ;;
+
+            *)
+                other_devs="$other_devs $dev" ;;
+        esac
+    done
+
+    # then echo devices sorted by $FROM_TYPE but always start with other_devs
+    echo -n "$other_devs"
+
+    for i in $(seq 6); do
+        local type=$(echo $from_type | cut -d, -f$i)
+        [ "$type" ] || continue
+        case "$type" in
+            cd)
+                FILTERED_LIST="$FILTERED_LIST$cd_devs"
+                cd_devs=
+                ;;
+            usb)
+                FILTERED_LIST="$FILTERED_LIST$usb_devs"
+                usb_devs=
+                ;;
+            hd)
+                FILTERED_LIST="$FILTERED_LIST$hd_devs"
+                hd_devs=
+                ;;
+            *)
+                invalid_scan="$invalid_scan $type";;
+        esac
+    done
+
+    [ "$invalid_scan" ] \
+        && _fatal "$(printf "$_Invalid_x_parameters_%s" "${cheat_co}from=$err_co" "$cheat_co$invalid_scan")" \
+        "$_Valid_values_are_$cheat_co cd hd usb all"
+
+    [ "$FILTERED_LIST" ] || return 1
+
+    return 0
+}
+
+#------------------------------------------------------------------------------
+# Function: find_files <files> <mntpnt> <dev> <label> <uuid> <retry>
+#
+# First find device specified by either <dev>, <label>, or <uuid>.  If none of
+# these are specified then we scan all possible devices.  Then for all devices
+# (might be one device) we try to mount each device and if we can mount it
+# we look for at least one file in our <files> list.  If found, we exit with
+# success after setting FOUND_DEV to the device that worked.
+#
+# If there is any failure along the way, we wait one second and then try all
+# over again.  If the error was due to not finding the device associated with
+# <device>, <label>, or <uuid>, then the error is fatal.  (Could change this if
+# needed but this is simplest).
+#
+# The outer wrapper lets us show the loop times regardless of how we left the
+# main code in _find_files().
+#------------------------------------------------------------------------------
+
+find_files() {
+    local ret loop_times start_t=$(get_time) t2 elapsed
+    _find_files "$@"
+    ret=$?
+    t2=$(get_time)
+    elapsed=$(get_seconds $((t2 - start_t)))
+    vmsg 6 "Elaspsed time finding files: %s seconds" $(nq $elapsed)
+    [ "$loop_times" ] && vmsg 6 "loop times:$num_co$loop_times"
+
+    case $ret in
+        10) fatal "$_No_x_devices_found_" block            ;;
+
+        20) fatal "$_No_x_devices_found_" $(fq $FROM_TYPE) ;;
+
+        30) _fatal "$(printf "$_The_x_parameter_is_blocking_device_y_"           \
+                        $(cq from=$FROM_TYPE)$hi_co "$(dq $DEVICE_LIST)")"       \
+                        "$(printf "$_Remove_the_x_boot_parameter_" $(cq from))"  ;;
+    esac
+
+    return $ret
+}
+
+_find_files() {
+    local files=$1  mp_orig=$2  device=$3  label=$4  uuid=$5  retry_time=$6
+
+
+    local last_list do_scan
+    [ "$device" -o "$label" -o "$uuid" ] || do_scan=true
+
+    unset FOUND_DEV FOUND_MP
+
+    local be_verbose vthresh=8
+    [ "$VERBOSE" -ge $vthresh ] && be_verbose=true
+
+    mkdir -p "$mp_orig"
+
+    local end_t loop_t1 loop_t2 usleep dt start_t=$(get_time) current_t=0
+    local try=-1 have_devices final_try dot=. dt_secs
+
+    # Stay in loop until success or time goal_t is reached
+    local goal_t=$(( start_t + retry_time * 100))
+
+    while [ -z "$final_try" ]; do
+
+        try=$((try + 1))
+         [ "$be_verbose" ] && cnt_up=$(nq "$(printf "%2d" $try)")
+
+        #-- delay every time but the first
+        if [ $try -gt 0 ]; then
+            if [ $try -eq 1 ]; then
+                msg -n "Retrying for %s seconds " $(nq $retry_time)
+                vmsg_if $vthresh " ..."
+            fi
+
+            # Normally just print out a dot for each iteration
+            [ "$be_verbose" ] || msg -n $dot
+
+            # Adjust sleep time dynamically to account for previous time
+            # through the loop
+
+            current_t=$(get_time)
+            dt=$((current_t - loop_t1))
+            usleep=$(( ($RETRY_DELAY - dt ) * 10000))
+            dt_secs=$(get_seconds $dt)
+            loop_times="$loop_times $dt_secs"
+            vmsg_if 9 "loop time:$num_co $dt_secs"
+
+            # Once we have exceeded the time limit we go through the
+            # loop one final time.
+            [ $current_t -gt $goal_t ] && final_try=true
+
+            # Only sleep long enough so total time through loop is constant
+            [ $usleep -gt 0 ] && usleep $usleep
+        fi
+
+        loop_t1=$(get_time)
+
+        # This disables usb-2
+        [ "$NO_EHCI" ] && disable_hcd ehci
+
+        unset DEVICE_LIST FILTERED_LIST IS_USB IS_NOT_USB
+
+        #----------------------------------------------------------------------
+        # Either scan all available block devices because no uuid, label, or
+        # device was specified ...
+        #----------------------------------------------------------------------
+        if [ "$do_scan" ]; then
+
+            [ "$try" = "0" ] \
+                && vmsg 4 "$_Scanning_x_devices_for_${from_co} $files" $(dq $FROM_TYPE)
+
+            DEVICE_LIST=$(most_block_devices)
+
+            if [ -z "$DEVICE_LIST" ]; then
+                [ "$final_try" ] && return 10
+
+                vmsg_if $vthresh "%s No %s devices found" "$cnt_up" block
+                continue
+            fi
+
+            # Filter and order devices according to from= parameter
+            if ! from_filter $DEVICE_LIST; then
+                [ "$final_try" ] && return 20
+
+                vmsg_if $vthresh "%s No %s devices found" "$cnt_up" $(pq $FROM_TYPE)
+                continue
+            fi
+
+            DEVICE_LIST="$FILTERED_LIST"
+
+            # pure window dressing
+            if [ -z "$have_devices" ]; then
+                [ $try -gt 0 ] && vmsg 5
+                vmsg 5 "$_Filtered_devices_$white $DEVICE_LIST"
+            else
+                vmsg_if $vthresh "%s $_Filtered_devices_ %s" "$cnt_up" "$(pq $DEVICE_LIST)"
+            fi
+
+        #----------------------------------------------------------------------
+        # ... Or look for specific devices because a uuid, label, or device was
+        # specified
+        #----------------------------------------------------------------------
+        else
+            find_device "$try" "$final_try" "$device" "$label" "$uuid" || return $?
+            if [ -z "$DEVICE_LIST" ]; then
+                vmsg_if $vthresh "%s No %s devices yet found" "$cnt_up" $(pq $FROM_TYPE)
+                continue
+            fi
+
+            #------------------------------------------------------------------
+            # When a device has been specified via label, uuid, or /dev/node
+            # then only filter and order if from= parameter is given explicitly
+            #------------------------------------------------------------------
+            if [ "$ALWAYS_SCAN" ]; then
+                if ! from_filter $DEVICE_LIST; then
+                    [ "$try" -ge "$retry" ] && return 30
+                    continue
+                fi
+
+                DEVICE_LIST="$FILTERED_LIST"
+            fi
+
+            # pure window dressing
+            if [ -z "$have_devices" ]; then
+                [ "$try" != "0" ] && msg
+                vmsg 4 "$_Looking_for_x_on_y_" "$(pq $files)" "$(dq $DEVICE_LIST)"
+            else
+                #vmsg_if $vthresh
+                vmsg_if $vthresh "%s $_Looking_for_x_on_y_" "$cnt_up" "$(pq $files)" "$(dq $DEVICE_LIST)"
+            fi
+        fi
+
+        #----------------------------------------------------------------------
+        # Now we have some device or devices to mount and search
+        #----------------------------------------------------------------------
+
+        # more window dressing
+        if [ -n "$have_devices" -a "$last_list" != "$DEVICE_LIST" ]; then
+            msg
+            msg "Found new device(s): %s" "$white$DEVICE_LIST"
+        fi
+        last_list="$DEVICE_LIST"
+
+        have_devices=true
+
+        #-- now try to mount each device and find at least one of the $files ...
+        local dev fname mntpnt mounted
+        for dev in $DEVICE_LIST; do
+
+            # use existing mountpoint if device is already mounted
+            mntpnt="$(get_mountpoint $dev)"
+            if [ "$mntpnt" ]; then
+                mounted=
+                vmsg 6 "$_Device_:$(dq $dev) $_already_mounted_ >>$mp_co$mntpnt$m_co<<"
+            else
+                try_mount $dev $mp_orig || continue
+                mounted=true
+                mntpnt=$mp_orig
+            fi
+
+            for fname in $files; do
+                [ -f "$mntpnt/$fname" ] || continue
+                if [ "$mntpnt" = "$mp_orig" ]; then
+                    vmsg 4 "$_Mounted_x_at_y_" "${from_co}$dev${m_co}" "${to_co}$mntpnt${m_co}"
+                else
+                    rmdir $mp_orig
+                fi
+                FOUND_DEV=$dev
+                FOUND_MP=$mntpnt
+                return 0
+            done
+            [ "$mounted" ] && mountpoint -q $mp_orig && umount $mp_orig
+        done
+    done
+    [ "$try" != "0" ] && msg
+    return 4
+}
+
+
+#------------------------------------------------------------------------------
+# Function find_device: <try> <final_try> <device> <label> <uuid>
+#
+# Find the device(s) associated with a device name, a label, or a uuid.  Puts
+# the result in $DEVICE_LIST so are free to echo error messages.  Returns true
+# on success or if we need to retry.  Returns false if there was a final error.
+#------------------------------------------------------------------------------
+
+find_device() {
+    local try=$1  final_try=$2  device=$3  label=$4  uuid=$5
+
+    DEVICE_LIST=
+
+    local looking_for
+    if [ "$ALWAYS_SCAN" ]; then
+        looking_for="$_Looking_for_ $dev_co$FROM_TYPE$m_co $_device_"
+    else
+        looking_for="$_Looking_for_ $_device_"
+    fi
+
+    if [ "$device" ]; then
+        [ "$try" = "0" ] && msg "$looking_for:$dev_co $device"
+        DEVICE_LIST="$(cleanse_dev $device)"
+        if [ -z "$DEVICE_LIST" ]; then
+            [ "$final_try" ] || return 0
+            [ "$try" != "0" ] && msg
+            device_err "$device"
+            return 1
+        fi
+
+    elif [ "$label" ]; then
+        [ "$try" = "0" ] && msg "$looking_for $_with_label_:$dev_co $label"
+        DEVICE_LIST="$(label_to_dev $label)"
+        if [ -z "$DEVICE_LIST" ]; then
+            [ "$final_try" ] || return 0
+            [ "$try" != "0" ] && msg
+            label_err "label" "$label" "LABEL"
+            return 2
+        fi
+
+    elif [ "$uuid" ]; then
+        [ "$try" = "0" ] && msg "$looking_for $_with_uuid_:$dev_co $uuid"
+        DEVICE_LIST="$(uuid_to_dev $uuid)"
+        if [ -z "$DEVICE_LIST" ]; then
+            [ "$final_try" ] || return 0
+            [ "$try" != "0" ] && msg
+            label_err "uuid" "$uuid" "UUID"
+            return 3
+        fi
+    fi
+
+    return 0
+}
+
+device_uuid() {
+    local device=$1 LABEL TYPE UUID
+    eval $(blkid $device | sed 's/^[^:]*://')
+    echo $UUID
+}
+
+find_linuxfs_file() {
+    LAB_ERR_PREAMB="boot"
+
+    if [ -n "$ISO_FILE" -o -n "$FROM_ISO" ]; then
+
+        : ${ISO_FILE:=$DEFAULT_ISO_FILE}
+        ISO_FILE=${ISO_FILE#/}
+
+        heading "${cheat_co}fromiso"
+        find_files "$ISO_FILE" "$ISO_DEV_MP" "$BOOT_DEV" "$BOOT_LABEL" "$BOOT_UUID" "$RETRY_TIME" \
+            || fatal "$_Could_not_find_iso_: $from_co\"$ISO_FILE\"$nc."
+
+        local iso_full=$ISO_DEV_MP/$ISO_FILE
+        DEFAULT_PERSIST_PATH=${ISO_FILE%/*}
+
+        # Check md5 of files in directory containing iso file
+        [ "$CHECK_MD5" ] && check_md5 $iso_full
+
+        # Mount the iso file
+        mkdir -p $ISO_FILE_MP
+        mount -t iso9660 -o loop,ro $iso_full $ISO_FILE_MP \
+            || fatal "$_Could_not_mount_x_as_a_y_file_" "$from_co$iso_full$err_co" "iso"
+
+        # Find the linuxfs file
+        SQFILE_FULL="$ISO_FILE_MP/$SQFILE_FILE"
+        [ -f "$SQFILE_FULL" ] \
+            || linuxfs_error "$(printf "$_Linuxfs_not_found_" "$SQFILE_FULL" "$FOUND_DEV")"
+
+        SQFILE_MP=$ISO_FILE_MP
+        SQFILE_DEV=$FOUND_DEV   # Used for toram-eject
+
+    else
+        find_files "$SQFILE_FILE" "$BOOT_MP" "$BOOT_DEV" "$BOOT_LABEL" "$BOOT_UUID" "$RETRY_TIME" \
+            || linuxfs_error "$(printf "$_Could_not_find_linuxfs_: $from_co\"$SQFILE_FILE\"$CO_NORM.")"
+
+        SQFILE_MP=$BOOT_MP
+
+        SQFILE_DEV=$FOUND_DEV
+        BOOT_DEV_TYPE=$(grep "^$FOUND_DEV " /proc/mounts | cut -d" " -f3)
+        case $BOOT_DEV_TYPE in
+            vfat|ext[234]|reiserfs) REMASTERABLE=true
+        esac
+
+        SQFILE_FULL=$BOOT_MP/$SQFILE_FILE
+        SQFILE_PATH=${SQFILE_FILE%/*}
+        DEFAULT_PERSIST_PATH=$SQFILE_PATH
+
+    fi
+
+    SQFILE_DIR=$SQFILE_MP/$SQFILE_PATH
+    DEFAULT_DIR=$SQFILE_DIR
+}
+
+linuxfs_error() {
+    local msg=$1  device_list=$(echo $DEVICE_LIST)
+    local all_devices=$(echo $(most_block_devices));
+
+    _fatal "$@" \
+        "$(printf " Searched devices: %s" "$white$device_list")" \
+        "$(printf "All block devices: %s" "$white$all_devices")" \
+        "$(printf "   Searched types: %s" "$white$FROM_TYPE")"   \
+        "" \
+        "$(printf "Please contact %s at %s" "$DEVELOPER" "$DEV_EMAIL")"
+}
+
+check_kernel_version() {
+    local mp=$1
+    local kversion=$(uname -r)
+    local mod_dir=/lib/modules/$kversion
+
+    [ -d $mp$mod_dir ] && return
+
+    _non_fatal "Possible kernel version mismatch" \
+        "$(printf "Kernel version: %s" $(pq $kversion))" \
+        "$(printf "Missing directory: %s" $(pq $mp$mod_dir))"
+}
+
+
+
+###############################################################################
+# Mount things
+###############################################################################
+
+mount_linuxfs() {
+    local sqfs_mp=$1  sqfile_full=$2  wrap_mp=$3  vid_file=$1$VID_FILE
+
+    mkdir -p $sqfs_mp
+    vmsg 6 "$_Mounting_x_at_y_" "linuxfs file:$from_co $sqfile_full$m_co" "$from_co$sqfs_mp"
+    log_cmd mount -t squashfs -o loop,ro $sqfile_full $sqfs_mp \
+        || fatal "$_Could_not_mount_x_as_a_y_file_" $sqfile_full squashfs
+
+    if [ -n "$wrap_mp" -a -e "$sqfs_mp/$SQFILE_NAME" -a ! -d "$sqfs_mp/usr" ]; then
+        msg "Found wrapped fs. Moving wrapper ..."
+        mkdir -p $wrap_mp
+        mount --move $sqfs_mp $wrap_mp
+
+        try_file_mount  $wrap_mp/$SQFILE_NAME $sqfs_mp ro \
+            || fatal "$_Could_not_mount_x_as_a_y_file_" $sqfile_full "fs-in-a-file"
+    fi
+
+    link_top_dirs $sqfs_mp $TOP_BIN_DIRS
+
+    set_path $LIVE_BIN:/sbin:/bin/usr/sbin:/usr/bin
+
+    SQFS_VID=$(get_vid $vid_file)
+
+    if [ "$SQFS_VID" ]; then
+        vmsg 7 "sqfs_vid:$nc_co %s" "$SQFS_VID"
+    else
+        vmsg 7 "No VID found at$white $vid_file"
+    fi
+    SQFS_VID_FILE=$vid_file
+}
+
+mount_aufs_ram() {
+    local aufs_ram_mp=$1  min_aufs_ram=$2  free_mem=$3
+    # Default tempfs size for tempfs = 80% of FREE_MEM
+    AUFS_RAM_SIZE=$((8 * free_mem / 10))
+
+    [ "$AUFS_RAM_SIZE" -lt "$MIN_AUFS_RAM" ] && AUFS_RAM_SIZE="$MIN_AUFS_RAM"
+    mkdir -p $aufs_ram_mp
+
+    mount_tmpfs $aufs_ram_mp $AUFS_RAM_SIZE "aufs ram" || fatal "$_Creating_aufs_tempfs_failed_!"
+}
+
+mount_aufs() {
+    local  aufs_arg  aufs_mp=$1  sqfs_mp=$2  aufs_ram_mp=$3  rootfs_mp=$4
+
+    mkdir -p $aufs_mp
+
+    # Need the cache file because we are using "mount" from the squashfs
+    local ld_cache=etc/ld.so.cache
+    cp $sqfs_mp/$ld_cache $LIVE_DIR/$ld_cache
+
+    if [ -n "$PERSIST_ROOT" -a -n "$STATIC_ROOT" ]; then
+        msg "Enabling static rootfs"
+        aufs_arg="$rootfs_mp:$sqfs_mp=ro"
+    else
+        STATIC_ROOT=
+        aufs_arg="$aufs_ram_mp:$sqfs_mp=ro"
+    fi
+
+    # Do the actual aufs mount
+    vmsg 6 "$_Mounting_x_at_y_" "aufs" "$from_co$aufs_mp"
+
+    log_cmd /bin/mount -t aufs -o "br:$aufs_arg" $aufs_mp $aufs_mp || fatal "$_Could_not_mount_aufs_!"
+
+    # Grab what we need from /etc before it gets nuked
+    cp -a /etc/mtab $aufs_mp/etc/
+
+    # Temporary top level symlinks to simulate real system
+    # These will disappear when we switch_root
+    link_top_dirs $aufs_mp $TOP_DIRS
+
+    # No longer needed, we're using the aufs now via symlinks
+    rm -f $LIVE_DIR/$ld_cache
+
+    # Always a good idea
+    mkdir -p   $aufs_mp/tmp /var/tmp
+    chmod 1777 $aufs_mp/tmp /var/tmp
+
+    set_path "/usr/sbin:/usr/bin:/sbin:/bin:$LIVE_BIN"
+}
+
+link_top_dirs() {
+    local mp=$1  dir  mp_dir
+    shift
+    vmsg 7 -n "symlink: "
+    for dir in $@; do
+        mp_dir=$mp/$dir
+        [ -d $mp_dir ] || continue
+        rm -rf /$dir
+        ln -s $mp_dir /$dir
+        vmsg 7 -n "$white/$dir "
+    done
+    vmsg 7
+}
+
+try_mount() {
+    local dev=$1  mp=$2  rw=${3:-$RW_MODE}
+    eval local $(blkid $dev |  sed -r 's/^[^:]+://')
+    [ "$TYPE" ] || return 1
+    case $TYPE in
+            vfat) mount -t vfat -o $rw,umask=000,shortname=winnt  "$dev" "$mp" 2>/dev/null ;;
+         iso9660) mount -t iso9660 -o ro                          "$dev" "$mp" 2>/dev/null ;;
+            ntfs) ntfs-3g -o umask=000,force,"$rw"                "$dev" "$mp" 2>/dev/null || \
+                  mount -t ntfs -o umask=000,ro                   "$dev" "$mp" 2>/dev/null ;;
+               *) mount -t $TYPE -o "$rw"                         "$dev" "$mp" 2>/dev/null ;;
+    esac
+    return $?
+}
+
+try_mount_old() {
+    local dev=$1  mp=$2  rw=${3:-$RW_MODE}
+
+    mount -t vfat -o $rw,umask=000,shortname=winnt    "$dev" "$mp" 2>/dev/null || \
+        mount -t iso9660                     -o ro    "$dev" "$mp" 2>/dev/null || \
+            ntfs-3g -o umask=000,force,"$rw"          "$dev" "$mp" 2>/dev/null || \
+            mount -t ntfs -o umask=000,ro             "$dev" "$mp" 2>/dev/null || \
+                mount -t reiserfs            -o "$rw" "$dev" "$mp" 2>/dev/null || \
+                    mount -t ext4            -o "$rw" "$dev" "$mp" 2>/dev/null || \
+                        mount -t ext3        -o "$rw" "$dev" "$mp" 2>/dev/null || \
+                            mount -t ext2    -o "$rw" "$dev" "$mp" 2>/dev/null
+    return $?
+}
+
+try_file_mount() {
+    local file=$1  mp=$2  rw=${3:-$RW_MODE}
+
+    mount -t reiserfs         -o loop,$rw "$file" "$mp"  2>/dev/null || \
+        mount -t ext4         -o loop,$rw "$file" "$mp"  2>/dev/null || \
+            mount -t ext3     -o loop,$rw "$file" "$mp"  2>/dev/null || \
+                mount -t ext2 -o loop,$rw "$file" "$mp"  2>/dev/null
+    return $?
+}
+
+#------------------------------------------------------------------------------
+# Function: mount_tmpfs <mountpoint> <size> <name> <mode>
+#------------------------------------------------------------------------------
+mount_tmpfs() {
+    local mp=$1  size=$2  name=$3  mode=$4
+    mkdir -p $mp
+    vmsg 6 "$_Creating_x_at_y_" "${hi_co}$name tmpfs${m_co}" "${from_co}$mp${m_co} (size=${num_co}$size ${m_co}MB)"
+    log_cmd $LIVE_BIN/mount -t tmpfs -o size=${size}m tmpfs $mp || return 1
+    [ "$mode" ] && chmod $mode $mp
+    return 0
+}
+
+
+###############################################################################
+# Check Filesystems
+###############################################################################
+
+read_superblock() {
+    local dev=$1
+    local word_size=$((2**16))
+    local addr f1 f2 f3 f4 f5 f6 f7 f8
+
+    while read addr f1 f2 f3 f4 f5 f6 f7 f8; do
+        case $addr in
+            0000030)
+                echo SB_MOUNT_CNT=$f3
+                echo SB_MAX_MOUNT_CNT=$f4
+                echo SB_MAGIC=$f5
+                echo SB_STATE=$f6
+                ;;
+            0000040)
+                echo SB_LASTCHECK=$((    f2 * word_size + f1))
+                echo SB_CHECKINTERVAL=$((f4 * word_size + f3))
+                ;;
+        esac
+    done <<DD_Hexdump
+$(dd if=$dev bs=1 skip=1024 count=128 2>/dev/null| hexdump -d | sed -r "s/ 0+([0-9])/ \1/g")
+DD_Hexdump
+}
+
+should_fsck() {
+    local dev=$1  sdev=${1##*/}  name=$2  max_count=$MAX_MOUNT_CNT
+    [ "$DO_FSCK" ] || return 1
+
+    case ,$DID_FSCK, in
+        *,$dev,*) return 1
+    esac
+
+    DID_FSCK=$DID_FSCK,$dev
+
+    local SB_MOUNT_CNT SB_MAX_MOUNT_CNT SB_MAGIC SB_STATE SB_LASTCHECK SB_CHECKINTERVAL
+
+    eval $(read_superblock $dev)
+
+    if [ "$SB_MAGIC" != 61267 ]; then
+        [ "$FORCE_FSCK" ] \
+            && warn "Can't fsck %s device %s.  Not an ext2/3/4 filesystem." \
+                $(pqw $name) $(pqw $sdev)
+        return 1
+    fi
+
+    local days=$((SB_CHECKINTERVAL /60/60/24))
+
+    vmsg 9 "${green}         Device:$white %s"             $dev
+    vmsg 9 "${green}    Mount count:$white %s"             $SB_MOUNT_CNT
+    vmsg 9 "${green}Max mount count:$white %s"             $SB_MAX_MOUNT_CNT
+    vmsg 9 "${green}   Last checked:$white %s"             "$(date --date=@$SB_LASTCHECK)"
+    vmsg 9 "${green}   Magic number:$white 0x%04X"         $SB_MAGIC
+    vmsg 9 "${green} Check interval:$white %d$m_co (days)" $days
+
+    [ "$FORCE_FSCK" ] && return 0
+
+    if [ $SB_STATE != 1 ]; then
+        warn "$name device $sdev not cleanly umounted.  Check forced."
+        return 0
+    fi
+
+    [ "$SB_MAX_MOUNT_CNT" != 65535 ] && max_count=$SB_MAX_MOUNT_CNT
+
+    if [ $SB_MOUNT_CNT -ge $max_count ]; then
+        vmsg 1 "$name device $sdev has not been checked in$num_co $SB_MOUNT_CNT$m_co mounts.  Check forced."
+        return 0
+    fi
+
+    [ $SB_CHECKINTERVAL -gt 0 ] || return 1
+
+    [ $((SB_LASTCHECK + SB_CHECKINTERVAL)) -ge $(date +%s) ] || return 1
+
+    vmsg 1 "$name device $sdev has not been checked in$num_co $days$m_co days.  Check forced."
+    return 1
+    return 0
+}
+
+do_fsck() {
+    local err ret output dev=$1  sdev=$(pq ${1##*/})
+
+    vmsg 2 "fsck$white $dev"
+    output=$(e2fsck -n -C 0 $dev 2>&1)
+    ret=$?
+    msg_nc "$output"
+    tune2fs -C 1 $dev
+
+    case $ret in
+	    0) vmsg 1    "There were no errors on %s"      "$sdev" ; err=0 ;;
+	    1) vmsg 1    "Filesystem %s repaired"          "$sdev" ; err=0 ;;
+	  2|3) vmsg 1    "Filesystems %s repaired"         "$sdev" ; err=0 ;;
+	    4) non_fatal "Errors on %s left uncorrected"   "$sdev" ; err=1 ;;
+	    8) non_fatal "Operational error"               "$sdev" ; err=1 ;;
+	   12) non_fatal "fsck interrupted"                "$sdev" ; err=1 ;;
+	   32) non_fatal "fsck cancelled"                  "$sdev" ; err=1 ;;
+	    *) non_fatal "Filesystem %s couldn't be fixed" "$sdev" ; err=1 ;;
+	esac
+
+    return $err
+}
+
+fsck_boot_dev() {
+    local dev=$1  mp=$2 sqfs_mp=$3  sq_file=$4  wrap_mp=$5
+    local name="boot device"
+
+    local type=$(grep "^$dev " /proc/mounts | cut -d" " -f3)
+
+    if [ -n "$FORCE_FSCK" -a -n "${type##ext[234]}" ]; then
+        warn "Can't fsck %s device filesystem of type %s" "$(pqw boot)" "$(pqw $type)"
+        return
+    fi
+
+    should_fsck $dev boot || return
+
+    mount_linuxfs "$sqfs_mp" "$sq_file" "$wrap_mp"
+
+    breakpoint f "After mounting linuxfs before fsck"
+
+    do_fsck $dev
+
+    # Always remount everything after fsck of boot device.  Don't want any
+    # nasty surprises if we only do it when we need to.
+    # We don't need no stinkin' reboots
+    set_path $LIVE_BIN
+    umount $sqfs_mp
+    mountpoint -q $wrap_mp && umount $wrap_mp
+    umount $mp
+
+
+    # Now mount the boot device again so no one knows we were here
+    try_mount $dev $mp || fatal "Could not remount boot device$white $dev"
+}
+
+#----- Misc Functions ---------------------------------------------------------
+
+set_path() {
+    PATH=$1
+    hash -r
+}
+
+should_break_at() {
+    local bp=$1
+    case ,$BREAK_POINTS, in
+        *,$bp,*) return 0 ;;
+          *,A,*) return 0 ;;
+          *,a,*)          ;;
+              *) return 1 ;;
+    esac
+    case $bp in
+        [e1-9]) return 0 ;;
+             *) return 1 ;;
+    esac
+}
+
+custom_code() {
+    local file=$1  desc=$2
+
+    [ "${#file}" -eq 1 ] && file=$CUSTOM_DIR/$DISTRO/$file.sh
+
+    [ -r $file ] || return
+
+    if $LIVE_BIN/sh -n $file; then
+        [ "$desc" ] && vmsg 7 "Run custom code %s: %s" "$white$desc$m_co" "$from_co$file$nc"
+        . $file
+    else
+        non_fatal "Errors found in custom code: %s.  Skipping" "$from_co$file$nc"
+    fi
+}
+
+do_report() {
+    echo
+    echo "bp-$bp: $desc"
+    usb-report.sh
+    echo
+}
+
+breakpoint() {
+    local bp=$1  desc=$2
+
+    custom_code "$bp" "$desc"
+
+    if [ "$USB_REPORT" ]; then
+        local rep_file=/live/etc/usb-report
+        case $bp in
+
+            3)
+               warn "Waiting 5 seconds for buses to settle ..."
+               sleep 5
+               warn "Starting report %s" $(pq $rep_file)
+               echo "Report started $(date)" >> $rep_file
+               do_report                    >> $rep_file
+               ;;
+
+            4) do_report  >> $rep_file
+               warn "The report was saved to %s" $(pq $rep_file)
+               ;;
+        esac
+    fi
+
+    if ! should_break_at $bp; then
+        [ "$DB_PLUS" ] \
+            && vmsg 9 "$green@bp$cyan[$num_co$bp$m_co]$hi_co $(get_seconds)s$m_co: $desc"
+        return
+    fi
+
+    write_log_files /init.log
+
+    echo "$green$tbar$nc_co"
+    echo "$green==>$cyan limited shell @ breakpoint [$num_co$bp$cyan]$white $desc"
+    echo "$green    Use the$white exit$green command or hit$white Ctrl-d$green to continue"
+
+    env PS1="${green}bp $red$bp$cyan>$nc_co " BP=$bp DESC="$desc" PATH=$LIVE_BIN:$PATH \
+        setsid cttyhack sh
+
+    echo
+}
+
+
+db_msg() { vmsg 5 "${green}db+:$hi_co $@" ;}
+err()    { vmsg 1 "$err_co$@" >&2         ;}
+msg()    { vmsg 5 "$@"                    ;}
+msg_nc() { vmsg 5 "$nc_co$@"              ;}
+pmsg()   { vmsg 5 "$(plural "$@")"        ;}
+warn()   { vmsg 3 "$warn_co$@"            ;}
+
+cq()     { echo "$cheat_co$*$m_co"        ;}
+dq()     { echo "$dev_co$*$m_co"          ;}
+dqe()    { echo "$dev_co$*$err_co"        ;}
+fq()     { echo "$m_co$*$hi_co"           ;}
+nq()     { echo "$num_co$*$m_co"          ;}
+pq()     { echo "$hi_co$*$m_co"           ;}
+pqe()    { echo "$hi_co$*$err_co"         ;}
+pqw()    { echo "$hi_co$*$warn_co"        ;}
+
+get_time() { cut -d" " -f22 /proc/self/stat ;}
+
+get_seconds() {
+    local dt=${1:-$(get_time)}
+    printf "%02d" $dt | sed -r 's/(..)$/.\1/'
+}
+
+vmsg() {
+    local msg nflag  level=$1; shift
+
+    [ "$1" = "-n" ] && nflag=true && shift
+    local fmt=$1; shift
+
+    if [ "$nflag" ]; then
+        msg="$(printf "$m_co$fmt$nc_co" "$@")"
+    else
+        msg="$(printf "$m_co$fmt$nc_co" "$@")\n"
+    fi
+
+    [ "$level" -le "$VERBOSE" ] && printf "$msg"
+    LOG="$LOG$msg"
+
+    return 0
+}
+
+vmsg_if() {
+    local level=$1; shift
+    [ "$VERBOSE" -ge "$level" ] || return
+    vmsg $level "$@"
+}
+
+vmsg_nc() {
+    local level=$1; shift
+    vmsg $level "$nc_co$@"
+}
+
+pvmsg() {
+    local level=$1; shift
+    vmsg $level "$(plural "$@")"
+}
+
+heading() {
+    vmsg_nc 6 $tbar
+    vmsg 3 "${head_co}$_Start_ $@"
+}
+
+plural() {
+    local n=$1 str=$2
+    case $n in
+        1) local s=  ies=y   are=is    have=has;;
+        *) local s=s ies=ies are=are   have=have;;
+    esac
+    echo "$str" | sed -e "s/%s/$s/g" -e "s/%ies/$ies/g"  \
+        -e "s/%are/$are/g" -e "s/%have/$have/" -e "s/%n/$n/g"
+}
+
+# This is cheesy and fragile. We are using output in stderr to indicate
+# an error condition.  The upside is we can log the error messages.
+log_cmd()
+{
+    local p cmd
+    for p; do
+        cmd="$cmd $p"
+    done
+    cmd="${cmd# }"
+
+    local err_msg=$("$@" &>/dev/null)
+    if [ -n "$err_msg" ]; then
+        vmsg 1 "$hi_co$cmd"
+        err "$err_msg"
+        return 1
+    else
+        vmsg 7 "$cmd_co$cmd"
+    fi
+    return 0
+}
+
+vsay() {
+    local level=$1; shift
+    [ "$level" -le "$VERBOSE" ] && printf "$@"
+    return 0
+}
+
+_error() {
+    local type=$1  cmsg1=$2  cmsg2=$3
+    shift 3
+
+    if [ "$type" ]; then
+        warn
+        warn $hbar
+        err "$type"
+        [ "$1" ] && msg "${hi_co}$1"
+        shift
+        for arg in "$@"; do
+            msg "$arg"
+        done
+        warn $hbar
+        err
+    fi
+
+    breakpoint e "On possibly fatal error"
+
+    PROMPT="$green    $_Select_ ${yellow}$cmsg1 $_p_$green $_or_$yellow $_r_$green $_then_hit_enter_$nc_co "
+
+    local fmt="    $yellow%s$cyan =$white %s$nc_co\n"
+    local reply
+    while [ "true" ]; do
+        echo $m_co$tbar$nc_co
+
+        [ "$cmsg1" ] && printf "$fmt" "$cmsg1" "$cmsg2"
+        printf "$fmt" $_p_ "$_power_off_"
+        printf "$fmt" $_r_ "$_reboot_"
+
+        echo $m_co$tbar$nc_co
+        read -p  "$PROMPT" reply
+        case "$reply" in
+            $_p_*|$_P_*)
+                echo "$_powering_down_ ..."
+                safe_shutdown poweroff;;
+
+            $_r_*|$_R_*)
+                echo "$_rebooting_ ..."
+                safe_shutdown reboot;;
+
+             $_c_*|$_C_*)
+                 [ "$cmsg1" ] && return;;
+        esac
+        echo -e "\n${m_co}$_Unknown_command_: >>$yellow$reply$m_co<<.  $_Please_try_again_:$nc_co"
+    done
+}
+
+move_mountpoints() {
+    local dir mp old aufs_live=/live/aufs$FINAL_DIR
+
+    [ -d $aufs_live ] || return
+
+    for dir in $(ls $aufs_live); do
+        [ "$dir" = "aufs" ] && continue
+        mp=$aufs_live/$dir
+        mountpoint -q $mp || continue
+        old=/live/$dir
+        mkdir -p $old
+        # echo mount --move $mp $old
+        mount --move $mp $old
+    done
+}
+
+mountpoint_list() {
+    local dev mp other ret=1
+
+    while read dev mp other; do
+        case $mp in /|/dev|/dev/*|/proc|/sys) continue;; esac
+        ret=0
+        echo -n "$mp "
+    done << Read_Mounts
+$(tac /proc/mounts)
+Read_Mounts
+    return $ret
+}
+
+final_umount() {
+    local mp list
+    move_mountpoints
+
+    list=$(mountpoint_list) || return 0
+    for mp in $list; do
+        umount $mp
+    done
+    list=$(mountpoint_list) || return 0
+    err "Unable to umount:$white $list"
+    return 1
+}
+
+safe_shutdown() {
+    local cmd=$1  ask=$2
+
+    set_path $LIVE_BIN
+    exec < /dev/console > /dev/console
+
+    final_umount && vmsg 1 "Umount successful"
+    breakpoint u "final umount"
+    if [ "$ask" ]; then
+        vmsg 1 -n "Hit <Enter> to$white $cmd "
+        read x
+    fi
+    vmsg -1 "Will %s" $white$cmd
+    #sleep 1
+    exec $cmd -f -n
+}
+
+_fatal()     { _error "$_Fatal_Error_"     ""     ""            "$@" ;}
+_non_fatal() { _error "$_Non_Fatal_Error_" "$_c_" "$_continue_" "$@" ;}
+fatal()      { _fatal     "$(printf "$@")"                           ;}
+non_fatal()  { _non_fatal "$(printf "$@")"                           ;}
+
+sync_fs() {
+    vsay 9 "$_Waiting_for_sync_ ..."
+    sync
+    vsay 9 " $_done_.\n"
+}
+
+label_to_dev() { any_to_dev "LABEL" $@; }
+uuid_to_dev()  { any_to_dev "UUID" $@; }
+
+# This is like findfs but this returns a list if there is more than one device
+any_to_dev() {
+
+    local field="$1=\"$2\"" devices
+    local dev f1 f2 f3 other
+    while read dev f1 f2 other; do
+        [ "$f1" = "$field" -o "$f2" = "$field" ] && devices="$devices$dev "
+    done <<EOT
+$(blkid)
+EOT
+    echo "$devices" | sed 's/://g' | sed 's/ $//'
+}
+
+cleanse_dev() {
+    case "$1" in
+        /dev/*)  [ -b "$1" ]      && echo "$1";;
+         dev/*)  [ -b "/$1" ]     && echo "/$1";;
+            /*)  [ -b "/dev$1"  ] && echo "/dev$1";;
+             *)  [ -b "/dev/$1" ] && echo "/dev/$1";;
+    esac
+}
+
+fix_lab() {
+    echo "$1" | sed "s/^$2=\"/$LAB_ERR_PREAMB$3=/" | sed 's/"$//'
+}
+
+label_err() {
+    warn "$hbar"
+    err "$_Fatal_Error_"
+    err "$hi_co$_No_device_with_" "${cheat_co}$LAB_ERR_PREAMB$1=$2${hi_co}"
+    vmsg_nc 3 "$_Valid_ ${1}s:"
+    local field=$3
+    local dev f f1 f2 other
+    while read dev f1 f2 other; do
+        for f in "$f1" "$f2"; do
+            case "$f" in
+                $field=*) vmsg_nc 3 "$dev $(fix_lab $f $3 $1)";;
+            esac
+        done
+    done <<EOT
+$(blkid)
+EOT
+    warn "$hbar"
+    if [ "$LAB_ERR_PREAMB" = "persist" ]; then
+        _error "" $_c_ "$_continue_"
+    else
+        _error
+    fi
+}
+
+device_err() {
+    local valid_devs=$(echo $(most_block_devices) | sed "s/^/$white    /");
+    if [ "$LAB_ERR_PREAMB" = "persist" ]; then
+        _non_fatal "$_Could_not_find_device_:$dev_co $1" "$_Valid_devices_:" "$valid_devs"
+    else
+        _fatal "$_Could_not_find_device_:$dev_co $1" "$_Valid_devices_:" "$valid_devs"
+    fi
+}
+
+cp_file() {
+    local src=$1  name=$2  dest=$3  file=$1/$2
+    mkdir -p $dest
+    echo -n $hi_co
+    local tar=$LIVE_BIN/tar
+    local progress=$LIVE_BIN/pipe_progress
+
+    if [ ! -d "$src" ]; then
+        err "Source directory %s does not exist" $(pqe $src)
+        return 2
+    fi
+
+    if [ ! -f "$file" ]; then
+        err "Source file %s does not exist" $(pqe $file)
+        return 3
+    fi
+
+    $tar -C "$src" -hcf - "$name" | $progress | $tar -C "$dest" -xpf -
+    local ret=$?
+    echo -n $nc_co
+    vmsg 8 "cp_file returned:$num_co $ret"
+    return $ret
+}
+
+#------------------------------------------------------------------------------
+# Function: cp_dir <sorc> <dest>
+#------------------------------------------------------------------------------
+cp_dir() {
+    mkdir -p "$2"
+    echo -n $hi_co
+    local tar=$LIVE_BIN/tar
+    local progress=$LIVE_BIN/pipe_progress
+    $tar -C "$1" -cf - . | $progress | $tar -C "$2" -xpf -
+    local ret=$?
+    echo -n $nc_co
+    return $ret
+}
+
+all_space()      { $LIVE_BIN/df -m "$1" | awk '{size=$2}END{print size}' ;}
+used_space()     { $LIVE_BIN/df -m "$1" | awk '{size=$3}END{print size}' ;}
+free_space()     { $LIVE_BIN/df -m "$1" | awk '{size=$4}END{print size}' ;}
+get_mountpoint() { grep "^$1 " /proc/mounts | cut -d" " -f2              ;}
+
+dir_has_param() {
+    local dir=$1  want_param=$2
+
+    [ -d "$dir" ] || return 1
+
+    local dev=$(df $dir | tail -n1 | cut -d" " -f1)
+    local params=$(grep "^$dev " /proc/mounts | cut -d" " -f4)
+    case ",$params," in
+        *,$want_param,*) return 0;;
+    esac
+    return 1
+}
+
+#------------------------------------------------------------------------------
+# Function: get_vid <file>
+#
+#------------------------------------------------------------------------------
+get_vid()   { [ -r "$1" ] && grep ^=== $1 | tail -n 1 ;}
+vid_error() { VID_ERROR="$1"; _non_fatal "$@"         ;}
+
+#------------------------------------------------------------------------------
+# Function: check_vid <sqfs_vid> <mp> <fname>
+#------------------------------------------------------------------------------
+
+check_vid() {
+    local sqfs_vid=$1  mp=$2  fname=$3  vid_file="$2$VID_DIR/$3.ver"
+    breakpoint v "checking vid"
+
+    local rootfs_vid=$(get_vid $vid_file)
+
+    if [ -n "$sqfs_vid" -a -n "$rootfs_vid" ]; then
+
+        if [ "$rootfs_vid" = "$sqfs_vid" ]; then
+            vmsg 6 "$_Matching_VID_found_in_:$from_co $file"
+            return 0
+        else
+            vid_error "$_VID_mismatch_" "linuxfs: $sqfs_vid" " rootfs: $vid"
+            return 1
+        fi
+
+    elif [ "$sqfs_vid" ]; then
+
+        # Pass test and create new rootfs version file if rootfs is empty
+        if ! ls $mp | egrep -q "etc|bin|lib|var|usr"; then
+            msg "$_Copying_linuxfs_VID_"
+            log_cmd mkdir -p "$mp$VID_DIR"      || return 1
+            log_cmd cp $SQFS_VID_FILE $vid_file || return 2
+            sync_fs
+            return 0
+
+        elif ! [ -f "$vid_file" ]; then
+            vid_error "$_VID_file_not_found_: $vid_file"
+            return 1
+
+        else
+            vid_error "$_No_VID_found_in_: $vid_file"
+            return 1
+        fi
+
+    elif [ "$rootfs_vid" ]; then
+        vid_error "No linuxfs VID but there is a rootfs VID"
+        return 1
+    else
+        vmsg 6 "No linuxfs VID or rootfs VID."
+        return 0
+    fi
+}
+
+#------------------------------------------------------------------------------
+# Function: check_md5 <dir>
+#
+# Checks the md5 sum of all files in <dir> that have a <name>.md5 file.
+#------------------------------------------------------------------------------
+check_md5()
+{
+    local dir=$1
+    [ ! -d "$dir" ] && dir=$(echo $1 | sed 's|\(.*\)/.*|\1|')
+    dir=$(echo $dir | sed 's|/$||')
+    if ! [ -d "$dir" ]; then
+        msg $tbar
+        err "$_Directory_ $from_co$1$err_co $_does_not_exist_."
+        err "$_Cant_md5_."
+        msg $tbar
+        return 0
+    fi
+
+    local fcnt=0
+    local fmt="%10s: %s\n"
+
+    vmsg 2 $tbar
+    vmsg_nc 1 "$_Checking_files_in_."  "${from_co}$dir${nc_co}"
+
+    local file fname md5_file file_md5 true_md5 error
+    for fname in $(ls $dir); do
+        file=$dir/$fname
+        local size=$(du -sm $file | cut -f1)
+        md5_file="$file.md5"
+        [ -f "$md5_file" -a -f "$file" ] || continue
+
+        local size_str="$nc_co($num_co$size$nc_co M)"
+        vmsg 1
+        vmsg 1 $tbar
+        vmsg_nc 1 "$fmt" "$_file_" "${nc_co}$fname $size_str"
+        fcnt=$(( fcnt + 1 ))
+        true_md5="$(head -n 1 $md5_file | cut -d" " -f1)"
+        file_md5="$(cat $file | pipe_progress | md5sum | cut -d" " -f1)"
+
+        if [ "$file_md5" == "$true_md5" ]; then
+            vmsg_nc 1 "$fmt" "$_result_" "${ok_co}$_passed_"
+        else
+            vmsg_nc 1 "$fmt" "$_result_" "${err_co}$_failed_"
+            error=true
+        fi
+
+        vmsg 6 "%12s:$nc_co %s" "$_wanted_" "$true_md5"
+        vmsg 6 "%12s:$nc_co %s" "$_got_"    "$file_md5"
+    done
+
+    vmsg 1
+    if [ "$fcnt" -eq "0" ]; then
+        err "$_No_md5_checksums_found_." "$from_co$dir$err_co"
+    elif [ "$error" ]; then
+        non_fatal "$_One_md5_did_not_match_."
+    elif [ "$fcnt" -eq "1" ]; then
+        vmsg 1 "${ok_co}$_Success_${num_co} $fcnt${ok_co} $_file_ $_passed_."
+    else
+        vmsg 1 "${ok_co}$_Success_${num_co} $fcnt${ok_co} $_files_ $_passed_."
+    fi
+    vmsg 2 $tbar
+}
+
+do_delay() {
+    local cnt=$1; shift
+    [ -z "$cnt" -o "$cnt" = "0" ] && return
+    [ $# -gt 0 ] && msg "$@"
+    while [ "$cnt" -gt "0" ]; do
+        msg -n "$hi_co$cnt "
+        cnt=$((cnt - 1))
+        sleep 1
+    done
+    msg
+}
+
+set_colors() {
+    local noco=$1  loco=$2
+
+    [ "$noco" ] && return
+
+    local e=$(printf "\e")
+     black="$e[0;30m";    blue="$e[0;34m";    green="$e[0;32m";    cyan="$e[0;36m";
+       red="$e[0;31m";  purple="$e[0;35m";    brown="$e[0;33m"; lt_gray="$e[0;37m";
+   dk_gray="$e[1;30m"; lt_blue="$e[1;34m"; lt_green="$e[1;32m"; lt_cyan="$e[1;36m";
+    lt_red="$e[1;31m"; magenta="$e[1;35m";   yellow="$e[1;33m";   white="$e[1;37m";
+        nc="$e[0m";
+
+    cheat_co=$white;      err_co=$red;       hi_co=$white;      nc_co=$nc;
+      cmd_co=$white;     from_co=$lt_green;  mp_co=$magenta;   num_co=$magenta;
+      dev_co=$magenta;   head_co=$yellow;     m_co=$lt_cyan;    ok_co=$lt_green;
+       to_co=$lt_green;  warn_co=$yellow;
+
+    [ "$loco" ] || return
+
+    from_co=$brown
+      hi_co=$white
+       m_co=$nc_co
+     num_co=$white
+}
+
+next_device() {
+    local base=$(echo $1 | sed 's/[0-9]*$//')
+    local num=$(echo $1 | sed 's/^[^0-9]*//')
+    while [ "$num" -lt "20" ]; do
+        num=$((num + 1))
+        device=$base$num
+        [ -b "$device" ] || continue
+        echo $device
+        return 0
+    done
+    return 1
+}
+
+# FIXME: converted retry to retry_time.  Need to test
+find_crypt_device() {
+    local retry_time=$1  try=-1
+    local start_t=$(get_time) current_t=0  final_try
+    local dt dt_secs loop_t1 usleep dt_secs
+    local goal_t=$(( start_t + retry_time * 100))
+    while [ -z "$final_try" ]; do
+        try=$((try + 1))
+        #-- delay every time but the first
+        if ! [ "$try" = "0" ]; then
+            [ "$try" = "1" ] && msg -n "$_retrying_ "
+
+            current_t=$(get_time)
+            dt=$((current_t - loop_t1))
+            usleep=$(( ($RETRY_DELAY - dt ) * 10000))
+
+            [ $current_t -gt $goal_t ] && final_try=true
+
+            [ $usleep -gt 0 ] && usleep $usleep
+
+            msg -n "."
+
+        fi
+        loop_t1=$(get_time)
+        find_device "$try" "$final_try" "$CRYPT_DEV" "$CRYPT_LABEL" "$CRYPT_UUID" || return
+        [ "$DEVICE_LIST" ] && return 0
+    done
+    return 1
+}
+
+#------------------------------------------------------------------------------
+# Function: do_remaster <dir>
+#
+# If <dir>/linuxfs.new exists we move:
+#       linuxfs     -->  linuxfs.old
+#       linuxfs.new -->  linuxfs
+#
+# If the "rollback" cheatcode is used, we instead move:
+#       linuxfs     -->  linuxfs.bad
+#       linuxfs.old -->  linuxfs
+#------------------------------------------------------------------------------
+do_remaster() {
+    [ "$NO_REMASTER" ] && return 0
+    local sqfile_path=$1
+    local sqfile="$sqfile_path/$SQFILE_NAME"
+    local old_file="$sqfile.old" new_file="$sqfile.new" bad_file="$sqfile.bad"
+
+
+    if [ "$ROLLBACK" ]; then
+        heading "$_remaster_ ${cheat_co}rollback"
+
+        if ! [ -f "$old_file" ]; then
+            err -n "$_boot_param_given_" "${cheat_co}rollback${err_co}" "${from_co}$SQFILE_NAME.old${err_co}"
+            do_delay 10 "$_Waiting_x_seconds_" "${num_co}10$m_co"
+            return 1
+        fi
+        msg $tbar
+        warn "$_Rolling_back_x_to_y_" "$SQFILE_NAME.old" "$SQFILE_NAME"
+        msg $tbar
+
+        local file full
+        for file in $SQFILE_NAME $MAKE_OLD; do
+            full=$sqfile_path/$file
+            [ -e $full.bad ] && log_cmd mv -f $full.bad $full.bak
+            [ -e $full     ] && log_cmd mv -f $full     $full.bad
+            [ -e $full.old ] && log_cmd mv -f $full.old $full
+        done
+
+        DID_ROLLBACK=true
+        sync_fs
+        sleep 2
+        return 0
+    fi
+
+    [ -e $new_file ] || return 0
+
+    heading "$_remaster_"
+
+    if [ -e $old_file -o -e $bad_file ]; then
+        warn  "$m_co$tbar"
+        warn  "$_Refusing_to_remaster_."
+        warn  "$_In_directory_x_one_or_more_:"  "$sqfile_path"
+        warn  "    $SQFILE_NAME.old"
+        warn  "    $SQFILE_NAME.bad"
+        warn
+        warn  "$_Run_remaster_"
+        warn  "$m_co$tbar"
+
+        non_fatal
+        return 2
+    fi
+    msg $tbar
+    warn "$_Remastering_x_to_y_:" "$SQFILE_NAME.new" "$SQFILE_NAME"
+    msg $tbar
+
+    local file full
+    for file in $SQFILE_NAME $MAKE_OLD; do
+        full=$sqfile_path/$file
+        [ -e $full     ] && log_cmd mv -f $full $full.old
+        [ -e $full.new ] && log_cmd mv -f $full.new $full
+    done
+
+    DID_REMASTER=true
+    sync_fs
+    sleep 2
+    return 0
+}
+
+most_block_devices() { find /dev -type b | egrep -v "/ram|/loop" ; }
+
+#------------------------------------------------------------------------------
+# Function: copy_to_ram
+#
+# Copies the linuxfs file (and a few other files) to RAM
+#------------------------------------------------------------------------------
+copy_to_ram() {
+    local toram_mp=$1
+
+    if _copy_to_ram "$@"; then
+
+        SQFILE_MP=$toram_mp
+        SQFILE_DIR=$toram_mp/$SQFILE_PATH
+        SQFILE_FULL=$toram_mp/$SQFILE_FILE
+        DEFAULT_DIR=$SQFILE_DIR
+    else
+        breakpoint ce "After toram copy file error"
+        mountpoint -q $toram_mp && log_cmd umount $toram_mp
+        [ -d $toram_mp ]        && rmdir $toram_mp
+    fi
+}
+
+_copy_to_ram() {
+    local toram_mp=$1
+    heading "$_linuxfs_in_RAM_ (${cheat_co}toram${head_co})"
+    local real_sq_file=$(readlink -f $SQFILE_FULL)
+    local sq_size_k=$(du -sk $real_sq_file | cut -f 1)
+    local format="%10s: %10d k"
+    vmsg 8 "$format" "linuxfs" $sq_size_k
+
+    local extra ex_full size_k
+    for extra in $EXTRA_FILES; do
+        ex_full="$(readlink -f $SQFILE_DIR/$extra)"
+        [ -e "$ex_full" ] || continue
+        size_k="$(du -sk $ex_full | cut -f 1)"
+        sq_size_k=$((sq_size_k + size_k))
+        vmsg 8 "$format" $extra   $size_k
+        vmsg 8 "$format" "total"  $sq_size_k
+    done
+
+    # Extra space here does not waste ram
+    local sq_size_m=$((sq_size_k/1000 + 10))
+
+    local ram_needed=$((sq_size_m + MIN_SYS_RAM));
+
+    if [ "$sq_size_m" -gt "$FREE_MEM" ]; then
+        vmsg 1 -n "${err_co}$_Not_enough_RAM_ ${cheat_co}toram${err_co}"
+        vmsg 1    " $_have_ ${num_co}$FREE_MEM ${m_co}M${err_co}, $_needed_ ${num_co}$sq_size_m ${m_co}M"
+        return 1
+    fi
+    if ! mount_tmpfs $toram_mp $sq_size_m toram; then
+        err "$_Unable_to_tmpfs_ ${cheat_co}toram${err_co}!"
+        return 2
+    fi
+
+    local orig=$SQFILE_DIR
+    local dest="$toram_mp/$SQFILE_PATH"
+
+    mkdir -p "$dest"
+
+    vmsg 3 "$_Copying_files_patience_." "$dev_co$orig$m_co" "$dev_co$dest$m_co"
+    for extra in $EXTRA_FILES; do
+        local full=$(readlink -f $SQFILE_DIR/$extra)
+        [ -e "$full" ] && cp -a $full $dest
+    done
+    [ -e $SQFILE_FULL.md5 ] && cp $SQFILE_FULL.md5 $dest
+
+    if ! cp_file $orig $SQFILE_NAME $dest; then
+        err "$_Copy_failed_ ${cheat_co}toram!"
+        return 3
+    fi
+
+    if ! [ -f "$dest/$SQFILE_NAME" ]; then
+        err "$_Dest_file_missing_,"
+        return 4
+    fi
+
+    # Rely on file size in bytes to check for errors
+    local orig_bytes=$(stat -c "%s" $real_sq_file)
+    local dest_bytes=$(stat -c "%s" $dest/$SQFILE_NAME)
+
+    if [ "$orig_bytes" -ne "$dest_bytes" ]; then
+        err "$_Copy_incomplete_" "${cheat_co}toram$err_co"
+        format="%30s: ${num_co}%12d${m_co} bytes"
+        vmsg 1 "$format"  "$_Original_size_" $orig_bytes
+        vmsg 1 "$format"  "$_Copy_size_"     $dest_bytes
+        vmsg_nc 1 "$(df -m | grep $toram_mp)"
+        return 5
+    fi
+
+    msg "${ok_co}$_Copy_to_RAM_succeeded_."
+
+    # Reduce FREE_MEM by size of tmpfs
+    FREE_MEM=$((FREE_MEM - sq_size_m))
+
+    vmsg 6 "persist device: %s" $(pq $PERSIST_DEVICE)
+    vmsg 6 "   boot device: %s" $(pq $SQFILE_DEV)
+
+    if ! [ "$PERSIST_DEVICE" -a "$PERSIST_DEVICE" = "$SQFILE_DEV" ]; then
+        # remount ro to be on the safe side
+        log_cmd mount -o remount,ro $toram_mp
+        log_cmd umount $SQFILE_MP
+    fi
+
+    DID_TORAM=true
+    return 0
+}
+
+#------------------------------------------------------------------------------
+# Function: prepare_persistence
+#
+# Parse the persist= bootcode but first set defaults.
+#------------------------------------------------------------------------------
+prepare_persistence() {
+    local param persist_files
+
+    # pdev= and pdir= etc enable persistence even with no persist= bootcode.
+    if [ "$SET_PERSIST" ]; then
+        [ -z "$PERSIST" ] && PERSIST="root,home"
+    else
+        # if we are on a read-only device and persist was set then set default
+        # persist label if persist device was not explicitly given
+        if [ -z "$REMASTERABLE" -a -n "$PERSIST" ]; then
+            PERSIST_LABEL="$DISTRO-Persist"
+            SET_PERSIST=true
+        fi
+    fi
+
+    PERSIST_PATH=${PERSIST_PATH:-$DEFAULT_PERSIST_PATH}
+
+    [ "$PERSIST" ] && ! echo $PERSIST | egrep -q "home|root" && PERSIST="$PERSIST,home,root"
+
+    #----- Parse persist= ---------------------------------------------------------
+
+    for param in $(echo "$PERSIST" | sed 's/,/ /g'); do
+
+        case "$param" in
+            s|static) STATIC_ROOT=true;;
+        esac
+
+        # You can't always get what you want ...
+        case "$param" in
+            home|home!)
+                persist_files="$PERSIST_PATH/homefs $persist_files"
+                persist_files="$PERSIST_PATH/homefs.new $persist_files"
+                WANT_HOMEFS=true ;;
+
+            root|root!)
+                persist_files="$PERSIST_PATH/rootfs $persist_files"
+                WANT_ROOTFS=true ;;
+
+            usb|hd)
+                FROM_PERSIST="$FROM_PERSIST,$param" ;;
+
+            s|static) ;;
+
+            *)
+                warn
+                warn "$_Unknown_x_parameter_y_"  "persist=" "$cheat_co$param"
+                warn "$_Valid_values_:$cheat_co home home! root root! s static usb hd" ;;
+        esac
+
+        # And if you try sometime ...
+        case "$param" in
+            home!)
+                NEED_HOMEFS=true;;
+            root!)
+                NEED_ROOTFS=true;;
+        esac
+    done
+    PERSIST_FILES=$persist_files
+}
+
+mount_persist_device() {
+    local persist_files=$1
+
+    [ "$persist_files" ] || return
+
+    LAB_ERR_PREAMB="persist"
+
+    # Default is to use device that holds the linuxfs or iso file
+    if [ -z "$SET_PERSIST" ]; then
+        # unless we are to scan for the persist files
+        [ "$FROM_PERSIST" ] || PERSIST_DEV=$FOUND_DEV
+    fi
+
+    ALWAYS_SCAN="$FROM_PERSIST"
+    FROM_TYPE="$FROM_PERSIST"
+
+    if find_files "$persist_files" "$PERSIST_MP" "$PERSIST_DEV" "$PERSIST_LABEL" \
+        "$PERSIST_UUID" "$PERSIST_RETRY_TIME"; then
+
+        PERSIST_MP=$FOUND_MP
+        PERSIST_DEVICE=$FOUND_DEV
+        PERSIST_UUID=$(device_uuid $PERSIST_DEVICE)
+        vmsg 7 "    persist_mp: $PERSIST_MP"
+        vmsg 7 "persist_device: $PERSIST_DEVICE"
+        vmsg 7 "  persist_uuid: $PERSIST_UUID"
+        PERSIST_FULL_PATH="$PERSIST_MP/$PERSIST_PATH"
+    else
+        warn "$_Could_not_find_any_persist_."
+        [ "$NEED_ROOTFS" ] && non_fatal "$_Could_not_enable_req_persist_." "root!"
+        [ "$NEED_HOMEFS" ] && non_fatal "$_Could_not_enable_req_persist_." "home!"
+        unset WANT_ROOTFS WANT_HOMEFS
+    fi
+}
+
+fsck_persist_dev() {
+    local persist_files=$1; shift
+    [ "$persist_files" ] || return
+    if ! _fsck_persist_dev "$@"; then
+        unset WANT_ROOTFS WANT_HOMEFS
+    fi
+}
+
+_fsck_persist_dev() {
+    local dev=$1  mp=$2
+
+    should_fsck $dev persist || return 0
+    umount $mp
+    do_fsck $dev
+    try_mount $dev $mp && return 0
+
+    non_fatal "Could not remount the persistence device"
+    return 1
+}
+
+mount_and_copy_rootfs() {
+    if _mount_and_copy_rootfs "$@"; then
+        PERSIST_ROOT=true
+    else
+        STATIC_ROOT=
+        [ "$NEED_ROOTFS" ] && non_fatal "Couldn't enable required root! persistence."
+    fi
+}
+
+_mount_and_copy_rootfs() {
+    mount_persist_file rootfs "$ROOTFS_MP" root "$WANT_ROOTFS" "$NEED_ROOTFS" || return 1
+    PERSIST_ROOT_FULL="$PERSIST_FULL_PATH/rootfs"
+    check_vid "$SQFS_VID" "$ROOTFS_MP" rootfs                                 || return 1
+    [ "$STATIC_ROOT" ] || copy_persist_to_ram                                 || return 1
+    return 0
+}
+
+#------------------------------------------------------------------------------
+# Function: copy_persist_to_ram
+#
+#------------------------------------------------------------------------------
+
+copy_persist_to_ram() {
+
+    vmsg 6 "$_Putting_persistent_root_in_RAM_ ($_from_ $ROOTFS_MP)"
+
+    local persist_used=$(used_space $ROOTFS_MP)
+    local format="%15s: $num_co%5d ${m_co}M"
+
+    vmsg 7 "$format" "filesystem used" $persist_used
+
+    if [ "$persist_used" -ge "$AUFS_RAM_SIZE" ]; then
+        vmsg_nc 3 $tbar
+        err  "$_Not_enough_RAM_space_."
+        warn "$_Time_to_remaster_!"
+        vmsg_nc 3 $tbar
+        return 1
+    fi
+    vmsg 5 "$_Copying_ ${num_co}$persist_used${m_co} MB $_to_ RAM ..."
+    if ! cp_dir $ROOTFS_MP $AUFS_RAM_MP; then
+         err "$_Copy_to_RAM_failed_ ..."
+         rm -rf $AUFS_RAM_MP/*
+         return 2
+     fi
+    local ram_used=$(used_space $AUFS_RAM_MP)
+    vmsg 7 "$format" "RAM used" $ram_used
+    vmsg 7 "$format" "filesystem used" $persist_used
+    vmsg 6 "${hi_co}$_Copy_persistent_root_to_RAM_succeeded_"
+
+    DF_ROOTFS="$(df -P -m $ROOTFS_MP | tail -n 1)"
+    log_cmd umount $ROOTFS_MP
+    return 0
+}
+
+mount_persist_file() {
+    local file=$1  mpnt=$2  type=$3  want=$4  need=$5
+
+    [ "$want" ]              || return 1
+    [ "$PERSIST_FULL_PATH" ] || return 1
+
+    local full=$(readlink -f $PERSIST_FULL_PATH/$file)
+    if ! [ -f "$full" ]; then
+        [ "$need" ] && non_fatal "$_Could_not_find_persist_x_for_y_" "$file" "$type"
+        return 3
+    fi
+
+    if should_fsck $full "$type file"; then
+        do_fsck $full || return 1
+    fi
+
+    heading "$_mount_persist_x_at_y_" "$from_co$file$head_co" "$from_co$mpnt"
+
+    mkdir -p $mpnt
+    if ! try_file_mount $full $mpnt; then
+        err "Could not mount file: %s for %s persistence" "$full" "$type"
+        err "$_Not_enabling_x_persist_." "$type"
+        return 4
+    fi
+    vmsg 2 "$_Enabling_x_persist_." "$type"
+
+    PERSISTENCE=$PERSISTENCE,$type
+    PERSISTENCE=${PERSISTENCE#,}
+    return 0
+}
+
+#------------------------------------------------------------------------------
+# Function: remaster_rootfs <mountpoint> <full_path>
+#
+# If we did a remaster or rollback on linuxfs then we perform a similar
+# operation on the rootfs file if it exists.
+#------------------------------------------------------------------------------
+remaster_rootfs() {
+    local mp=$1  path=$2
+
+    if [ "$DID_REMASTER" -o "$DID_ROLLBACK" ]; then
+        if [ "$path" = "$BOOT_MP/$SQFILE_PATH" ]; then
+            msg "$_Not_remastering_twice_."
+            return
+        fi
+    fi
+
+    if [ "$DID_REMASTER" ]; then
+        [ -e "$path/rootfs"  ]    && mv $path/rootfs     $path/rootfs.old
+        [ -e "$path/rootfs.new" ] && mv $path/rootfs.new $path/rootfs
+    fi
+
+    if [ "$DID_ROLLBACK" ]; then
+        [ -e "$path/rootfs"  ]    && mv $path/rootfs     $path/rootfs.bad
+        [ -e "$path/rootfs.old" ] && mv $path/rootfs.old $path/rootfs
+    fi
+}
+
+
+#----- Update bootloader menu if asked and able -------------------------------
+
+update_gfx_menu() {
+    local script=$1  param=$2  dir=$3
+    msg
+    heading "GFX Boot Menu Update"
+
+    if ! [ -x "$script" ]; then
+        err "Could not find script: $script"
+        return
+    fi
+
+    if ! [ "$REMASTERABLE" ]; then
+        if [ "$DB_PLUS" ]; then
+            local tdir=$LIVE_DIR/test
+            mkdir -p $tdir
+            msg "Using $tdir to test $script"
+            cp -r $dir/* $tdir
+            dir=$tdir
+        else
+            err "Can't update gfx menu on read-only boot media"
+            return
+        fi
+    fi
+
+    msg "in directory$white $dir"
+
+    env VERBOSE=$VERBOSE NO_COLOR=$NO_COLOR LO_COLOR=$LO_COLOR \
+        GFX_LOG_FILE=$LOG_DIR/gfxsave.log $script $dir $param
+
+    vmsg_nc 6 $tbar
+}
+
+#----- Mount home persistence file --------------------------------------------
+copy_homefs() {
+    local pfull_path=$1
+    [ -e "$pfull_path/homefs.new" ] || return
+    local tmp_dir=$LIVE_DIR/tmp
+
+    _copy_homefs "$pfull_path" $tmp_dir
+
+    # Always try to clean up even if it is not needed
+    for dir in $tmp_dir/homefs*; do
+        msg "Cleaning $dir"
+        mountpoint $dir &>/dev/null && log_cmd umount $dir
+        [ -d "$dir" ] && rmdir $dir
+    done
+
+}
+
+_copy_homefs() {
+    local persist_full_path=$1  tmp_dir=$2
+
+    local homefs_new=$persist_full_path/homefs.new
+    local homefs_cur=$persist_full_path/homefs
+    local homefs_old=$persist_full_path/homefs.old
+
+    msg "Looking for $homefs_new ..."
+    [ -e "$homefs_new" ] || return
+
+    if ! [ -e "$homefs_cur" ]; then
+        msg "No homefs file found.  Renaming homefs.new to homefs"
+        mv $homefs_new $homefs_cur
+        return
+    fi
+
+    local rsync=$(which rsync 2>/dev/null)
+
+    if !  [ -x "$rsync" ]; then
+        err "Cound not find rsync program for resizing homefs"
+        return
+    fi
+
+    local new_home=$tmp_dir/homefs.new
+    local cur_home=$tmp_dir/homefs
+
+    log_cmd mkdir -p $cur_home $new_home
+
+    if ! log_cmd mount -o loop $homefs_cur $cur_home; then
+        err "Could not mount homefs for copy!"
+        return
+    fi
+
+    if ! log_cmd mount -o loop $homefs_new $new_home; then
+        err "Could not mount homefs.new for copy!"
+        return
+    fi
+
+    local need_meg=$(used_space $cur_home)
+    local have_meg=$(all_space $new_home)
+    need_meg=$((need_meg + 10))
+    vmsg 6 "Have$num_co $have_meg$m_co meg free.  Need $num_co$need_meg$m_co Meg."
+    if [ "$need_meg" -gt "$have_meg" ]; then
+        err "Not enough room to copy home filesystem"
+        return
+    fi
+
+    vmsg 6 "$_Copying_ home filesystem using $rsync.  Please be patient ..."
+
+    if ! $rsync -aq --delete $cur_home/ $new_home/; then
+        err "rsync failed.  Not resizing homefs"
+        return
+    fi
+
+    log_cmd umount $cur_home
+    log_cmd umount $new_home
+
+    log_cmd mv -f $homefs_cur $homefs_old
+    log_cmd mv -f $homefs_new $homefs_cur
+}
+
+auto_login() {
+    local dir prog  prog=$1  terms=$2
+    [ -n "$prog" -a -n "$terms" ] || return
+
+    for dir in $(echo $PATH | sed 's/:/ /g'); do
+        local full=$dir/$prog
+        [ -e "$full" ] || continue
+        db_msg "Enabling autologin"
+        sed -i "s=^\([$terms]\)\(:[0-9]\+:respawn:\).*=\1\2$prog tty\1 login -f root=" /etc/inittab
+        break
+    done
+}
+
+fancy_prompt() {
+    local prompt=$1  bashrc=/etc/skel/.bashrc  fp_prog=/usr/local/bin/fancy-prompts.bash
+    local cmd=${prompt%%\ *}
+    [ -r $fp_prog -a -n "$prompt" ] || return
+
+    if grep -q $cmd $bashrc; then
+        db_msg "fancy prompts were already enabled"
+    else
+        db_msg "Enabling fancy prompts"
+        echo "[ -r $fp_prog ] && source $fp_prog" >> $bashrc
+        echo "[ -n \"\$(alias $cmd)\" ] && $prompt" >> $bashrc
+    fi
+
+    local file full_file
+    for file in .bashrc .profile; do
+        full_file=/etc/skel/$file
+        [ -f "$full_file" ] && cp $full_file /root
+    done
+}
+
+copy_xtra() {
+    local dir xtra_dir=$1/xtra
+    [ -d "$xtra_dir" ] || return
+
+    msg -n "Copying xtra file(s) to:"
+    for  dir in $(ls $xtra_dir); do
+        [ -d "$xtra_dir/$dir" ] || continue
+        msg -n " $from_co/$dir"
+        cp -a $xtra_dir/$dir $NEW_ROOT/
+    done
+    msg
+}
+
+#----- Install additional debs ------------------------------------------------
+install_debs() {
+    local deb_dir=$1/deb
+    local deb file
+
+    ls $deb_dir/*.deb &>/dev/null || return
+
+     msg  "Installing Debian packages from ${from_co}$deb_dir"
+
+    if [ -f $deb_dir/order ] ; then
+        for deb in $(cat $deb_dir/order); do
+            vmsg 5 "    Installing ${from_co}$deb"
+            log_cmd /usr/bin/dpkg -i $deb_dir/$deb
+        done
+    else
+        for deb_file in $(ls $deb_dir/*.deb 2>/dev/null); do
+            deb=$(basename $deb_file)
+            vmsg 5 "    Installing ${from_co}$deb"
+            log_cmd /usr/bin/dpkg -i $deb_file
+        done
+    fi
+}
+
+#----- Create output files ----------------------------------------------------
+
+write_output_files() {
+    local dir=$1  out_file=$1/bootstrap.out
+    mkdir -p $dir
+    rm -f $dir/* 2>/dev/null
+
+    [ "true" ] && cat > $out_file <<Bootstrap_Out
+#$tbar
+#              file: $out_file
+# auto-generated by: $0
+#   somewhen around: $(date)
+#$tbar
+AUFS_MP="$AUFS_MP"
+AUFS_RAM_MP="$AUFS_RAM_MP"
+BOOT_DEV="$SQFILE_DEV"
+BOOT_MP="$ORIG_SQFILE_MP"
+DF_ROOTFS="$DF_ROOTFS"
+DID_REMASTER="$DID_REMASTER"
+DID_ROLLBACK="$DID_ROLLBACK"
+DID_TORAM="$DID_TORAM"
+DISTRO="$DISTRO"
+DISTRO_CODENAME="$DISTRO_CODENAME"
+DISTRO_VERSION="$DISTRO_VERSION"
+FULL_DISTRO="$DISTRO-$DISTRO_VERSION"
+LINUXRC_VERSION="$VERSION"
+LINUXRC_DATE="$VERSION_DATE"
+LIVE_DIR="$FINAL_DIR"
+PERSISTENCE="$PERSISTENCE"
+PERSIST_DEV="$PERSIST_DEVICE"
+PERSIST_UUID="$PERSIST_UUID"
+PERSIST_DIR="$PERSIST_FULL_PATH"
+PERSIST_FILE="$PERSIST_ROOT_FULL"
+PERSIST_MP="$PERSIST_MP"
+PERSIST_PATH="$PERSIST_PATH"
+REMASTERABLE="$REMASTERABLE"
+ROOTFS_MP="$ROOTFS_MP"
+RW_MODE="$RW_MODE"
+SQFILE_DIR="$ORIG_SQFILE_MP/$SQFILE_PATH"
+SQFILE_FULL="$ORIG_SQFILE_MP/$SQFILE_PATH/$SQFILE_NAME"
+SQFILE_NAME="$SQFILE_NAME"
+SQFILE_PATH="$SQFILE_PATH"
+SQFS_MP="$SQFS_MP"
+SQFS_VID_FILE="$SQFS_VID_FILE"
+STATIC_ROOT="$STATIC_ROOT"
+TORAM_MP="$TORAM_MP"
+VID_ERROR="$VID_ERROR"
+VID_FILE="$VID_FILE"
+Bootstrap_Out
+
+    echo "$FINAL_DIR" > $dir/live-dir
+
+    [ "$DID_TORAM"    ]                         && touch $dir/did-toram
+    [ "$REMASTERABLE" ]                         && touch $dir/remasterable
+    [ -n "$PERSIST_ROOT" -a -z "$STATIC_ROOT" ] && touch $dir/save-persist
+}
+
+old_write_output_files() {
+    local dir=$1
+
+    mkdir -p $dir
+    [ "true" ] && cat > $dir/linuxrc.out <<Linuxrc_Out
+#$tbar
+#              file: $dir/linuxrc.out
+# auto-generated by: $0
+#   somewhen around: $(date)
+#$tbar
+AUFS_MP="$AUFS_MP"
+AUFS_RAM_MP="$AUFS_RAM_MP"
+BOOT_DEV="$SQFILE_DEV"
+BOOT_MP="$ORIG_SQFILE_MP"
+DF_ROOTFS="$DF_ROOTFS"
+DID_REMASTER="$DID_REMASTER"
+DID_ROLLBACK="$DID_ROLLBACK"
+DID_TORAM="$DID_TORAM"
+DISTRO="$DISTRO"
+DISTRO_CODENAME="$DISTRO_CODENAME"
+DISTRO_VERSION="$DISTRO_VERSION"
+FULL_DISTRO="$DISTRO-$DISTRO_VERSION"
+LINUXRC_VERSION="$VERSION"
+LINUXRC_DATE="$VERSION_DATE"
+PERSISTENCE="$PERSISTENCE"
+PERSIST_DEV="$PERSIST_DEVICE"
+PERSIST_DIR="$PERSIST_FULL_PATH"
+PERSIST_FILE="$PERSIST_ROOT_FULL"
+PERSIST_MP="$PERSIST_MP"
+PERSIST_PATH="$PERSIST_PATH"
+PERSIST_UUID="$PERSIST_UUID"
+REMASTERABLE="$REMASTERABLE"
+ROOTFS_MP="$ROOTFS_MP"
+RW_MODE="$RW_MODE"
+SQFILE_DIR="$ORIG_SQFILE_MP/$SQFILE_PATH"
+SQFILE_FULL="$ORIG_SQFILE_MP/$SQFILE_PATH/$SQFILE_NAME"
+SQFILE_NAME="$SQFILE_NAME"
+SQFILE_PATH="$SQFILE_PATH"
+SQFS_MP="$SQFS_MP"
+SQFS_VID_FILE="$SQFS_VID_FILE"
+STATIC_ROOT="$STATIC_ROOT"
+TORAM_MP="$TORAM_MP"
+VID_ERROR="$VID_ERROR"
+VID_FILE="$VID_FILE"
+Linuxrc_Out
+
+    [ "$DID_TORAM" ] && cat > $dir/toram-eject.conf  <<Toram_Out
+BOOT_DEV="$SQFILE_DEV"
+Toram_Out
+
+    [ "$REMASTERABLE" ] && cat > $dir/remaster-live.conf  <<Remaster_Out
+AUFS_MP="$AUFS_MP"
+AUFS_RAM_MP="$AUFS_RAM_MP"
+BOOT_DEV="$SQFILE_DEV"
+BOOT_MP="$ORIG_SQFILE_MP"
+DID_REMASTER="$DID_REMASTER"
+DID_ROLLBACK="$DID_ROLLBACK"
+SQFILE_DIR="$ORIG_SQFILE_MP/$SQFILE_PATH"
+SQFILE_FULL="$ORIG_SQFILE_MP/$SQFILE_PATH/$SQFILE_NAME"
+SQFILE_NAME="$SQFILE_NAME"
+SQFILE_PATH="$SQFILE_PATH"
+SQFS_MP="$SQFS_MP"
+SQFS_VID_FILE="$SQFS_VID_FILE"
+VID_FILE="$VID_FILE"
+Remaster_Out
+
+    [ -n "$PERSIST_ROOT" -a -z "$STATIC_ROOT" ] && cat > $dir/persist-save.conf <<Persist_Out
+AUFS_MP="$AUFS_MP"
+AUFS_RAM_MP="$AUFS_RAM_MP"
+DF_ROOTFS="$DF_ROOTFS"
+PERSIST_DEV="$PERSIST_DEVICE"
+PERSIST_UUID="$PERSIST_UUID"
+PERSIST_FILE="$PERSIST_ROOT_FULL"
+PERSIST_MP="$PERSIST_MP"
+ROOTFS_MP="$ROOTFS_MP"
+SQFS_MP="$SQFS_MP"
+Persist_Out
+}
+
+#----- Save log files ---------------------------------------------------------
+
+write_log_files() {
+    local file=$1 e=$(printf "\e")
+    mkdir -p $(dirname $LOG_FILE)
+    echo -e "$LOG" | sed -r "s/$e\[[0-9;]+[mK]//g" > $file
+    [ "$NO_COLOR" ] || echo -e "$LOG"              > $file.color
+}
+
+find_init_prog() {
+    local prog=$1 dir=$2
+    [ "$prog" ] || return 1
+    if [ ! -e $dir$prog ]; then
+        err "Could not find init program %s. Using /sbin/init" $prog
+        return 1
+    fi
+    if [ ! -x $dir$prog ]; then
+        err "Init prog %s is not executable.  Using /sbin/init" $prog
+        return 1
+    fi
+    return 0
+}
+
+prepare_switch_root() {
+    local new_root=$1  live_dir=$2  final_live=$3
+
+    local new_live=$new_root${final_live:-$live_dir}
+
+    # Now tell kernel where the real modprobe lives
+    echo "/sbin/modprobe" > /proc/sys/kernel/modprobe
+
+    # Avoid PID wrap by setting a large max
+    echo 4000000 > /proc/sys/kernel/pid_max 2>/dev/null
+
+    mount_tmpfs $new_live 10 $live_dir 755
+
+    #cp /mdev.trace /init $new_live/ 2>/dev/null
+
+    local mp new
+    for mp in $live_dir/*; do
+        [ $mp = $new_root ] && continue
+        mountpoint -q $mp   || continue
+        new=$new_live/$(basename $mp)
+        mkdir -p $new
+        mount --move $mp $new
+
+        # ignore error on read-only filesystems
+        # I'm not sure why the chmod is needed on the others but it is.
+        chmod 755 $new 2>/dev/null
+    done
+
+    # We don't need these now so this saves some RAM
+    (cd $live_dir/lib && rm -rf modules libdl* libfuse* libntfs* libpthread*)
+
+    local dir old new
+    for dir in bin config etc lib locale; do
+        old=$live_dir/$dir
+        new=$new_live/$dir
+        mkdir -p $new
+        cp -a $old/* $new
+    done
+
+    # Make basic nodes
+    make_nodes $new_root/dev
+
+    # Create $live_dir/aufs mount in new_root (for historical reasons)
+    mkdir -p $new_live/$AUFS_DIR
+    mount --bind $new_root $new_live/$AUFS_DIR
+
+    PATH=$new_live/bin:$PATH
+
+    (cd $new_root && mkdir -p sys proc dev/pts)
+}
+
+#==============================================================================
+# What was last shall be first
+main "$@"
+#==============================================================================

@@ -1,0 +1,27 @@
+root/.bash_history
+var/lib/apt/lists/*
+var/cache/apt/*.bin
+var/cache/debconf/*-old
+etc/group-
+etc/gshadow-
+etc/passwd-
+etc/shadow-
+etc/slim.conf.dpkg-*
+etc/init.d/*.dpkg-dist
+etc/apt/sources.list.d/*.dpkg-dist
+etc/apt/sources.list.d/*.dpkg-old
+var/lib/dpkg/*-old 
+var/lib/dbus/machine-id
+var/log/*.log
+var/log/apt/*.log
+var/log/*log
+var/log/*mp
+var/log/dmesg
+usr/share/applications/gparted.desktop
+usr/share/applications/luckybackup-kde-su.desktop
+usr/share/applications/ndisgtk-kde.desktop
+usr/share/applications/synaptic-kde.desktop
+usr/share/applications/synaptic.desktop
+usr/share/applications/gufw.desktop 
+usr/share/icons/*/icon-theme.cache 
+usr/share/icons/BRIT ICONS/icon-theme.cache

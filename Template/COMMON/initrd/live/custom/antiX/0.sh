@@ -1,0 +1,12 @@
+AUTOLOAD=true
+LIST_MODULES=true
+CHECK_BOOTCODES=true
+
+DO_DEB=true
+DO_FSCK=true
+DO_XTRA=true
+DO_GFX=true
+
+FANCY_PROMPT="prompt-fancy"
+AUTO_LOGIN_PROG="autologin"
+AUTO_LOGIN_TERMS="2-4"

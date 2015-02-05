@@ -1,0 +1,8 @@
+; Base flavour menu
+key.F1=help
+key.F2=lang
+key.F3=timezone
+key.F4=options1
+key.F5=video_mode
+key.F6=desktop
+key.F7=dpi

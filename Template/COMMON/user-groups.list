@@ -1,0 +1,13 @@
+audio
+cdrom
+dialout
+dip
+floppy
+fuse
+lp
+#lpadmin
+netdev
+plugdev
+sudo
+users
+video

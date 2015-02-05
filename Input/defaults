@@ -1,0 +1,33 @@
+#----------------------------------------------------------------------
+# defaults file for build-antiX-iso
+#
+# This file contains almost all of the variables that determine what
+# actually gets built.  It has a middle priority in between
+# defaults-system which has the lowest priority and defaults-local
+# which has the highest
+#----------------------------------------------------------------------
+
+CODE_NAME="Killah P"
+DEBIAN_RELEASE="wheezy"
+DISTRO_NAME="antiX"
+DISTRO_VERSION="13.6"
+
+K_REVISION="*"
+K_TEMPLATE="%V%G-antix.%R-%A-smp"
+K_VERSION="3.7.10"
+
+#K_REVISION="1"
+#K_TEMPLATE="%V%G.dmz.%R-liquorix-%A"
+#K_VERSION="3.12.4"
+
+#K_REVISION="4"
+#K_TEMPLATE="%V%G-%R-%A"
+#K_VERSION="3.2.0"
+
+LIVE_USER="demo"
+LOCALE="en_US.UTF-8"
+MIRROR="us"
+NEW_HOSTNAME="antiX1"
+RELEASE_DATE=
+TIME_ZONE="America/New_York"
+X_TERM_EMULATOR="/usr/bin/roxterm"
