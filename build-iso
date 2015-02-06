@@ -1287,19 +1287,17 @@ do_stage_6() {
     fi
 
     mkdir -p $initrd_dir/etc
-    cat << Init_Conf >> $initrd_dir/init.conf
-DISTRO="$DISTRO_NAME"
-DISTRO_VERSION="$DISTRO_VERSION"
-DISTRO_CODENAME="$CODE_NAME"
-Init_Conf
+    cat << Initrd_Version >> $initrd_dir/etc/initrd-version
 
-    local distro_file=/etc/default/distro
-    say "Update $(pq $distro_file) inside initrd"
-    sed -i -r \
-        -e "s/^(DISTRO=).*/\1\"$DISTRO_NAME\"/" \
-        -e "s/^(DISTRO_VERSION=).*/\1\"$DISTRO_VERSION\"/" \
-        -e "s/^(DISTRO_CODENAME=).*/\1\"$CODE_NAME\"/" \
-        $initrd_dir/$distro_file
+NAME="$DISTRO_NAME"
+VERSION="$DISTRO_VERSION"
+ID="$(echo $DISTRO_NAME | tr 'A-Z' 'a-z')"
+VERSION_ID="$(echo $DISTRO_VERSION | sed -r 's/^([0-9.]+).*/\1/')"
+PRETTY_NAME="DISTRO_VERSION ($CODE_NAME)"
+ANSI_COLOR="0;34"
+HOME_URL="$HOME_URL"
+BUG_REPORT_URL="$BUG_REPORT_URL"
+Initrd_Version
 
     if [ -z "$iso_only_xxx" ]; then
         say "Copy $(pq $K_NAME) modules into initrd"
