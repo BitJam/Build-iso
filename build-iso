@@ -2056,13 +2056,17 @@ copy_modules() {
 
 update_gfxboot_menu() {
     local menu=$1 cfg=$2
-    local menu_string="antiX Function key menu"
-
+    local menu_string="Function key menu"
     # Insert Function key menu into gfxboot.cfg
-    if [ -e "$menu" -a -e "$cfg" ] && grep -q "$menu_string" $cfg; then
-        say "Add Fn key menu to gfxboot.cfg"
-        sed -i -e "/^key\.F.*/d"  -e "/$menu_string/ r $menu" $cfg
-    fi
+    [ -e "$menu" -a -e "$cfg" ] || return
+    grep -q "$menu_string" $cfg || return
+    say "Update Fn key menu in bootloader $(basename $cfg)"
+    sed -i "/$menu_string/,$ d" $cfg
+    cat << Fn_Menu >> $cfg
+; >>>>>>>>>> Function key menu >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+$(cat $menu)
+; <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+Fn_Menu
 }
 
 write_version_files() {
