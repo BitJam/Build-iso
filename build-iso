@@ -1286,6 +1286,7 @@ do_stage_6() {
         error "No $initrd_src/ or $initrd_src.gz found"
     fi
 
+    mkdir -p $initrd_dir/etc
     cat << Init_Conf >> $initrd_dir/init.conf
 DISTRO="$DISTRO_NAME"
 DISTRO_VERSION="$DISTRO_VERSION"
@@ -1300,12 +1301,10 @@ Init_Conf
         -e "s/^(DISTRO_CODENAME=).*/\1\"$CODE_NAME\"/" \
         $initrd_dir/$distro_file
 
-    if [ -z "$iso_only" ]; then
+    if [ -z "$iso_only_xxx" ]; then
         say "Copy $(pq $K_NAME) modules into initrd"
 
-        rm -rf $initrd_dir/$mod_dir
-
-        echo $tools/grab-modules --quiet --kernel $K_NAME --from $sqfs_dir --to $initrd_dir --count --dir kernel/drivers/ata $initrd_modules_file*
+        rm -rf $initrd_dir/lib/modules/
 
         $tools/grab-modules --quiet --kernel $K_NAME --from $sqfs_dir --to $initrd_dir \
             --count --dir kernel/drivers/ata $initrd_modules_file*
