@@ -1169,10 +1169,12 @@ do_stage_5() {
         end_part_strict
     fi
 
-    say "Change ownwership of 3 files"
-    $SUDO chown anticap:users $sqfs_dir/usr/share/desktop-menu/.fluxbox/menu-applications 
-    $SUDO chown anticap:users $sqfs_dir/usr/share/desktop-menu/.icewm/menu-applications 
-    $SUDO chown anticap:users $sqfs_dir/usr/share/desktop-menu/.jwm/menu-applications    
+    local f wm
+    say "Change ownwership of 3 menu-applications files"
+    for wm in fluxbox icewm jwm; do
+        f=$sqfs_dir/usr/share/desktop-menu/.$wm/menu-applications
+        [ -e $f ] && $SUDO chown 1000:1000 $f
+    done
 
     if [ "$DEBIAN_RELEASE" != "wheezy" ]; then
        say "Compress /usr/share/doc then delete folder"
