@@ -1,4 +1,4 @@
-; Base flavour menu
+; Base/Full flavour menu
 key.F2=lang
 key.F3=timezone
 key.F4=options
