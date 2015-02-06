@@ -1374,6 +1374,9 @@ do_stage_7() {
     enter_stage 7 "Create squashfs file"
     umount_chroot
 
+    say "Run depmod one last time"
+    $SUDO depmod --basedir $sqfs_dir $K_NAME
+
     say "Build the xz compressed linuxfs file. This takes time and uses a lot of CPU power."
 
     local linuxfs_file=$iso_dir/antiX/linuxfs
