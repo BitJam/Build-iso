@@ -1341,6 +1341,10 @@ do_stage_7() {
     say "Run depmod one last time"
     $SUDO depmod --basedir $sqfs_dir $K_NAME
 
+    say "Clear /run directory"
+    $SUDO rm -rf $sqfs_dir/run
+    mkdir -p $sqfs_dir/run
+
     say "Build the xz compressed linuxfs file. This takes time and uses a lot of CPU power."
 
     local linuxfs_file=$iso_dir/antiX/linuxfs
