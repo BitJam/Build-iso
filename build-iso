@@ -573,9 +573,10 @@ Output
 do_stage_1() {
     enter_stage 1 "Make directories and symlinks"
 
-    convenience_link $work_dir work
-    convenience_link $sqfs_dir sqfs
-    convenience_link $iso_dir  iso
+    convenience_link $work_dir   work
+    convenience_link $sqfs_dir   sqfs
+    convenience_link $iso_dir    iso
+    convenience_link $initrd_dir initrd
 
     leave_stage notime
 }
