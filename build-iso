@@ -1256,38 +1256,6 @@ do_stage_6() {
 
     echo 1 > $syslinux_dir/gfxsave.on
 
-    # Make a copy of the isolinux dir for creating Grub "message" cpio archive
-     #local mess_dir=$work_dir/grub-message
-     #rm -rf $mess_dir
-     #cp -r $isolinux_dir $mess_dir
-    # Remove files not needed by Grub
-     #rm -f $mess_dir/isolinux* $mess_dir/*.c32
-
-    # Enable F7 Save menu on Live systems that use Grub
-     #echo 1 > $mess_dir/gfxsave.on
-
-    # Translate isolinux.cfg to Grub's menu.lst
-     #local grub_dir=$iso_dir/boot/grub
-     #local grub_menu=$grub_dir/menu.lst
-     #mkdir -p $grub_dir
-     #$tools/isolinux-to-grub.pl $isolinux_cfg > $grub_menu
-
-     #say "Create $(pq message) cpio archive for LiveUSB Grub"
-     #(cd $mess_dir && find . | cpio -o --quiet --file=$grub_dir/message)
-
-    # Copy in original bg image
-     #cp $bootloader_bg $mess_dir/back.jpg
-
-    # Comment out all Fn menu key definitions
-     #sed -i -r "s/^(key\.F)/; \1/" $mess_dir/gfxboot.cfg
-
-    # Disable F7 Save menu and 64-bit check on installed systems
-     #rm -f $mess_dir/gfxsave.on $mess_dir/64bit
-
-    # say "Create $(pq message) cpio archive for installed Grub"
-     #mkdir -p $sqfs_dir/boot/grub
-     #(cd $mess_dir && find . | $SUDO cpio -o --quiet --file=$sqfs_dir/boot/grub/message)
-
     echo "$fancy_name" > $iso_dir/version
 
     if [ -z "$iso_only" ]; then
