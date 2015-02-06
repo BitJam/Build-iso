@@ -1284,7 +1284,7 @@ do_stage_6() {
     # Disable F7 Save menu and 64-bit check on installed systems
      #rm -f $mess_dir/gfxsave.on $mess_dir/64bit
 
-    say "Create $(pq message) cpio archive for installed Grub"
+    # say "Create $(pq message) cpio archive for installed Grub"
      #mkdir -p $sqfs_dir/boot/grub
      #(cd $mess_dir && find . | $SUDO cpio -o --quiet --file=$sqfs_dir/boot/grub/message)
 
