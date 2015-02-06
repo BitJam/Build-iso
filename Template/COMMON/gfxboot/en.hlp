@@ -2,7 +2,7 @@
 The demo user password is "demo" (no quotes)
  The root password is "root" (no quotes)
 
-  • helpF1: the Help System  • languageF2: Select Language  • timezoneF3: Select Timezone  • options1F4: Miscellaneous Options  • video_modeF5: Video Mode  • desktopF6: Choose Desktop Program  • saveF7: Save Bootloader Settings  • persistencePersistence Options  • bo_instructBoot Option Instructions  • bo_antixantiX Boot Options  • aboutAbout antiX Linux
+  • helpF1 the Help System  • languageF2 Select Language  • timezoneF3 Select Timezone  • options1F4 Miscellaneous Options  • video_modeF5 Video Mode  • desktopF6 Choose Desktop Program  • consoleF7 Console and Splash  • saveF7 Save Bootloader Settings  • persist_frugalPersistence and Frugal Install  • bo_instructOther Boot Options  • aboutAbout antiX Linux
 Press the [Esc] key to leave the help systemhelpUsing the Help System The help system consists of a set of linked pages that you can navigate through with the follow keys. 
   • [Up Arrow] -- highlight previous link  • [Down Arrow] -- highlight next link  • [Left Arrow], [Backspace] -- return to previous page  • [Right Arrow], [Enter], [Space] -- follow link  • [Page Up], [Home] -- go to first link on page  • [Page Down], [End] -- go to last link on page  • [Esc] -- leave help
 Using [Left Arrow] or [Backspace] will take you to your place (same highlighted link) on the previous page.
@@ -18,15 +18,15 @@ The menu is an easy shortcut for entering lang=language-code directly on the b
 Return to the mainMain Menu | general-helpprev | timezonenexttimezoneF3: Select TimezonePress F3 to get at list of cities in various time zones. The cities are listed time zone order so they circle the globe eastward. If your area uses Daylight Savings Time then make sure you select a city that does also. Your system will be started using the timezone selected. Locations that observe Daylight Savings Time are marked with a trailing * (asterisk).
 NOTE: You do not have to use this option if you have set a language and your country has only one time-zone.
  The menu is an easy shortcut for entering tz=timezone directly on the boot line. 
-Return to the mainMain Menu | languageprev | options1nextoptions1F4: Miscellaneous Options  • check md5
- check integrity of the install media.  • check fs
- check integrity of the LivUSB and persistent file systems (if any).  • to ram
- copy the compressed file system to RAM. This takes extra time when you boot but results in a very fast system (if you have enough RAM).  • no usb-2
+Return to the mainMain Menu | languageprev | options1nextoptions1F4: Miscellaneous Options  • checkmd5
+ check integrity of the install media.  • checkfs
+ check integrity of the LivUSB and persistent file systems (if any).  • toram
+ copy the compressed file system to RAM. This takes extra time when you boot but results in a very fast system (if you have enough RAM).  • nousb2
  Disable all usb-2 devices. This helps a few older systems boot LiveUSB.  • HP laptop
  Some HP laptops need a cheat to get brightness working correctly.
 See mountingMounting Options for the rest of the F4 menu option.
  Return to the mainMain Menu | timezoneprev | mountingnextmountingF4: Mounting OptionsThe Live system will dynamically update the fstab file whenever a usb drive gets plugged in. You can also choose to have drives mounted automatically when they are plugged in.
-  • automount -- mount drives when they are plugged in  • mount usb -- in addition, mount all usb drives at boot time  • mount all -- in addition, mount non-usb drives at boot time
+  • automount -- mount drives when they are plugged in  • mount=usb -- in addition, mount all usb drives at boot time  • mount=all -- in addition, mount non-usb drives at boot time
 Note: Your automount choices are saved on persistent systems.
 See options1Misc. Options for the rest of the F4 menu options.
 Return to mainMain Menu | options1prev | video_modenextvideo_modeF5: Video ModeThere are 3 options. Default should work for most users.
@@ -36,27 +36,21 @@ The antiX core system has consoleConsole menu instead.
  Use the Vesa driver. Disable modeset  • safe
  Use X11 defaults. Disable modeset.
 You can also set the resolution by directly typing in xres=resolution. This is useful if you want to force a resolution.
-Return to the mainMain Menu | mountingprev | consolenextconsoleF5: Console ResolutionThe antiX core system does not come with X-windows installed so instead of a Video Mode menu there is a menu that lets you select the console resolution. If your system supports it, the modeset option should automatically give you the highest possible console resolution otherwise you can use these bootcodes to set the console resolution manually in base and full:
-  • vga=789 800x600  • vga=877 1024x640  • vga=792 1024x768  • vga=864 1280x800  • vga=795 1280x1024  • vga=834 1400x1050  • vga=839 1600x1200
-Return to the video_modeVideo Mode menu.
-Return to the mainMain Menu | video_modeprev | desktopnextdesktopF6: Select Desktop ProgramOn full and base systems, there are a selection of desktop programs available. The F6 menu allows you to choose which desktop program to use. The menu also shows you the list of all desktop programs that are installed on the standard antiX iso (either full or base).
+Return to the mainMain Menu | mountingprev | consolenextdesktopF6: Select Desktop ProgramOn full and base systems, there are a selection of desktop programs available. The F6 menu allows you to choose which desktop program to use. The menu also shows you the list of all desktop programs that are installed on the standard antiX iso (either full or base).
 Desktops that start with Rox- (Rox pinboard) or Space- (SpaceFM desktop) come with desktop icons. These are often convenient for people who are just starting out.
 If you are running a persistent system and you install new desktop programs then you can boot into one of them by typing desktop=desktop-program. You will need to have already run the program update-default-desktop in order for this to work.
-Return to the mainMain Menu | consoleprev | savenextsaveF7: Save Bootloader SettingsOn LiveUSBs and Frugal installs, the F7 Save menu should appear.
-LiveCDs have a dpiDPI menu instead.
-  • menus
- Save the current menus settings as the defaults.  • custom
- Create/replace a Custom main menu entry with all the options that were typed in that don't exist in the menus.  • both
- Save the current menu settings and create/replace the custom main entry.  • reset
- Restore the original menu defaults. Does not affect the main menu.
-Return to the mainMain Menu | desktopprev | dpinextdpiSet X-Windows Dots per InchThe DPI (dots per inch) scales most font sizes inside of X-windows. The larger the DPI, the larger the fonts will be. The default value is 96.
-Return to the saveF7 Save menu.
-Return to the mainMain Menu | saveprev | persistencenextpersistencePersistence OptionsPersistence allows you to save files and settings between reboots. There are three types of persistence in the main menu.
+Return to the mainMain Menu | consoleprev | savenextsaveF6: Save Bootloader SettingsOn LiveUSBs and Frugal installs, the F6 Save menu should appear replacing F6 Desktop.
+LiveCDs have a desktopDesktop menu instead.
+  • save
+ Save the current popup menu settings as the defaults and create/replace a custom main menu entry if needed for options that are typed in that don't exist in the popup menus.  • reset
+ Restore the original menu defaults. Does not affect the custom main menu entry.
+Return to the mainMain Menu | desktopprev | consolenextconsoleF7: Console and Splash  • vga=789 800x600  • vga=877 1024x640  • vga=792 1024x768  • vga=864 1280x800  • vga=795 1280x1024  • vga=834 1400x1050  • vga=839 1600x1200
+Return to the mainMain Menu | saveprev | persist_frugalnextpersist_frugalPeristence and Frugal InstallReturn to the mainMain Menu | dpiprev | bo_instructnextpersistencePersistence OptionsPersistence allows you to save files and settings between reboots. There are three types of persistence in the main menu.
   • Root Persistence
  Save all the changes to the file-system in RAM and then transfer these changes to disk right before you shutdown or reboot. Fast, but space is limited by how much RAM you have.  • Static Root Persistence
  Saves all your file-system changes directly to a file. This can be slow but it requires no extra RAM and no changes need to be transfered when you shutdown.  • Home Persistence
  Only save changes to files and directories under /home. This will include all of your bookmarks and personal settings. Like static root persistence, changes are stored immediately to a file but in this case speed is almost never an issue.
-Return to the mainMain Menu | dpiprev | bo_instructnextbo_instructBoot Option InstructionsThere are many boot options available. They are usually only necessary if your system will not boot properly. To use the boot options just place the appropriate code in the Boot Options box at the bottom of the main screen. You may also need to edit or delete options that are already in the Boot Options box.
+Return to the mainMain Menu | dpiprev | bo_instructnextfrugalFrugal InstallReturn to the mainMain Menu | dpiprev | bo_instructnextbo_instructBoot Option InstructionsThere are many boot options available. They are usually only necessary if your system will not boot properly. To use the boot options just place the appropriate code in the Boot Options box at the bottom of the main screen. You may also need to edit or delete options that are already in the Boot Options box.
 You can't make changes permanent on a LiveCD or a LiveDVD. You have to enter them each time you boot. You can make permanent changes on some LiveUSBs.
 Go to bo_antixantiX Boot Options
  Go to mm_bootKernel Boot Options
