@@ -37,27 +37,28 @@ The most complicated stage is "4: Inside the chroot".  This is
 also the most time consuming stage because this is when *.deb
 packages get installed.  So Stage 4 is broken up into parts:
 
-  0: Read PARTIAL file to skip parts done
-  1: Update repos and do apt-get update
-  2: Search for complete kernel name
-  3: Define locales
-  4: Install basic packages
-  5: Install kernel & headers
-  6: Update locales
-  7: Install pesky packages
-  8: Install antiX packages
-  9: Run first apt-get -f install
- 10: Install latest antiX debs
- 11: Remove some packages
- 12: Add some packages
- 13: Reinstall some packages
- 14: Update runlevels based on flavour
- 15: Get Latest Flash
- 16: Manual configuration
- 17: Update Timezone, hostname, and user accounts
- 18: Run second apt-get -f install
- 19: Update SLiM defaults
- 20: Apply Theme
+  0. Read PARTIAL file to skip parts done
+  1. Update repos and do apt-get update
+  2. Search for complete kernel name
+  3. Define locales
+  4. Install basic packages
+  5. Install kernel & headers
+  6. Update locales
+  7. Install pesky packages
+  8. Install antiX packages
+  9. Run first apt-get -f install
+ 10. Install latest antiX debs
+ 11. Remove some packages
+ 12. Add some packages
+ 13. Reinstall some packages
+ 14. Update runlevels based on flavour
+ 15. Get Latest Flash
+ 16. Manual configuration
+ 17. Update Timezone, hostname, and user accounts
+ 18. Run second apt-get -f install
+ 19. Update SLiM defaults
+ 20. Apply Theme
+ 21. Check kernel's GCC version
 
 These parts are not automatically skipped if they have already
 been performed but the most time consuming parts (installing
