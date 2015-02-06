@@ -7,10 +7,12 @@
 # which has the highest
 #----------------------------------------------------------------------
 
+BUG_REPORT_URL="http://antix.freeforums.org"
 CODE_NAME="Killah P"
 DEBIAN_RELEASE="wheezy"
 DISTRO_NAME="antiX"
 DISTRO_VERSION="13.6"
+HOME_URL="http://antix.mepis.org/"
 
 K_REVISION="*"
 K_TEMPLATE="%V%G-antix.%R-%A-smp"
@@ -31,3 +33,4 @@ NEW_HOSTNAME="antiX1"
 RELEASE_DATE=
 TIME_ZONE="America/New_York"
 X_TERM_EMULATOR="/usr/bin/roxterm"
+
