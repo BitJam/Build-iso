@@ -2030,29 +2030,6 @@ gather_deb() {
 #==============================================================================
 # Routines for preparing and making the iso file
 #==============================================================================
-copy_modules() {
-    local expr file list_file=$1  from=$2  to=$3  verbose=${4:-$verbose_mode}
-    mkdir -p $to
-    local list=$(sed -e 's/[_-]/[_-]/g' -e 's/$/.ko/' $list_file)
-
-    for mod in $list; do
-        expr="$expr${expr:+ -o} -name $mod"
-    done
-
-    for file in $(find $from $expr); do
-        [ "$verbose" ] && say "Add initrd module $(pq $(basename $file .ko))"
-        cp $file $to
-    done
-}
-
-#old_copy_modules() {
-#    local mod file mods=$1  from=$2  to=$3
-#    mkdir -p $to
-#    for mod in $(echo $mods | sed -e 's/[:,;]/ /g' -e 's/[_-]/[_-]/g'); do
-#        file=$(find $from -name "$mod.ko" -type f 2>/dev/null | head -n 1)
-#        [ -n "$file" -a -e "$file" ] && cp $file $to
-#    done
-#}
 
 update_gfxboot_menu() {
     local menu=$1 cfg=$2
