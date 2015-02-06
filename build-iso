@@ -39,12 +39,12 @@ Build an antiX liveCD/USB iso from scratch using debootstrap.
 Options:
     -a --auto           Don't prompt before entering each stage
     -A --AUTO           ... and also clear out most files when done.
-    -A --ASK-ERROR      Ask before exiting due to stderr output messages
     -c --chroot         Enter the chroot environment if it is available
     -C --color=         Color mode: high|low|off.  Default is high.
     -d --delete         Delete squashfs dir and stage-?.out files when done
                         without prompting
     -D --DELETE         Also delete entire work directory without prompting
+    -e --error-ask      Ask before exiting due to stderr output messages
     -f --fast           Mount chroot directory as tmpfs for speed
     -F --FAST-UMOUNT    List and optionally umount all our tmpfs mounts
     -h --help           Show this help
@@ -126,7 +126,7 @@ main() {
     local partial_name="PARTIAL"
     local partial_file=$build_dir/$partial_name
 
-    local short_stack="aAcCdDfFhiImnNpqrsuUvV0-8"
+    local short_stack="aAcCdDefFhiImnNpqrsuUvV0-8"
 
     # Need the leading space to prevent echo from swallowing -e or -E
     local arg val ARGS=$(echo " $*") 
@@ -157,12 +157,12 @@ main() {
         case $arg in
             -auto|a)      auto_mode=true                        ;;
             -AUTO|A)      auto_mode=true ; full_auto=true       ;;
-       -ASK-ERROR|A)     ask_errors=true                        ;;
           -chroot|c)    chroot_mode=true                        ;;
        -color=*|C=*)     color_mode=$val                        ;;
            -color|C)     color_mode=$val                        ;;
           -delete|d)    delete_mode=true                        ;;
           -DELETE|D)    delete_mode=true ; delete_all=true      ;;
+       -error-ask|e)     ask_errors=true                        ;;
             -fast|f)        do_fast=true                        ;;
      -FAST-UMOUNT|F)    check_tmpfs=true                        ;;
             -help|h)   usage                                    ;;
