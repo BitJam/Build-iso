@@ -12,6 +12,11 @@ Copies modules listed in file from /lib/modules/\$KERN to
 If only one kernel directory exists then we choose that kernel
 automatically.  
 
+If no --dir or -- option is given and there are no files on
+the command line then "default mode" is used.  The list of
+modules is from a default list and the kernel/drivers/ata
+directory is included automatically.
+
 Options:
     --                 Read modules list on stdin
     -c --count         Display a count of the modules found
@@ -142,15 +147,17 @@ main() {
     local mod_dir=$from_dir/lib/modules/$kernel
     test -d "$mod_dir" || fatal "Directory $mod_dir does not exist"
 
-    local list1 list2 repeats
+    local list1 list2 repeats default_mode
     # grab list from files or stdin and strip comments
 
     if [ -z "$USE_STDIN" -a $# -eq 0 ]; then
+        default_mode=true
         list1=$(echo "$DEFAULT_LIST" | grep -v "^\s*#" | sed 's/\s*#.*//')
     else
         list1=$(cat "$@" | grep -v "^\s*#" | sed 's/\s*#.*//')
     fi
 
+    [ "$default_mode" -a -z "$DIRS" ] && DIRS=kernel/drivers/ata
     local d
     for d in $(echo $DIRS | sed 's/,/ /g'); do
         local dir=$mod_dir/$d
