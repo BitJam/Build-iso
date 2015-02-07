@@ -12,6 +12,7 @@ _Could_not_find_any_persistence_files_="Δε βρέθηκαν αρχεία persi
 _Could_not_find_device_X_="Δεν ήταν δυνατή η εύρεση συσκευής %s"
 _Could_not_find_file_X_for_required_Y_persistence_="Δεν ήταν δυνατή η εύρεση του %s για persist %s"
 _Could_not_find_script_X_="Δεν βρέθηκε %s "
+_Could_not_load_module_X_="Δεν ήταν δυνατή η τοποθέτηση "
 _Could_not_mount_X_="Δεν ήταν δυνατή η προσάρτηση %s "
 _Could_not_mount_X_as_a_Y_file_="Δεν ήταν δυνατή η προσάρτηση %s σε αρχείο %s "
 _Could_not_mount_X_as_a_Y_filesystem_="Δεν ήταν δυνατή η προσάρτηση %s σε αρχείο %s "
