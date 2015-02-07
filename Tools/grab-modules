@@ -13,8 +13,9 @@ If only one kernel directory exists then we choose that kernel
 automatically.  
 
 Options:
+    --                 Read modules list on stdin
     -c --count         Display a count of the modules found
-    -d --dir=DIR       Pull in all module under subdirectory DIR
+    -d --dir=DIR       Grab all modules found under DIR
     -f --from=FROM     copy from lib/modules under FROM/
     -h --help          Show this usage
     -k --kernel=KERN   Use KERN instead of \`uname -r\`
@@ -27,6 +28,57 @@ Options:
 Usage
     exit ${1:-0}
 }
+
+DEFAULT_LIST="
+aufs
+block
+btrfs
+# cdrom
+ext4
+# fat
+fusbh200-hcd
+fuse
+# hid
+hid-generic
+# i2c-core
+isofs
+# jbd2
+jfs
+loop
+# mbcache
+msdos
+nls-cp437
+nls-utf8
+ntfs
+ohci-pci
+pcie-aspm
+printk
+pstore
+reiserfs
+sd-mod
+sg
+squashfs
+sr-mod
+udf
+ufshcd-pci
+uhci-hcd
+# usb-common
+usb-storage
+# usbcore
+usbhid
+usbmon
+vfat
+whc-rc
+whci-hcd
+xcbc
+xfs
+xhci-hcd
+xhci-pci
+
+i915
+nouveau
+radeon
+"
 
 main() {
 
@@ -58,6 +110,7 @@ main() {
         esac
 
         case $arg in
+                  -) USE_STDIN=true                  ;;
            -count|c) SHOW_COUNT=true                 ;;
              -dir|d) DIRS="$DIRS,$val"               ;;
             -help|h) usage                           ;;
@@ -91,7 +144,12 @@ main() {
 
     local list1 list2 repeats
     # grab list from files or stdin and strip comments
-    list1=$(cat "$@" | grep -v "^\s*#" | sed 's/\s*#.*//')
+
+    if [ -z "$USE_STDIN" -a $# -eq 0 ]; then
+        list1=$(echo "$DEFAULT_LIST" | grep -v "^\s*#" | sed 's/\s*#.*//')
+    else
+        list1=$(cat "$@" | grep -v "^\s*#" | sed 's/\s*#.*//')
+    fi
 
     local d
     for d in $(echo $DIRS | sed 's/,/ /g'); do
