@@ -7,7 +7,7 @@ usage() {
         cat <<Usage
 Usage: $ME [options] [file]
 Copies modules listed in file from /lib/modules/\$KERN to 
-./lib/modules/\$KERN in the CWD.  Also copies all dendencies.
+./lib/modules/\$KERN in the CWD.  Also copies all dependencies.
 
 If only one kernel directory exists then we choose that kernel
 automatically.  
@@ -26,6 +26,7 @@ Options:
     -k --kernel=KERN   Use KERN instead of \`uname -r\`
     -p --pretend       Don't actually copy anything
     -q --quiet         Supress modprobe warnings
+    -s --show          Show the default list
     -Q --very-quiet    Also suppress warnins about duplicate inputs
     -t --to=TODIR      Copy to TODIR instead of CWD
     -v --verbose       List modules as they are copied
@@ -89,7 +90,7 @@ main() {
 
     local to_dir from_dir kernel
 
-    local short_stack="cdfhkpqQtv"
+    local short_stack="cdfhkpqQstv"
     while [ $# -gt 0 -a -n "$1" -a -z "${1##-*}" ]; do
         local arg=${1#-} val=
         shift
@@ -125,6 +126,7 @@ main() {
          -pretend|p) PRETEND=true                    ;;
            -quiet|q) QUIET=true                      ;;
       -very-quiet|Q) VERY_QUIET=true                 ;;
+            -show|s) echo "$DEFAULT_LIST" ; exit     ;;
          -verbose|v) VERBOSE=true                    ;;
                   *) fatal "Unknown argument -$arg"  ;;
         esac
@@ -202,4 +204,5 @@ fatal() {
 warn() {
     echo "$ME warning: $*" >&2
 }
+
 main "$@"
