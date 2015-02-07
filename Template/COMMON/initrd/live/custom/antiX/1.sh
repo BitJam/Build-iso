@@ -7,6 +7,7 @@ live_param_filter() {
     for param; do
         case $param in
         # Our Live params
+        disable_srv=*|disable_service=*) ;;
         aX=*|amnt|amnt=*|antiX=*|automount|automount=*|confont=*|conkeys=*);;
         desktop=*|dpi=*|drvr=*|dummy|fstab=*|hostname=*|kbd=*|kbopt=*|kbvar=*);;
         lang=*|lean|mean|mirror=*|mount=*|noRox|nodbus|noloadkeys|noprompt);;
