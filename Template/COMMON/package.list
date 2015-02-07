@@ -22,11 +22,11 @@ firmware-linux-free
 flashrom
 fonts-liberation
 fuse
-fuse-utils
+# fuse-utils
 gawk
 genisoimage
 gettext-base
-gnu-fdisk
+# gnu-fdisk
 grub-common
 grub-gfxboot
 htop
