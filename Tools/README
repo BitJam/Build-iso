@@ -58,4 +58,3 @@ vmlinuz-gcc-version
     Print out the version of gcc that was used to compile the
     kernel stored in a vmlinuz file.  Relies on having the
     extract-vmlinux in the same directory or on the path.
-
