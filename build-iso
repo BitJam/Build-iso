@@ -1379,6 +1379,13 @@ do_stage_8() {
     mkdir -p $iso_file_dir
     local full_iso_file=$iso_file_dir/$iso_file
     say "Build the live $(pq $iso_file) file"
+
+    local file full
+    for file in vmlinuz linuxfs initrd.gz; do
+        full=$iso_dir/antiX/$file
+        test -e $full && md5sum_file $full
+    done
+
     start_timer
     $MAKE_ISO -l -V antiXlive -R -J -pad -no-emul-boot -boot-load-size 4  \
         -boot-info-table -gid 0 -uid 0 -b boot/isolinux/isolinux.bin      \
