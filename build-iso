@@ -1236,6 +1236,9 @@ do_stage_6() {
            -e "s/%CODE_NAME%/$CODE_NAME/g" \
            -e "s/%FULL_DISTRO_NAME%/$full_distro_name/g" $isolinux_cfg
 
+    # Create text-only menu
+    $tools/make-isolinux-menu $isolinux_cfg >> $isolinux_dir/isolinux.msg
+
     local boot_menu bootloader_bg
     get_template_file gfxboot.menu boot_menu
     [ "$boot_menu" ] && update_gfxboot_menu $boot_menu $isolinux_dir/gfxboot.cfg
