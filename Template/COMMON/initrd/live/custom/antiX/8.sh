@@ -26,8 +26,6 @@ antix_specific_code() {
         mkdir -p $(dirname $dir$f)
         [ -e $f ] || touch $dir$f
     done
-
-    mount_tmpfs $dir/media 1 /media
 }
 
 antix_specific_code $NEW_ROOT

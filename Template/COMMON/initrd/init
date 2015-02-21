@@ -89,11 +89,10 @@ MKFS_FREE_MARGIN=20
   rootfs_SIZE_PARAM="min_size=250 mid_size=100 max_size=4000 factor=50"
   homefs_SIZE_PARAM="min_size=250 mid_size=100 max_size=3000 factor=25"
 
+    VFAT_MKFS_SIZES="250 375 500 750 1000 1500 2000 2500 3000 4000"
          MKFS_SIZES="250 375 500 750 1000 1500 2000 2500 3000 4000 5000 6000"
-      MAX_MKFS_SIZE=${MKFS_SIZES##* }
 
-      LIVE_SCRIPTS="live-L10n live-init persist-password persist-autosave live-disable-services"
-      LIVE_SCRIPTS="live-L10n live-init live-disable-services"
+      LIVE_SCRIPTS="live-L10n live-init live-usb-save"
 
       LAST_BP_TIME=0
 
@@ -152,6 +151,7 @@ main_wrapper() {
     custom_code 0 'before reading boot codes'
 
     read_cmdline_params
+    select_breakpoints
 
     FREE_MEM=$(mem_info MemFree)
 
@@ -184,31 +184,13 @@ main_wrapper() {
 
     # Need to run persist-password outside of our error catching
 
-#--    # FIXME remove after squashfs gets updated
-#--    #----------------------------------------------------------------
-#--    local f
-#--    for f in halt reboot; do
-#--        rm -f $NEW_ROOT/usr/local/bin/$f
-#--    done
-#--
-#--    rm -f  $NEW_ROOT/etc/rc2.d/S01slim
-#--    rm -f  $NEW_ROOT/sbin/make-fstab
-#--    rm -f  $NEW_ROOT/usr/sbin/buildxconfig
-#--    #rm -rf $NEW_ROOT/usr/share/antiX/lib
-#--
-#--    rm -rf /usr/share/antiX/init-xlat
-#--
-#--    for f in $LIVE_SCRIPTS live-restore-services; do
-#--        rm -f $NEW_ROOT/etc/init.d/$f
-#--        rm -f $NEW_ROOT/etc/rc?.d/S*[0-9]$f
-#--    done
-#--
-#--    #----------------------------------------------------------------
-
     breakpoint 8 "before running init.d scripts"
 
-    [ "$PERSIST_ROOT" ] && LIVE_SCRIPTS="$LIVE_SCRIPTS persist-password"
-    [ "$PERSIST_ROOT" -a -z "$STATIC_ROOT" ] && LIVE_SCRIPTS="$LIVE_SCRIPTS persist-autosave"
+    [ -e /live/config/persist-root ] && LIVE_SCRIPTS="$LIVE_SCRIPTS persist-password"
+    [ -e /live/config/save-persist ] && LIVE_SCRIPTS="$LIVE_SCRIPTS persist-autosave"
+
+    # Do this last so the changes aren't saved until a "real" persist-save
+    [ -e /live/config/systemd ] || LIVE_SCRIPTS="$LIVE_SCRIPTS live-disable-services"
 
     PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin
     run_init_scripts $NEW_ROOT $LIVE_SCRIPTS
@@ -251,16 +233,14 @@ main_core() {
 
     vmsg 6 '%s started at %s seconds' "$ME" $(nq $(get_seconds $time_0))
 
-    select_breakpoints
-
     start_hotplug "$DO_HOTPLUG" "$TRACE_LOAD"
 
-    breakpoint 1 "before welcome"
+    #breakpoint 1 "before welcome"
     do_welcome "$DISTRO_PRETTY_NAME" "$VERSION" "$VERSION_DATE"
-    show_bootcodes "$UNKNOWN_BOOTCODES"
+    show_bootcodes "$(live_param_filter $UNKNOWN_BOOTCODES)"
     show_integer_errors "$INTEGER_ERRORS"
 
-    breakpoint 2 "before loading modules"
+    breakpoint 1 "before loading modules"
     load_kernel_modules "$BLACK_LIST" "$DO_LOAD" "$MODULE_LIST"
 
     : ${SQFILE_FILE:=$DEFAULT_SQFILE}
@@ -276,7 +256,7 @@ main_core() {
     # will always work
     #[ "$NO_EHCI" ] && disable_hcd ehci
 
-    breakpoint 3 "before looking for linuxfs file"
+    breakpoint 2 "before looking for linuxfs file"
 
     RW_MODE=ro
 
@@ -292,7 +272,7 @@ main_core() {
 
     BOOT_UUID=$(device_uuid $SQFILE_DEV)
     [ "$BOOT_UUID" ] && vmsg 6 "boot device uuid: $BOOT_UUID"
-    breakpoint 4 "after mounting boot device"
+    breakpoint 3 "after mounting boot device"
 
     mount -o remount,rw $SQFILE_DEV 2>/dev/null
     dir_has_param "$SQFILE_MP" rw || REMASTERABLE=
@@ -312,7 +292,7 @@ main_core() {
     #[ "$PERSIST_FILES" ] && mount -o remount,rw $SQFILE_DEV
     mount -o remount,rw $SQFILE_DEV
 
-    breakpoint 5 "after mounting linuxfs file"
+    breakpoint 4 "after mounting linuxfs file"
 
     prepare_persistence
 
@@ -324,7 +304,7 @@ main_core() {
     # Check for ehci warning
     dmesg | grep 'Warning.*ehci' >&2
 
-    #breakpoint 6 "after mounting persistence device"
+    breakpoint 5 "after mounting persistence device"
 
     fsck_boot_dev "$SQFILE_DEV" "$SQFILE_MP"
 
@@ -357,8 +337,11 @@ main_core() {
 
     SYSTEM_D=
     local sbin_init=$(readlink $NEW_ROOT/sbin/init)
-    [ -n "$sbin_init" -a -z "${sbin_init##*systemd}" ] && SYSTEM_D=true
-    [ "$SYSTEM_D" ] && msg  "$_Detected_systemd_init_system_"
+    if [ -n "$sbin_init" -a -z "${sbin_init##*systemd}" ]; then
+        SYSTEM_D=true
+        touch /live/config/systemd
+        msg  "$_Detected_systemd_init_system_"
+    fi
 
     breakpoint 6 "after mounting aufs"
 
@@ -370,6 +353,8 @@ main_core() {
     if mount_persist_file 'homefs' $NEW_ROOT/home 'home' "$WANT_HOMEFS" "$NEED_HOMEFS"; then
         HOMEFS_DEV=$PERSIST_DEVICE
         msg  "$_Enabled_X_persistence_" "$(cq home)"
+        PERSISTENCE="$PERSISTENCE,home"
+
     else
         [ "$NEED_HOMEFS" ] && non_fatal  "$_Could_not_enable_required_X_persistence_" "$(pqh home!)"
     fi
@@ -779,7 +764,7 @@ mem_info() {
 
 clean_xlat() {
     find $LOCALE_DIR/xlat -name init.xlat -delete
-    rm -rf $LOCALE_DIR/fonts
+    #rm -rf $LOCALE_DIR/fonts
 }
 
 read_xlat() {
@@ -1301,7 +1286,7 @@ _find_files() {
 
                     #. <type> device filesystem: <filesystem-name>
                     vmsg 5  "$_X_device_filesystem_Y_" $find_type \
-                        "$(cq $(grep " $mntpnt " /proc/mounts | cut -d" " -f3))"
+                        "$(cq $(mntpnt_fstype $mntpnt))"
 
                     local short_dev=${dev##*/}
                     local model=$(cat /sys/block/${short_dev%%[0-9]*}/device/model 2>/dev/null)
@@ -1363,21 +1348,23 @@ find_device() {
 }
 
 device_uuid() {
-    local device=$1 LABEL TYPE UUID
-    eval $(blkid $device | sed 's/^[^:]*://')
-    echo $UUID
+    local device=$1
+    blkid $device | sed -n -r 's/.* UUID="([^"]*)"( |$).*/\1/p'
 }
 
 device_label() {
-    local device=$1 LABEL TYPE UUID
-    eval $(blkid $device | sed 's/^[^:]*://')
-    echo $LABEL
+    local device=$1
+    blkid $device | sed -n -r -e 's/" (UUID=|TYPE=)".*//' -e 's/[^:]*: LABEL="//p'
 }
 
 device_fstype() {
-    local device=$1 LABEL TYPE UUID
-    eval $(blkid $device | sed 's/^[^:]*://')
-    echo $TYPE
+    local device=$1
+    blkid $device | sed -n -r 's/.* TYPE="([^"]*)"$/\1/p' | tail -n 1
+}
+
+mntpnt_fstype() {
+    local dev=$(df $1 | tail -n1 | cut -d" " -f1)
+    device_fstype $dev
 }
 
 frugal_error() {
@@ -1594,6 +1581,8 @@ find_linuxfs_file() {
     DEFAULT_DIR=$SQFILE_DIR
 }
 
+# FIXME: mention failsafe option or load=all.
+
 linuxfs_error() {
     local msg=$(printf "$@")  device_list=$(echo $DEVICE_LIST)
     local all_devices=$(echo $(most_block_devices));
@@ -1689,8 +1678,8 @@ mount_aufs() {
     cp -a /etc/mtab $aufs_mp/etc/
 
     # Always a good idea
-    mkdir -p   $aufs_mp/tmp /var/tmp
-    chmod 1777 $aufs_mp/tmp /var/tmp
+    mkdir -p   $aufs_mp/tmp $aufs_mp/var/tmp
+    chmod 1777 $aufs_mp/tmp $aufs_mp/var/tmp
 }
 
 link_top_dirs() {
@@ -1709,15 +1698,14 @@ link_top_dirs() {
 
 try_mount() {
     local dev=$1  mp=$2  rw=${3:-$RW_MODE}
-    local LABEL UUID TYPE
-    eval local $(blkid $dev | sed -r 's/^[^:]+://')
-    [ "$TYPE" ] || return 1
-    case $TYPE in
+    local type=$(blkid $dev | sed -n -r 's/.* TYPE="([^"]*)"$/\1/p' | tail -n 1)
+    [ "$type" ] || return 1
+    case $type in
             vfat) mount -t vfat -o $rw,umask=000,shortname=winnt  "$dev" "$mp" 2>/dev/null ;;
          iso9660) mount -t iso9660 -o ro                          "$dev" "$mp" 2>/dev/null ;;
             ntfs) ntfs-3g -o umask=000,force,"$rw"                "$dev" "$mp" 2>/dev/null 17>/dev/null || \
                   mount -t ntfs -o umask=000,ro                   "$dev" "$mp" 2>/dev/null ;;
-               *) mount -t $TYPE -o "$rw"                         "$dev" "$mp" 2>/dev/null ;;
+               *) mount -t $type -o "$rw"                         "$dev" "$mp" 2>/dev/null ;;
     esac
     return $?
 }
@@ -1807,13 +1795,15 @@ should_fsck() {
 
     local days=$((SB_CHECKINTERVAL /60/60/24))
 
-    vmsg 7  "$_Check_filesystem_on_X_"                        $(dq $dev)
-    vmsg 9 "${green}         Device:$white %s"             $dev
-    vmsg 9 "${green}    Mount count:$white %s"             $SB_MOUNT_CNT
-    vmsg 9 "${green}Max mount count:$white %s"             $SB_MAX_MOUNT_CNT
-    vmsg 9 "${green}   Last checked:$white %s"             "$(date --date=@$SB_LASTCHECK)"
-    vmsg 9 "${green}   Magic number:$white 0x%04X"         $SB_MAGIC
-    vmsg 9 "${green} Check interval:$white %d$m_co (days)" $days
+    vmsg 7  "$_precheck_filesystem_on_X_"                     $(dq $dev)
+    if [ "$DB_PLUS" ]; then
+        vmsg 9 "${green}         Device:$white %s"             $dev
+        vmsg 9 "${green}    Mount count:$white %s"             $SB_MOUNT_CNT
+        vmsg 9 "${green}Max mount count:$white %s"             $SB_MAX_MOUNT_CNT
+        vmsg 9 "${green}   Last checked:$white %s"             "$(date --date=@$SB_LASTCHECK)"
+        vmsg 9 "${green}   Magic number:$white 0x%04X"         $SB_MAGIC
+        vmsg 9 "${green} Check interval:$white %d$m_co (days)" $days
+    fi
 
     [ "$FORCE_FSCK" ] && return 0
 
@@ -1997,6 +1987,65 @@ pqw()    { echo "$hi_co$*$warn_co"        ;}
 pqh()    { echo "$m_co$*$hi_co"           ;}
 hq()     { echo "$hi_co$*$m_co"           ;}
 
+vmsg() {
+    local level=$1  fmt=$2
+    shift 2
+
+    msg=$(printf "$m_co$fmt$nc_co" "$@")
+
+    [ "$level" -le "$VERBOSE" ] && printf "$msg\n"
+    echo -e "$msg" >> $MY_LOG
+    return 0
+}
+
+vmsgN() {
+    local level=$1  fmt=$2
+    shift 2
+
+    msg=$(printf "$m_co$fmt$nc_co" "$@")
+
+    [ "$level" -le "$VERBOSE" ] && printf "$msg"
+    echo -ne "$msg" >> $MY_LOG
+    return 0
+}
+
+vmsg_if() {
+    local level=$1; shift
+    [ "$VERBOSE" -ge "$level" ] || return
+    vmsg $level "$@"
+}
+
+vmsg_nc() {
+    local level=$1; shift
+    vmsg $level "$nc_co$@"
+}
+
+set_colors() {
+    local noco=$1  loco=$2
+
+    [ "$noco" ] && return
+
+    local e=$(printf "\e")
+     black="$e[0;30m";    blue="$e[0;34m";    green="$e[0;32m";    cyan="$e[0;36m";
+       red="$e[0;31m";  purple="$e[0;35m";    brown="$e[0;33m"; lt_gray="$e[0;37m";
+   dk_gray="$e[1;30m"; lt_blue="$e[1;34m"; lt_green="$e[1;32m"; lt_cyan="$e[1;36m";
+    lt_red="$e[1;31m"; magenta="$e[1;35m";   yellow="$e[1;33m";   white="$e[1;37m";
+     nc_co="$e[0m";
+
+    cheat_co=$white;      err_co=$red;       hi_co=$white;
+      cmd_co=$white;     from_co=$lt_green;  mp_co=$magenta;   num_co=$magenta;
+      dev_co=$magenta;   head_co=$yellow;     m_co=$lt_cyan;    ok_co=$lt_green;
+       to_co=$lt_green;  warn_co=$yellow;  bold_co=$yellow;
+
+    [ "$loco" ] || return
+
+    from_co=$brown
+      hi_co=$white
+       m_co=$nc_co
+     num_co=$white
+}
+
+
 get_time() { cut -d" " -f22 /proc/self/stat ;}
 
 show_time() {
@@ -2051,39 +2100,6 @@ vmsg_old() {
     echo -ne "$msg" >> $MY_LOG
 
     return 0
-}
-
-vmsg() {
-    local level=$1  fmt=$2
-    shift 2
-
-    msg=$(printf "$m_co$fmt$nc_co" "$@")
-
-    [ "$level" -le "$VERBOSE" ] && printf "$msg\n"
-    echo -e "$msg" >> $MY_LOG
-    return 0
-}
-
-vmsgN() {
-    local level=$1  fmt=$2
-    shift 2
-
-    msg=$(printf "$m_co$fmt$nc_co" "$@")
-
-    [ "$level" -le "$VERBOSE" ] && printf "$msg"
-    echo -ne "$msg" >> $MY_LOG
-    return 0
-}
-
-vmsg_if() {
-    local level=$1; shift
-    [ "$VERBOSE" -ge "$level" ] || return
-    vmsg $level "$@"
-}
-
-vmsg_nc() {
-    local level=$1; shift
-    vmsg $level "$nc_co$@"
 }
 
 heading() {
@@ -2326,38 +2342,43 @@ select_device() {
     local title_type=$1  var=$2  min_size=${3:-0} not_mounted=$4
     local title=$(printf  "$_Please_select_X_device_" "$title_type")
 
-    local cnt=1 cnt_lab rtype mp=/tmp/mnt  skip
-    local size size_lab free free_lab
-    local name bytes type label line model last_model data display title
-    local size_rev free_rev type_rev name_rev
+    local cnt=1 cnt_lab rtype mp=/tmp/mnt
+    local size_lab free free_lab
+    local line pretty skip data display
+    local free_rev type_rev name_rev
     #local format="$green%3s $lt_cyan%-5s $magenta%8s $yellow%8s $lt_blue%10s $lt_gray%9s $white%-16s $lt_gray%s\n"
     local format="$green%3s $lt_cyan%s%-5s$nc_co $magenta%s%8s$nc_co $yellow%s%8s$nc_co $lt_blue%s%10s$nc_co $lt_gray%10s  $white%-16s $lt_gray%s\n"
     local head_fmt="${hi_co}%3s %-5s %8s %8s %10s %10s  %-16s %s\n"
-    local header=$(printf "$head_fmt" "" name size free fstype removable label model)
-    title="$title\n$header"
+    local header=$(printf "$head_fmt" "" Name Size Free FS-type Removable Label Model)
+    local title="$title\n$header"
 
     mkdir -p $mp
     local rev=$(printf "\e[0;4;7;31m")
     #local rev=$(printf "\e[5;7;31m")
     #local rev=$(printf "\e[1;7m")
+
     (bogo_meter)&
     local pid=$!
 
     while read -r line ; do
 
-        bytes=0
+        local name=${line%%:*}
+        name=${name##*/}
+        [ ${#name} -eq 0 -o ${#name} -gt 8 ] && continue
+        #case $name in sd?[0-9]*) ;; *) continue ;; esac
 
-        name=$(  echo "$line" | cut -d" " -f1)
-        bytes=$( echo "$line" | cut -d" " -f2)
-        type=$(  echo "$line" | cut -d" " -f3)
-        remove=$(echo "$line" | cut -d" " -f4)
-        reado=$( echo "$line" | cut -d" " -f5)
-        label=$( echo "$line" | cut -d" " -f6 | sed 's/\\x20/ /g')
-        model=$( echo "$line" | cut -d" " -f7 | sed 's/\\x20/ /g')
+        local type=$(echo "$line" | sed -n -r 's/.* TYPE="([^"]*)"$/\1/p' | tail -n 1)
+        #uuid=$(echo "$line" | sed -n -r -e 's/" (UUID=|TYPE=)".*//' -e 's/[^:]*: LABEL="//p')
+        local label=$(echo "$line" | sed -n -r -e 's/" (UUID=|TYPE=)".*//' -e 's/[^:]*: LABEL="//p')
+
+        local drive_name=${name%%[0-9]*}/
+        local model=$(cat  /sys/block/$drive_name/device/model 2>/dev/null)
+        local remove=$(cat /sys/block/$drive_name/removable    2>/dev/null)
+        local reado=$(cat  /sys/block/$drive_name/$name/ro     2>/dev/null)
+        local size=$(cat   /sys/block/$drive_name/$name/size   2>/dev/null)
+        size=$((size / 2 / 1024))
 
         local dev=/dev/$name
-
-        [ "$model" ] && last_model=$model
 
         [ "$reado" = 1 ] && continue
 
@@ -2371,9 +2392,8 @@ select_device() {
         esac
 
         skip=
-        size_rev=
+        local size_rev=
 
-        size=$((bytes / 1024 / 1024))
         cnt_lab="$cnt)"
         size_lab=$(size_label_m $size)
 
@@ -2419,25 +2439,21 @@ select_device() {
         fi
 
         rtype="no"
-        [ "$remove" = 1 ] && rtype=${yellow}"yes"
+        [ "$remove" = 1 ] && rtype="yes"
 
-        local this_model=$last_model
-        #[ "${#label}" -gt 16 ] && this_model=
+        pretty=$(printf "$format" "$cnt_lab" "$name_rev" "$name" "$size_rev" "$size_lab" \
+            "$free_rev" "$free_lab" "$type_rev" "$type" "$rtype" "$label" "$model")
 
-        line=$(printf "$format" "$cnt_lab" "$name_rev" "$name" "$size_rev" "$size_lab" \
-            "$free_rev" "$free_lab" "$type_rev" "$type" "$rtype" "$label" "$this_model")
-
-        display="${display}$line\n"
+        local display="${display}$pretty\n"
 
         [ -z "$cnt_lab" ] && continue
 
         data="${data}$cnt:$dev\n"
         cnt=$((cnt + 1))
 
-    done <<Data
-$(ld_path /bin/lsblk -rnbo name,size,fstype,rm,ro,label,model)
-Data
-
+    done <<Blkid
+$(blkid | sed -r -e 's=^(/dev/sd.[0-9][0-9]):=\1+\1:=' -e 's=^(/dev/sd.)([0-9]):=\10\2+\1\2:=' | sort)
+Blkid
     kill -9 $pid
     echo
 
@@ -2448,9 +2464,9 @@ Data
         return 1
     fi
 
-    line=$(printf "$format" "0)" "${bold_co}quit" "$m_co($(cq default))")
+    pretty=$(printf "$format" "0)" "${bold_co}quit " "$m_co($(cq default))")
 
-    display="${display}$line\n"
+    display="${display}$pretty\n"
     data="${data}0:quit\n"
     if [ "$skip" ]; then
         local rev_video=$(printf "$rev%s$nc_co"  "$_reverse_video_")
@@ -2508,26 +2524,30 @@ label_device() {
     msg  "$_Label_updated_to_X_" $(pq $new)
 }
 
-
-sync_fs() {
-    sync
-}
-
-label_to_dev() { any_to_dev 'LABEL' "$@"  ;}
-uuid_to_dev()  { any_to_dev 'UUID'  "$@"  ;}
-
-# This is like findfs but this returns a list if there is more than one device
-any_to_dev() {
-
-    local field="$1=\"$2\"" devices
-    local dev f1 f2 other
-    while read dev f1 f2 other; do
-        [ "$f1" = "$field" -o "$f2" = "$field" ] && devices="$devices$dev "
+label_to_dev() {
+    local label=$1 devices
+    local dev line lab
+    while read dev line; do
+        lab=$( echo "$line" |sed -n -r -e 's/" (UUID=|TYPE=)".*//' -e 's/^LABEL="//p')
+        [ "$lab" = "$label" ] && devices="$devices$dev "
     done <<EOT
 $(blkid)
 EOT
-    echo "$devices" | sed 's/://g' | sed 's/ $//'
+    echo "$devices" | sed -e 's/://g' -e 's/ $//'
 }
+
+uuid_to_dev() {
+    local uuid=$1 devices
+    local dev line id
+    while read dev line; do
+        id=$( echo "$line" | sed -n -r 's/.* UUID="([^"]*)"( |$).*/\1/p')
+        [ -n "$id" -a -z "${id##$uuid}" ] && devices="$devices$dev "
+    done <<EOT
+$(blkid)
+EOT
+    echo "$devices" | sed -e 's/://g' -e 's/ $//'
+}
+
 
 cleanse_dev() {
     case $1 in
@@ -2546,22 +2566,29 @@ general_device_error() {
 }
 
 label_error() {
-    local find_type=$1  param=$1$2 name=$2  value=$3  field=$(echo $2 | tr 'a-z' 'A-Z')
+    local find_type=$1  param=$2  name=$2  value=$3
+    [ "$param" = label ] && param=lab
+    param=${1:0:1}$param
+
     ##warn "$hbar"
     warn
     err  "$_Fatal_Error_"
     err  "$_No_device_with_X_was_found_" "$name $(cqe $value)"
 
     vmsg_nc 3  "$_Valid_X_" "${name}s:"
-    local line val LABEL TYPE UUID
-    while read line; do
-        eval $field=
-        eval local "$line"
-        eval val=\$$field
+    local val
+    while read val; do
         [ "$val" ] && echo "$white  $param=$val$nc_co"
-    done <<EOT
-$(blkid | sed 's/^[^:]*://')
-EOT
+    done <<Label_Error
+$(
+case $name in
+    label)
+        blkid | sed -n -r -e 's/" (UUID=|TYPE=)".*//' -e 's/[^:]*: LABEL="//p' ;;
+     uuid)
+        blkid | sed -n -r 's/.* UUID="([^"]*)"( |$).*/\1/p' ;;
+esac
+)
+Label_Error
     #warn "$hbar"
     warn
     case $from_type in
@@ -2737,7 +2764,7 @@ check_vid() {
 
             log_cmd mkdir -p "$mp$VID_DIR"      || return 1
             log_cmd cp $SQFS_VID_FILE $vid_file || return 2
-            sync_fs
+            sync
             return 0
 
         elif ! [ -f "$vid_file" ]; then
@@ -2838,31 +2865,6 @@ do_delay() {
     msg
 }
 
-set_colors() {
-    local noco=$1  loco=$2
-
-    [ "$noco" ] && return
-
-    local e=$(printf "\e")
-     black="$e[0;30m";    blue="$e[0;34m";    green="$e[0;32m";    cyan="$e[0;36m";
-       red="$e[0;31m";  purple="$e[0;35m";    brown="$e[0;33m"; lt_gray="$e[0;37m";
-   dk_gray="$e[1;30m"; lt_blue="$e[1;34m"; lt_green="$e[1;32m"; lt_cyan="$e[1;36m";
-    lt_red="$e[1;31m"; magenta="$e[1;35m";   yellow="$e[1;33m";   white="$e[1;37m";
-     nc_co="$e[0m";
-
-    cheat_co=$white;      err_co=$red;       hi_co=$white;
-      cmd_co=$white;     from_co=$lt_green;  mp_co=$magenta;   num_co=$magenta;
-      dev_co=$magenta;   head_co=$yellow;     m_co=$lt_cyan;    ok_co=$lt_green;
-       to_co=$lt_green;  warn_co=$yellow;  bold_co=$yellow;
-
-    [ "$loco" ] || return
-
-    from_co=$brown
-      hi_co=$white
-       m_co=$nc_co
-     num_co=$white
-}
-
 next_device() {
     local base=$(echo $1 | sed 's/[0-9]*$//')
     local num=$(echo $1 | sed 's/^[^0-9]*//')
@@ -2929,7 +2931,7 @@ do_remaster() {
         done
 
         DID_ROLLBACK=true
-        sync_fs
+        sync
         sleep 2
         return 0
     fi
@@ -2964,7 +2966,7 @@ do_remaster() {
     done
 
     DID_REMASTER=true
-    sync_fs
+    sync
     sleep 2
     return 0
 }
@@ -3115,8 +3117,7 @@ prepare_persistence() {
     for param in $(echo "$PERSIST" | sed 's/,/ /g'); do
 
         case $param in
-            s|static)
-                STATIC_ROOT=true;;
+            s|static) STATIC_ROOT=true;;
         esac
 
         # You can't always get what you want ...
@@ -3301,9 +3302,18 @@ _persist_makefs() {
 
     : ${default_size:=-1}
 
+
+    # Make sure we don't exceed max size of 4G - 1 on vfat file systems
+    local par_fstype=$(mntpnt_fstype $full_file) mkfs_sizes vfat
+    case $par_fstype in
+        vfat) mkfs_size=$MKFS_SIZES                   ;;
+           *) mkfs_sizes=$VFAT_MKFS_SIZES ; vfat=true ;;
+    esac
+    local max_mkfs_size=${mkfs_sizes##* }
+
     # Create a menu of sizes.  Include the default size
     local size sizes default_cnt cnt=1
-    for size in $MKFS_SIZES; do
+    for size in $mkfs_sizes; do
         if [ -z "$default_cnt" -a $default_size -gt 0 -a $size -ge $default_size ]; then
             sizes="$sizes $default_size"
             default_cnt=$cnt
@@ -3331,14 +3341,14 @@ _persist_makefs() {
 
    # Include all available in menu if it is appropriate
     local max=$(echo "$sizes" | sed 's/.* //')
-    [ $max -lt $avail -a $avail -lt $MAX_MKFS_SIZE ] && sizes="$sizes $avail"
+    [ $max -lt $avail -a $avail -lt $max_mkfs_size ] && sizes="$sizes $avail"
 
     local fs_type fs_size auto_mode create_mode quit=$(printf  "$_quit_")
     #[ "$needed" ] && quit=
 
     heading  "$_create_X_persistence_file_" "$(fq $file)"
     vmsg 1  "$_Default_size_X_Meg_Filesystem_type_Y_" $(nq $default_size) $(pq ext4)
-    warn  "$_Warning_this_operation_can_take_a_few_minutes_"
+    [ "$vfat" ] &&  warn  "$_Warning_this_operation_can_take_a_few_minutes_on_a_file_system_" $(pqw $par_fstype)
 
     if [ "$AUTO_MAKE_FS" ]; then
         auto_mode=true
@@ -3397,7 +3407,7 @@ makefs() {
     local file=$1  type=$2  size=$3
     mkdir -p $(dirname $file)                                     || return 1
     dd if=/dev/zero of=$file bs=1M count=0 seek=$size &>/dev/null || return 2
-    ld_path /sbin/mkfs.$type -q -F $file                          || return 3
+    ld_path /sbin/mkfs.$type -q -F $file              &>/dev/null || return 3
 }
 
 default_makefs_size() {
@@ -3463,8 +3473,10 @@ mount_and_copy_rootfs() {
         if [ "$STATIC_ROOT" ]; then
             ROOTFS_DEV=$PERSIST_DEVICE
             msg  "$_Enabled_X_persistence_" "$(cq static root)"
+            PERSISTENCE="root,static"
         else
             msg  "$_Enabled_X_persistence_" "$(cq dynamic root)"
+            PERSISTENCE="root,dynamic"
         fi
     else
 
@@ -3478,6 +3490,7 @@ _mount_and_copy_rootfs() {
     PERSIST_ROOT_FULL="$PERSIST_FULL_PATH/rootfs"
     check_vid "$SQFS_VID" "$ROOTFS_MP" rootfs                                 || return 1
     [ "$STATIC_ROOT" ] || copy_persist_to_ram                                 || return 1
+
     return 0
 }
 
@@ -3547,8 +3560,6 @@ mount_persist_file() {
         return 4
     fi
 
-    PERSISTENCE=$PERSISTENCE,$type
-    PERSISTENCE=${PERSISTENCE#,}
     return 0
 }
 
@@ -3731,7 +3742,7 @@ fancy_prompt() {
 }
 
 copy_xtra() {
-    local dir xtra_dir=$1/xtra tarball=$1/xtra.tgz
+    local dir bdir=$1 xtra_dir=$1/xtra tarball=$1/xtra.tgz
 
     if [ -e $tarball ]; then
         msg  "$_Unpack_xtra_tarball_"
@@ -3749,6 +3760,11 @@ copy_xtra() {
         cp -a $xtra_dir/$dir $NEW_ROOT/
     done
     msg
+    local dfile=$bdir/delete.list
+    test -e $dfile || return
+    msg  "$_Deleting_files_listed_in_X_" $(pq $dfile)
+    grep -v "^\s*#" $dfile | sed "s=^\s*/=$NEW_ROOT/=" | grep "/[a-z]" >> $MY_LOG
+    rm -rf $(grep -v "^\s*#" $dfile | sed "s=^\s*/=$NEW_ROOT/=" | grep "/[a-z]")
 }
 
 ld_path_which() {
@@ -3838,7 +3854,7 @@ chroot_umount() {
 }
 
 write_output_files() {
-    local dir=$1  out_file=$1/init.out
+    local dir=$1  out_file=$1/initrd.out
     mkdir -p $dir
     rm -f $dir/* 2>/dev/null
 
@@ -3887,13 +3903,14 @@ VID_ERROR="$VID_ERROR"
 VID_FILE="$VID_FILE"
 Bootstrap_Out
 
-    echo "$FINAL_DIR" > $dir/live-dir
-
-    [ "$DID_TORAM"    ]                         && touch $dir/did-toram
-    [ "$REMASTERABLE" ]                         && touch $dir/remasterable
-    [ -n "$PERSIST_ROOT" -a -z "$STATIC_ROOT" ] && touch $dir/save-persist
-
+    echo "$FINAL_DIR"  > $dir/live-dir
     echo "$SQFILE_DEV" > $dir/boot-device
+
+    [ "$DID_TORAM"    ]                      && touch $dir/did-toram
+    [ "$REMASTERABLE" ]                      && touch $dir/remasterable
+    [ "$PERSIST_ROOT" ]                      && touch $dir/persist-root
+    [ "$PERSIST_ROOT" -a -z "$STATIC_ROOT" ] && touch $dir/save-persist
+    [ "$PERSIST_ROOT" -a    "$STATIC_ROOT" ] && touch $dir/static-root
 }
 
 old_write_output_files() {
@@ -4014,24 +4031,25 @@ run_init_scripts() {
 
     mkdir -p $new_root/etc/live/protect $new_root/run/lock
 
-    local script full last_time=$(get_time)
+    local script full now last_time=$(get_time)
     for script; do
         full=/live/etc/init.d/$script
         test -x $new_root/$full || continue
         chroot $new_root $full start
+        [ "$DB_PLUS" ] || continue
         now=$(get_time)
         vmsg 6 "%25s @ %s seconds" $script $(pq $(get_seconds $((now - last_time))))
         last_time=$now
     done
 
-    # Do a persist-save to save new passwords and persist save mode
-    [ -f $new_root/live/config/new-passwords       ] || return
-    [ -f $new_root/live/config/persist-save.conf   ] || return
+    #-jbb # Do a persist-save to save new passwords and persist save mode
+    #-jbb [ -f $new_root/live/config/new-passwords       ] || return
+    #-jbb [ -f $new_root/live/config/persist-save.conf   ] || return
 
-    local persist_save=/usr/local/bin/persist-save
-    [ -x $new_root$persist_save                    ] || return
-    msg  "$_Do_persist_save_"
-    chroot $new_root $persist_save --cli --nolog --quiet
+    #-jbb local persist_save=/usr/local/bin/persist-save
+    #-jbb [ -x $new_root$persist_save                    ] || return
+    #-jbb msg "Do persist-save"
+    #-jbb chroot $new_root $persist_save --cli --nolog --quiet
 }
 
 late_umount() {
@@ -4063,9 +4081,9 @@ prepare_switch_root() {
     # Avoid PID wrap by setting a large max
     echo 4000000 > /proc/sys/kernel/pid_max 2>/dev/null
 
-    mount_tmpfs $new_root/run 10 /run mode=755,nodev
-    mount_tmpfs $new_live 10 $live_dir mode=755
-
+    mount_tmpfs $new_root/media 10 /media
+    mount_tmpfs $new_root/run   10 /run      mode=755,nodev
+    mount_tmpfs $new_live       10 $live_dir mode=755
     ln -s . $new_live/live
 
     cp -a /bin/shutdown $new_live/
@@ -4115,6 +4133,8 @@ prepare_switch_root() {
 
     (cd $new_root && mkdir -p sys proc dev/pts)
 }
+
+live_param_filter() { echo $*; }
 
 #==============================================================================
 # What was last shall be first
