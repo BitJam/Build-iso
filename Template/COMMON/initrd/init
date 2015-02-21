@@ -3304,10 +3304,11 @@ _persist_makefs() {
 
 
     # Make sure we don't exceed max size of 4G - 1 on vfat file systems
-    local par_fstype=$(mntpnt_fstype $full_file) mkfs_sizes vfat
+    mkdir -p $dir
+    local par_fstype=$(mntpnt_fstype $dir) mkfs_sizes vfat
     case $par_fstype in
-        vfat) mkfs_size=$MKFS_SIZES                   ;;
-           *) mkfs_sizes=$VFAT_MKFS_SIZES ; vfat=true ;;
+        vfat) mkfs_sizes=$VFAT_MKFS_SIZES ; vfat=true ;;
+           *) mkfs_sizes=$MKFS_SIZES                  ;;
     esac
     local max_mkfs_size=${mkfs_sizes##* }
 
@@ -3348,7 +3349,7 @@ _persist_makefs() {
 
     heading  "$_create_X_persistence_file_" "$(fq $file)"
     vmsg 1  "$_Default_size_X_Meg_Filesystem_type_Y_" $(nq $default_size) $(pq ext4)
-    [ "$vfat" ] &&  warn  "$_Warning_this_operation_can_take_a_few_minutes_on_a_file_system_" $(pqw $par_fstype)
+    [ "$vfat" ] &&  warn  "$_Warning_this_operation_can_take_a_few_minutes_on_a_X_file_system_" $(pqw $par_fstype)
 
     if [ "$AUTO_MAKE_FS" ]; then
         auto_mode=true
