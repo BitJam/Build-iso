@@ -27,6 +27,7 @@ live_param_filter() {
         nodbus)                      CMD_NO_DBUS=true ;;
 
         # Our Live params
+        hwclock=utc|hwclock=local) ;;
         amnt|amnt=*|automount|automount=*|confont=*|conkeys=*);;
         desktop=*|dpi=*|drvr=*|fstab=*|hostname=*|kbd=*|kbopt=*|kbvar=*);;
         lang=*|mirror=*|mount=*|noloadkeys|noprompt);;
