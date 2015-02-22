@@ -1,0 +1,376 @@
+#!/bin/bash
+
+#------------------------------------------------------------------------------
+#   People come and go
+#   And forget to close the door
+#   And leave their stains and cigarette butts trampled on the floor
+#   And when they do ...
+#   remaster me, remaster me
+#------------------------------------------------------------------------------
+
+# GETTEXT_KEYWORD="gt"
+# GETTEXT_KEYWORD="pfgt"
+# GETTEXT_KEYWORD="ctitle"
+# GETTEXT_KEYWORD="remaster_error"
+# GETTEXT_KEYWORD="error_box_pf"
+
+# Only needed for the location of the protect files
+source /usr/local/lib/antiX/antiX-get-param.sh
+
+source /usr/local/lib/antiX/antiX-common.sh  "$@"
+
+TITLE="antiX Live Remaster"
+BLURB="$(gt "Create a new compressed file system saving all of the changes you have made to the system.")"
+BLURB="$BLURB  $(gt "Optionally save changes in your home directory.")"
+BLURB="\n$(echo "$BLURB" | fold -s -w 74 | sed 's/^/    /')"
+
+SAFETY_MARGIN=20
+
+EXTRA_USAGE="
+\n[b]$(gt "Extra options for"):[/] [p]$ME[/]
+    -p|--pretend        $(gt "Make a smaller linuxfs.new.  NOT deleted when done.")
+    -t|--title=<[p]title[/]>  $(pfgt "Use %s instead of prompting user for title." "<[p]title[/]>")
+    -n|--no-info        $(pfgt "Do not alter the %s file." "[f]/etc/live/version/linuxfs.ver[/]")
+    --general           $(gt "Make a general-purpose remaster.")
+    --personal          $(gt "Make a personalized remaster.")
+    --home              $(pfgt "Save files under the %s directory." "[f]/home[/]")
+    --no-home           $(pfgt "Don't save files under the %s directory." "[f]/home[/]")\n
+"
+
+OPTIONS="
+    p,pretend||PRETEND
+    n,no-info||NO_INFO
+    t,title|o|TITLE
+    general||GENERAL
+    personal||PERSONAL
+    home||HOME
+    no-home||NO_HOME
+"
+
+add_options  "$OPTIONS"
+read_options "$@"
+extra_args    0
+
+SYS_TYPE="LiveUSB/HD"
+read_conf || read_conf_error "linuxfs"
+
+show_cli_title
+
+need_root
+start_logging
+
+trap clean_up EXIT
+create_lock
+
+#--- Mount device holding linuxfs if needed
+mount_if_needed $BOOT_DEV $BOOT_MP
+make_readwrite $BOOT_MP
+
+# Need to ask this early so we get the exclude size right
+if ! [ "$SET_HOME" -o "$SET_NO_HOME" ]; then
+    no_yes_box "$TITLE" "" \
+        "$(pfgt "Do you want to save files under %s in the new remaster?" "[f]/home[/]")" \
+        ""                                                           \
+        && SET_HOME=true
+fi
+
+bg_info_box -o "$PULSATE"                           \
+    "$TITLE"                                        \
+    ""                                              \
+    "$(gt "Checking for existing files and")"       \
+    "$(gt "Checking if there is enough room ...")"  \
+    ""
+
+[ "$SET_HOME" ]    || home_exclude="/home/*"
+[ "$SET_PRETEND" ] && pretend_excludes="boot bin lib media usr"
+excludes="$(remaster_excludes $AUFS_MP $pretend_excludes $home_exclude)"
+
+exclude_size="$(du_size $excludes)"
+
+boot_total=$(all_space  $BOOT_MP)
+boot_avail=$(free_space $BOOT_MP)
+
+sq_old_size=$(du_size $(readlink -f $SQFILE_FULL))
+fs_old_size=$(du_size $SQFS_MP)
+fs_new_size=$(du_size $AUFS_MP)
+
+fs_new_size=$(( $fs_new_size - $exclude_size ))
+
+sq_new_size_est=$(( $fs_new_size * $sq_old_size / $fs_old_size))
+
+safe_estimate=$(($sq_new_size_est + $SAFETY_MARGIN))
+
+boot_remain=$(($boot_avail - $sq_new_size_est))
+
+exclude_size_est=$(( $exclude_size * $sq_old_size / $fs_old_size))
+main_text=(
+    "$(fmt_size "current linuxfs size" $sq_old_size)"
+    "$(fmt_size "excluded files est."  $exclude_size_est)"
+    "$(fmt_size "estimated new size"   $sq_new_size_est)"
+    ""
+    "boot device: [f]$BOOT_DEV[/f]"
+    " mounted at: [f]$BOOT_MP[/f]"
+    "  directory: [f]$SQFILE_DIR[/]"
+    ""
+    "$(fmt_size "boot device total" $boot_total)"
+    "$(fmt_size "boot device free"  $boot_avail)"
+    "$(fmt_size "est. remaining"    $boot_remain)"
+)
+
+for t in "${main_text[@]}"; do
+    vmsg "$t"
+done
+
+BAD_FILES=""
+for ext in new old bad tmp; do
+    [ -e "$SQFILE_FULL.$ext" ] && BAD_FILES="$BAD_FILES $SQFILE_NAME.$ext"
+done
+
+kill_bg_info_box
+
+[ "$boot_avail" -lt "$safe_estimate" ] && \
+    error_box_pf "Have: %s megs available.  Need: %s." "[n]$boot_avail[/]" "[n]$safe_estimate[/]"
+
+while [ "$BAD_FILES" ]; do
+    yes_no_box                                                        \
+        "$(gt "Leftover files found")"                                \
+        ""                                                            \
+        "$(gt "The following file(s) already exist")"                 \
+        "$(pfgt "in the %s directory:" "[f]$SQFILE_DIR[/]")"          \
+        ""                                                            \
+        "[f]$BAD_FILES[/]"                                            \
+        ""                                                            \
+        "$(gt "They may be left over from a previous remastering.")"  \
+        "$(gt "Do you want to fix this problem now?")"                \
+        "$(gt "(the alternative is to quit now)")"                    \
+        || vexit "at user request"
+
+    for file in $BAD_FILES; do
+        save_or_delete $SQFILE_DIR $file
+    done
+
+    BAD_FILES=""
+    for ext in new old bad; do
+        [ -e "$SQFILE_FULL.$ext" ] && BAD_FILES="$BAD_FILES $SQFILE_NAME.$ext"
+    done
+done
+
+noisy_yes_no_box                                    \
+    "$(gt "Ready to create a new linuxfs file")"    \
+    "[fixed]"                                       \
+    "${main_text[@]}"                               \
+    "[/]"                                           \
+    "$(gt "Shall we begin?")"                       \
+    || vexit "At user's request"
+
+if which alsactl &>/dev/null; then
+    vpf "Storing volume settings"
+    alsactl store
+fi
+
+_General_="$(gt "General")"
+_Personal_="$(gt "Personal")"
+
+if ! [ "$SET_GENERAL" -o "$SET_PERSONAL" ]; then
+    combo_box remaster-type "$_General_!$_Personal_" -a                           \
+        "$TITLE" ""                                                               \
+        "$(pfgt "%s uses your current language settings."  "[b]$_Personal_[/]")"  \
+        "$(pfgt "%s does not." "[b]$_General_[/]")"
+
+    [ "$UI_RESULT" = "$_General_" ] && SET_GENERAL=true
+fi
+
+if [ "$SET_GENERAL" ]; then
+    cp $PERSIST_PROTECT_FILE $REMASTER_PROTECT_FILE
+else
+    rm -f $REMASTER_PROTECT_FILE
+fi
+
+if ! [ "$NO_INFO" ]; then
+    if ! [ "$SET_TITLE" ]; then
+        get_text title ""                                                \
+            "$(gt "Remaster Version Identification")"                    \
+            ""                                                           \
+            "$(gt "Please enter an (optional) title for this remaster")" \
+            ""
+
+        OPT_TITLE="$UI_RESULT"
+    fi
+    # Make a new version id for the new squashfs to be created
+    mkdir -p $(dirname $AUFS_VID_FILE)
+    cat >> $AUFS_VID_FILE << Version_Info_End
+
+$(version_id)
+
+title: $OPT_TITLE
+creation date: $(date +"%e %B %Y %T %Z")
+kernel: $(uname -sr)
+machine: $(uname -m)
+Version_Info_End
+
+    av_file=$AUFS_MP/etc/antix-version
+    if [ -r "$av_file" ]; then
+        antiX_version="$(cat $av_file)"
+        echo "inxi version: $antiX_version" >> $AUFS_VID_FILE
+    fi
+
+fi
+
+gui_wait() {
+    local text=(                                    \
+        "$(ctitle "Remaster in progress")"          \
+    ""                                              \
+    "$(gt "please be patient")"                     \
+    "$(gt "(even after it says it is 100% done)")"  \
+    "" )
+
+    # Must call yad directly to get correct PID
+    (yad $YAD_STD_OPTS                                \
+        --title="$(gt "antiX Remaster in Progress")"  \
+         --width="300"                                \
+         --text="$(center_strings "${text[@]}")"      \
+        --progress --pulsate                          \
+        --button="gtk-cancel:1") &
+    GUI_PID=$!
+    disown $GUI_PID
+}
+
+# we create tmp_file and only move it to new_file if everything checks
+new_file=$SQFILE_FULL.new
+tmp_file=$SQFILE_FULL.tmp
+
+# The return code from mksquashfs is stored in ret_file by run-mksquashfs
+ret_file=$SQFILE_DIR/mksquashfs.ret
+rm -f $ret_file
+
+FROM=$AUFS_MP
+
+exclude_file=$CONF_DIR/remaster.exclude
+#lifo_string TO_DELETE $exclude_file
+
+remaster_excludes "" $pretend_excludes | sort -u > $exclude_file
+
+#--- create the tmp/new squashfs file
+MKSQ_OPTS="$FROM $tmp_file -wildcards -ef $exclude_file"
+#MKSQ_OPTS="$FROM $tmp_file"
+MKSQ_COMMAND="/usr/local/bin/run-mksquashfs $ret_file $MKSQ_OPTS"
+
+#vmsg "mksquashfs options: $MKSQ_OPTS"
+
+restore_live
+
+#------------------------------------------------------------------------------
+#
+#  We launch run-mksquashfs from inside a x-terminal-emulator run in the bg.  We also
+#  launch a yad dialog in the bg.  We monitor them both in the loop below.  If
+#  the x-terminal-emulator exits we simply kill the yad dialog.  If the yad dialog exits we
+#  first launch another yad dialog asking for confirmation.  If confirmed we
+#  kill the x-terminal-emulator, otherwise we relaunch the original yad dialog.
+#
+#------------------------------------------------------------------------------
+
+if [ "$SET_GUI" ]; then
+    ($GUI_TERM $TERM_TITLE_OPT "$(gt "Remastering -- DO NOT CLOSE")" $TERM_OPTS $MKSQ_COMMAND &>/dev/null)&
+    mksq_pid=$!
+    disown $mksq_pid
+
+    gui_wait
+
+    while true; do
+
+        if ! [ -d "/proc/$mksq_pid" ]; then
+            kill -9 $GUI_PID &> /dev/null
+            remaster_done="true"
+            break
+        fi
+
+        if ! [ -d "/proc/$GUI_PID"  ]; then
+            if yes_no_box -c "$(ctitle "Remaster in Progress")" \
+                "$(gt "Do you REALLY want to stop midway?")"; then
+                kill $mksq_pid
+                rm -f $tmp_file
+                sleep 1
+                exit
+            fi
+
+            if [ -d "/proc/$mksq_pid" ]; then
+                remaster_done="true"
+                break
+            fi
+
+            gui_wait
+        fi
+
+        sleep 1
+
+    done
+else
+    $MKSQ_COMMAND
+fi
+
+remaster_error() {
+    local fmt="$(gettext "$1")" && shift
+    local msg="$(printf "$fmt" "$@")"
+    no_yes_box -c                                       \
+        "[e]$(gt "Error")[/]"                           \
+    ""                                                  \
+    "[e]$err_msg[/]"                                    \
+    "$msg"                                              \
+    ""                                                  \
+    "$(gt "Do you want to save the incomplete file?")"  \
+    "([f]$SQFILE_NAME.tmp[/])"                          \
+    || rm -f $tmp_file
+    exit 2
+}
+
+
+[ -f $ret_file ] || remaster_error "Remastering Terminated Early"
+
+ret_value=$(cat $ret_file)
+rm -f $ret_file
+
+[ "$ret_value" = "0" ] || remaster_error "Remastering Failed" "(with an exit code of %s)" "[n]$ref_val[/]"
+
+[ -f "$tmp_file" ] || error_box_pf "New linuxfs file was not created!"
+
+sq_new_size=$(du_size $tmp_file)
+
+mount_squashfs_temp $tmp_file || remaster_error "Could not mount new file as %s!" "("squashfs")"
+
+mv $tmp_file $new_file
+
+#[ "$SET_TEST" ] && rm -r $FROM/lib/etc
+#[ "$SET_TEST" ] && rm $new_file
+
+clean_up && trap EXIT
+
+info_box -c                                                                                \
+    "$(gt "Created new compressed filesystem file:")"                                      \
+    ""                                                                                     \
+    "[f]$new_file[/]"                                                                      \
+    "$(pfgt "size: %s Meg" "[n]$sq_new_size[/]")"                                          \
+    ""                                                                                     \
+    "$(gt "The new file should be used automatically the next time you boot.")"            \
+    ""                                                                                     \
+    "$(gt "If there is a problem with the new system:")"                                   \
+    "$(pfgt "Use the %s  boot option to return to the current system."  "[b]rollback[/]")" \
+    "" ""                                                                                  \
+
+[ -e /live/config/persist-save.conf \
+    -o -e /live/config/persist-root ] || exit 0
+which persist-makefs &>/dev/null      || exit 0
+
+opts=
+[ "$SET_QUIET"  ] && opts=--quit
+[ "$SET_NO_LOG" ] && opts="$opts --nolog"
+[ "$SET_GUI"    ] || opts="$opts --cli"
+
+yes_no_box
+        "$(gt "Root persistence is enabled")"                \
+        ""                                                   \
+        "$(pfgt "Do you want to make a new %s file now?" "[f]rootfs.new[/]")" \
+        "" "" \
+        && persist-makefs --rootfs $opts
+
+exit 0
+

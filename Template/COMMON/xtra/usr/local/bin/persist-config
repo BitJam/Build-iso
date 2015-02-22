@@ -1,0 +1,181 @@
+#!/bin/bash
+
+# GETTEXT_KEYWORD="gt"
+# GETTEXT_KEYWORD="pfgt"
+
+antiX_lib=/usr/local/lib/antiX
+source $antiX_lib/antiX-common.sh     "$@"
+
+TITLE="$(gt "antiX Root Persistence Auto-Save Configuration")"
+
+CONF_FILE=/etc/live/config/persist-config.conf
+
+     _Automatic_="$(gt "Automatic")"
+_Semi_Automatic_="$(gt "Semi-Automatic")"
+        _Manual_="$(gt "Manual")"
+          _Quit_="$(gt "Quit")"
+
+[ -e /live/config/persist-save.conf \
+    -o -e /live/config/save-persist ]  && SHOULD_RUN=true
+
+BLURB="
+    $(gt "Configure root persistence saves to run either:")
+
+    1) [b]$_Automatic_[/] ($(gt "at shutdown/reboot, no asking"))
+    2) [b]$_Semi_Automatic_[/] ($(gt "ask at shutdown/reboot"))
+    3) [b]$_Manual_[/] ($(gt "you snooze, you lose"))"
+
+A="$(pfgt "This program should be called with the %s option in a startup script to ensure a config file is created."\
+    "[p]--startup[/]")"
+B="$(pfgt "It should be called with the %s option in shutdown scripts so your changes can be saved before shutting down." \
+    "[p]--shutdown[/]")"
+
+BLURB="$BLURB\n\n$(echo "$A  $B" | fold -s -w 74 | sed 's/^/    /')"
+
+
+u_fmt="    %-16s %s"
+EXTRA_USAGE="
+$(pfgt "%s specific options" "[p]$ME[/][b]"):[/]
+    --startup         $(pfgt "Create a %s file if one is missing." "[f]persist-config.conf[/]")
+    --shutdown        $(pfgt "Run persist-save as directed by %s file." "[f]persist-config.conf[/]")
+    --command <cmd>   $(pfgt "Run %s if %s succeeded." "<[p]cmd[/]>" "persist-save")
+                      $(pfgt "If %s fails prompt user before running %s." "persist-save" "<[p]cmd[/]>")
+                      ($(pfgt "implies %s" "--shutdown"))
+
+$(pfgt "Config file is located at: %s" "[f]$CONF_FILE[/]")
+"
+
+
+OPTIONS="
+    startup||START_UP
+    shutdown||SHUT_DOWN
+    command|o|COMMAND
+"
+
+add_options  "$OPTIONS"
+read_options "$@"
+extra_args   0
+
+[ "$SET_COMMAND" ] && SET_SHUT_DOWN=true
+
+#show_cli_title
+
+need_root
+start_logging
+
+#trap clean_up EXIT
+#create_lock
+
+exit_command() {
+    [ "$OPT_COMMAND" ]  || exit 0
+    # chvt so we see shutdown messages on tty1
+    chvt 1 2>/dev/null
+    exec $OPT_COMMAND
+}
+
+edit_config() {
+    [ -f $CONF_FILE ] && source $CONF_FILE
+
+    if [ "$AUTOSAVE_MODE" ]; then
+        mode_str="$(pfgt "Current mode is: %s" "[f]$AUTOSAVE_MODE[/]")"
+    else
+        mode_str="$(pfgt "There is no current auto-save mode.  The default is: %s." "[b]$_Semi_Automatic_[/]")"
+    fi
+
+    fmt="[fixed][b]%15s:[/][/] %s   "
+    combo_box save-mode "1 $_Automatic_!2 $_Semi_Automatic_!3 $_Manual_!4 $_Quit_" -n \
+        "$TITLE" ""                                                    \
+        "Please choose auto-save mode."                                \
+        ""                                                             \
+        "$mode_str"                                                    \
+        ""                                                             \
+        "$(pf "$fmt" "$_Automatic_"      "`gt "save on shutdown/reboot automatically.  No asking."`")"   \
+        "$(pf "$fmt" "$_Semi_Automatic_" "`gt "ask to save on shutdown/reboot."`")"                      \
+        "$(pf "$fmt" "$_Manual_"         "`gt "only save changes manually (you snooze, you lose)."`")"   \
+        "$(pf "$fmt" "$_Quit_"           "`gt "use current default."`")"                                 \
+        ""
+
+    AUTOSAVE_MODE=$UI_RESULT
+
+    [ -z "${AUTOSAVE_MODE##4*}" ] && exit
+
+    [ -f $CONF_FILE ] || mkdir -p $(dirname $CONF_FILE)
+
+    echo "AUTOSAVE_MODE=\"$AUTOSAVE_MODE\"" > $CONF_FILE
+
+    info_box -c "$TITLE" ""                                                                    \
+        "$(pfgt "Auto-save mode set to %s in %s." "[b]$AUTOSAVE_MODE[/]"  "[f]$CONF_FILE[/]")" \
+        ""
+}
+
+only_once_box() {
+    okay_box "$TITLE" ""                                           \
+        "$(gt "It looks like root persistence was just enabled.")" \
+        "$(gt "Please set the save-mode for root persistence.")"   \
+        "$(gt "You will only have to do this once.")"              \
+        ""                                                         \
+        "$(pfgt "You can change your choice later with %s." "[f]$ME[/]")"
+}
+
+#------------------------------------------------------------------------------
+if  [ "$SET_START_UP" ]; then
+#------------------------------------------------------------------------------
+
+    [ "$SHOULD_RUN" ] || exit 0
+    [ -f $CONF_FILE ] && exit 0
+
+    only_once_box
+    edit_config
+
+#------------------------------------------------------------------------------
+elif [ "$SET_SHUT_DOWN" ]; then
+#------------------------------------------------------------------------------
+
+    [ "$SHOULD_RUN" ] || exit_command
+
+    if ! [ -f "$CONF_FILE" ]; then
+
+        only_once_box
+        edit_config
+    fi
+
+    source $CONF_FILE
+
+    [ "$AUTOSAVE_MODE" ] || exit_command
+
+    vmsg "AUTOSAVE_MODE=$AUTOSAVE_MODE"
+    persist_opts=--quiet
+    case "$AUTOSAVE_MODE" in
+        1*) ;;
+        2*) persist_opts= ;;
+        3*) vmsg "Not auto-saving.  AUTOSAVE_MODE was set to $AUTOSAVE_MODE"
+            exit_command ;;
+        *)  okay_box "$TITLE" "" \
+                "$(pfgt "Unknown auto-save mode %s.  Defaulting to $s." "[b]$AUTOSAVED_MODE[/]" "[b]$_Automatic_[/]")" ;;
+    esac
+    [ "$SET_VERBOSE" ] && persist_opts="$persist_opts --verbose"
+    [ "$SET_GUI" ]     || persist_opts="$persist_opts --cli"
+
+    vmsg "running perist-save($persist_opts )"
+    #sudo persist-save $persist_opts 2>&1  && exit_command
+    if persist-save $persist_opts 2>&1; then
+        date +%s > /live/config/last-auto-save
+        exit_command
+    fi
+
+    [ "$OPT_COMMAND" ] || exit 0
+
+    yes_no_box "$(gt "CONFIRM") $OPT_COMMAND" ""                    \
+        "$(gt "There was an error saving your changes.")"           \
+        ""                                                          \
+        "$(pfgt "Do you still want to %s?" "[b]$OPT_COMMAND[/]")"   \
+        && exit_command
+
+#------------------------------------------------------------------------------
+else
+#------------------------------------------------------------------------------
+    edit_config
+fi
+
+
+

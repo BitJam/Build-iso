@@ -1,0 +1,33 @@
+# sudoers file.
+ 
+%users ALL=(root) NOPASSWD: /sbin/halt 
+
+%users ALL=(root) NOPASSWD: /sbin/poweroff
+
+%users ALL=(root) NOPASSWD: /sbin/reboot  
+
+%users ALL=(root) NOPASSWD: /sbin/blkid 
+
+%users ALL=(root) NOPASSWD: /sbin/fdisk.distrib 
+
+%users ALL=(root) NOPASSWD: /usr/bin/ceni 
+
+%users ALL=(root) NOPASSWD: /usr/bin/rox 
+
+%users ALL=(root) NOPASSWD: /usr/local/bin/persist-config
+
+%users ALL=(root) NOPASSWD: /usr/local/bin/persist-save 
+
+%users ALL=(root) NOPASSWD: /usr/sbin/minstall 
+
+%users ALL=(root) NOPASSWD: /usr/local/bin/connectshares.sh
+
+%users ALL=(root) NOPASSWD: /usr/local/bin/disconnectshares.sh 
+
+%users ALL=(root) NOPASSWD: /bin/chvt
+
+Defaults env_keep += "RESTARTED"
+Defaults  !requiretty
+Defaults  !tty_tickets
+
+%users ALL=(root) NOPASSWD: /usr/local/bin/update-default-desktop

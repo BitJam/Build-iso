@@ -1,0 +1,92 @@
+#!/bin/bash
+
+. /usr/local/lib/desktop-session/lib-desktop-session.sh
+
+parent_name=desktop-session
+
+protect_cmds="^(slim|dbus|roxterm|gnome-pty|desktop-session)"
+
+main() {
+    
+    local ds_gpid su_gpid all_gpids ppid p
+    say "Started"
+
+    # Run ourselves via setsid so we don't commit suicide
+    [ $# -le 1 -a $PPID -ne 1 ] && echo_cmd exec setsid $0 "$@" extra args
+
+    # First gather gpid for desktop-session process
+    if ppid=$(read_file $ppid_file); then
+        say "found ppid file.  ppid: $ppid"
+    else
+        say "Missing or empty ppid file: $ppid_file"
+
+        local procs=$(find_my_procs .) || return 0
+        say "Kill remaining procs: $(echo $procs)"
+        ps j -p $(echo $procs)
+        kill -TERM $procs &>/dev/null
+        sleep .25
+        kill -KILL $procs &>/dev/null
+
+        exit 0
+    fi
+
+    # For the very rare case where there is no ppid file and multiple
+    # instances of desktop-session run by our user on our display
+    for p in $ppid; do
+        ds_gpid=$(cut -d" " -f5 /proc/$p/stat)
+        all_gpids="$all_gpids $ds_gpid"
+    done
+
+    # Usually not used/needed:
+    if [ "$1" = nuke ]; then
+        say "Nuclear option invoked"
+        say "kill all remaining windows in display $DISPLAY"
+        echo_cmd kill_family $(wmctrl -lp | awk '{print $3}' | grep -v "^0")
+    fi
+
+    # FIRST kill the startup group.  Otherwise volumeicon will complain
+    # about a missing WM.
+    if su_gpid=$(read_file $gpid_file); then
+
+        # Ignore the startup group if it is the same as the desktop-session
+        # group.
+        case ,$(echo "$all_gpids" | sed 's/ /,/g'), in
+            *,$su_gpid,*) warn "startup gpid same as desktop-session gpid: $su_gpid"
+                          warn "skipping"
+                          continue;;
+        esac
+        
+
+        local group=$(pgrep --pgroup $su_gpid)
+        if [ "$group" ]; then
+            say "Kill startup process group: $su_gpid"
+            echo_cmd kill_family $group
+        else
+            warn "No process found for gpid: $su_gpid"
+        fi
+    fi
+
+    # Now kill the window manager and everything in its group except the
+    # protected programs listed in $protect_cmds
+    for ds_gpid in $all_gpids; do
+        say "Kill desktop-session group: $ds_gpid"
+        # echo_cmd kill_list $(pgrep --pgroup $ds_gpid | grep -v ^$p$)
+        # echo_cmd kill_list $(protect_cmd $protect_cmds $(pgrep --pgroup $ds_gpid | grep -v ^$p$))
+        echo_cmd kill_list $(protect_cmd $protect_cmds $(pgrep --pgroup $ds_gpid))
+    done
+}
+
+#------------------------------------------------------------------------------
+# Function: protect_cmd <regex> <list of pids>
+# Filter a list of pids.  Only pass through pids that are not associated
+# with a command in the first parameter.
+#------------------------------------------------------------------------------
+protect_cmd() {
+    local pid regex=$1
+    shift
+    for pid; do
+        egrep -q "$regex" /proc/$pid/comm || echo $pid
+    done
+}
+
+main "$@" >> $log_file 2>&1

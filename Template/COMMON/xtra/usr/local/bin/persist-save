@@ -1,0 +1,216 @@
+#!/bin/bash
+
+# GETTEXT_KEYWORD="gt"
+# GETTEXT_KEYWORD="pfgt"
+# GETTEXT_KEYWORD="vexit"
+# GETTEXT_KEYWORD="error_box_pf"
+
+antiX_lib=/usr/local/lib/antiX
+
+#source $antiX_lib/antiX-get-param.sh
+source $antiX_lib/antiX-common.sh     "$@"
+
+TITLE="$(gt "antiX Save Persistent Root")"
+
+BLURB="$(pf "\n    %s\n    %s\n"                                                                  \
+    "`pfgt "Manually save filesystem changes in %s file for persistent root." "[f]rootfs[/]"`"    \
+    "`pfgt "You%s MUST%s run a program like this to save your filesystem changes." "[b]" "[/]"`")"
+
+SAFETY_MARGIN=2
+
+main() {
+    read_options "$@"
+    extra_args   0
+
+    SYS_TYPE="LiveCD/USB/HD"
+    read_conf || read_conf_error "rootfs"
+
+    # error_box                                                                       \
+    #     "$(pfgt "This script can only be run in a %s environment" "$SYS_TYPE")"                  \
+    #     "$(pfgt "where the device holding the %s file can be written to." "[f]rootfs[/]")"       \
+    #     ""                                                                                       \
+    #     "$(pfgt "The file %s was not found" "[f]$CONF_DIR/$ME.conf[/]")"                         \
+    #     "$(pfgt "This indicates that %s can't be run on this system." "$ME")"                    \
+    #     ""                                                                                       \
+
+    show_cli_title
+
+    # First make sure script is run as root.
+    need_root
+    start_logging
+
+    trap clean_up EXIT
+    create_lock
+
+    if [ "$PERSIST_UUID" ]; then
+        uuid_dev=$(blkid -U "$PERSIST_UUID")
+        [ -z "$uuid_dev" ] &&  error_box \
+        "$(pfgt "The persistence device with UUID %s was not found" "[n]$PERSIST_UUID[/]")" \
+        "$(pfgt "Please plug in the persistence device and try again")"
+
+        vpf "Using device %s with UUID %s" "[n]$uuid_dev[/]" "[n]$PERSIST_UUID[/]"
+        PERSIST_DEV=$uuid_dev
+    fi
+
+    if which alsactl &>/dev/null; then
+        vpf "Storing volume settings"
+        alsactl --ignore store
+    fi
+
+    mount_if_needed $PERSIST_DEV $PERSIST_MP
+    make_readwrite $PERSIST_MP
+
+    mount_if_needed -o loop $PERSIST_FILE $ROOTFS_MP
+    make_readwrite $ROOTFS_MP
+
+    check_vid $ROOTFS_MP \
+        || error_box_pf "Version id inside of %s file does not match" "[n]rootfs[/]"
+
+    # Check for available space. If ok continue else stop.
+    #FIXME: should offer to make a new rootfs if we don't have enough room.
+
+    bg_info_box -o "$PULSATE"                           \
+        "$TITLE"                                        \
+        ""                                              \
+        "$(gt "Checking for existing files and")"       \
+        "$(gt "Checking if there is enough room ...")"  \
+
+    excludes="$(rootfs_excludes $AUFS_RAM_MP)"
+    exclude_size="$(du_size $excludes)"
+
+    pdev_total=$(all_space  $PERSIST_MP)
+    pdev_avail=$(free_space $PERSIST_MP)
+
+    rootfs_file_size=$(du_size $(readlink -f $PERSIST_FILE))
+
+    aufsrw_used=$(du_size $AUFS_RAM_MP)
+    rootfs_used=$(du_size $ROOTFS_MP)
+
+    rootfs_full=$(all_space $ROOTFS_MP)
+
+    # Reduce available size by 10% for a safety margin and because
+    # the du and df commands give different sizes.
+    safe_full=$(( $rootfs_full * 90 / 100 ))
+    need_size=$(( $aufsrw_used - $exclude_size ))
+    xfer_size=$(( $need_size - $rootfs_used))
+    [ "$xfer_size" -lt "10" ] && xfer_size="?"
+
+    main_text=(
+        "$(fmt_size "reported rootfs space"  $rootfs_full)"
+        "$(fmt_size "total rootfs space"     $safe_full)"
+        "$(fmt_size "used rootfs space"      $rootfs_used)"
+        "$(fmt_size "excluded file size"     $exclude_size)"
+        "$(fmt_size "required rootfs space"  $need_size)"
+        "$(fmt_size "approx. transfer size"  $xfer_size)"
+        ""
+        "$(pf "%12s: %s"  "`gt "persist device"`" "[f]$PERSIST_DEV[/]")"
+        "$(pf "%12s: %s"  "`gt "mounted at"`"     "[f]$PERSIST_MP[/]")"
+        ""
+        "$(fmt_size "persist device total" $pdev_total)"
+        "$(fmt_size "persist device free"  $pdev_avail)"
+    )
+
+    for t in "${main_text[@]}"; do
+        vmsg "$t"
+    done
+
+    kill_bg_info_box
+
+    [ "$rootfs_full" -lt "$SAFETY_MARGIN" ] && \
+        error_box_pf "Available space, %s, is smaller than the margin of %s." \
+            "[n]$rootfs_full[/]" "[n]$SAFETY_MARGIN[/]"
+
+    [ "$safe_full" -lt "$need_size" ] && \
+        error_box_pf "Insufficient space.  Have: %s. Need: %s." "[n]$safe_full[/]" "[n]$need_size[/]"
+
+    noisy_yes_no_box                                    \
+        "$(gt "Ready to sync file system changes")"     \
+        "[fixed]"                                       \
+        "${main_text[@]}"                               \
+        "[/]"                                           \
+        "$(gt "Shall we begin?")"                       \
+        || vexit "Stopping at user's request"
+
+    bg_info_box -o "$PULSATE" "$TITLE" ""            \
+    "$(gt "Performing rsync ... please be patient")" \
+        ""
+    exclude_file=$CONF_DIR/rsync.exclude
+
+    #lifo_string TO_DELETE $exclude_file
+
+    rootfs_excludes "/" | sort -u > $exclude_file
+
+    rsync_opts="-a --delete-excluded --exclude-from=$exclude_file $AUFS_RAM_MP/ $ROOTFS_MP/"
+    vmsg "rsync $rsync_opts"
+
+    restore_live
+
+    #--- now do the rsync
+    rsync -a $rsync_opts
+
+    rsync_ret=$?
+
+    #rsync_ret=17
+
+    full_rootfs=$(all_space  $ROOTFS_MP)
+    used_rootfs=$(used_space $ROOTFS_MP)
+    free_rootfs=$(free_space $ROOTFS_MP)
+
+    clean_up && trap EXIT
+
+    kill_bg_info_box
+
+    [ "$rsync_ret" != "0" ] && error_box                                      \
+        "$(pfgt "%s The rsync command failed Failed! %s" "[e][b]" "[/][/]")"  \
+        ""                                                                    \
+        "$(pfgt "It returned an exit code of %s" "[n]$rsync_ret[/]")"         \
+        "$(gt   "See the rsync man page to look up its meaning.")"            \
+        ""
+
+    if [ "$SET_QUIET" ]; then
+        #pfgt $TITLE_COLOR"%s succeeded"$NO_COLOR $ME
+        pfgt "%s succeeded" $ME
+        echo
+        exit 0
+    fi
+
+    info_box                                              \
+        "$(pfgt "%s succeeded" $ME)"                      \
+        ""                                                \
+        "$(gt "    Your changes were saved in:")"         \
+        "    [f]$PERSIST_FILE[/]"                         \
+        "[fixed]"                                         \
+        "$(fmt_size "total rootfs space" $full_rootfs)"   \
+        "$(fmt_size "used rootfs space"  $used_rootfs)"   \
+        "$(fmt_size "free rootfs space"  $free_rootfs)"   \
+        "[/]"
+
+    exit 0
+}
+
+get_vid() { [ -r "$1" ] && grep ^=== $1 | tail -n 1   ;}
+
+check_vid() {
+    local rootfs_mp=$1 linuxfs_mp=${2:-/live/linux}
+    local linuxfs_vf=$linuxfs_mp/etc/live/version/linuxfs.ver
+    test -e $linuxfs_vf || return 0
+    local linuxfs_vid=$(get_vid $linuxfs_vf)
+    [ "$linuxfs_vid" ] || return 0
+    local rootfs_vf=$rootfs_mp/etc/live/version/rootfs.ver
+    if [ -z "$rootfs_vf" ]; then
+        vmsg "Missing version file in rootfs file system"
+        return 1
+    fi
+    local rootfs_vid=$(get_vid $rootfs_vf)
+    if [ -z "$rootfs_vid" ]; then
+        vmsg "Missing version ID in rootfs file system"
+        return 1
+    fi
+    if [ "$rootfs_vid" != "$linuxfs_vid" ]; then
+        vmsg "Version ID mismatch in rootfs file system"
+        return 1
+    fi
+    return 0
+}
+
+main "$@"
