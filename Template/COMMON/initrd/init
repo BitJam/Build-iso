@@ -25,8 +25,8 @@
 # that you don't want users to be able to adjust.
 
                      ME="initrd init"
-                VERSION="7.14.00"
-           VERSION_DATE="Mon Jan 26 20:54:50 MST 2015"
+                VERSION="7.14.03"
+           VERSION_DATE="Sun Feb 22 14:48:34 MST 2015"
               DEVELOPER="BitJam"
   DISTRO_BUG_REPORT_URL="http://antix.freeforums.org"
 
