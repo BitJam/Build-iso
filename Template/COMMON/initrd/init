@@ -241,7 +241,11 @@ main_core() {
     show_integer_errors "$INTEGER_ERRORS"
 
     breakpoint 1 "before loading modules"
+
+    local orig_fb_name=$(cat /sys/class/graphics/fb0/name 2> /dev/null)
     load_kernel_modules "$BLACK_LIST" "$DO_LOAD" "$MODULE_LIST"
+
+    set_fbcondecor $SPLASH_PARAM "$orig_fb_name"
 
     : ${SQFILE_FILE:=$DEFAULT_SQFILE}
     : ${SQFILE_NAME:=${SQFILE_FILE##*/}}
@@ -370,8 +374,8 @@ main_core() {
     [ "$DO_AUTO_LOGIN" ] && auto_login   "$AUTO_LOGIN_PROG" "$AUTO_LOGIN_TERMS" "$NEW_ROOT"
     [ "$DO_FANCY"      ] && fancy_prompt "$FANCY_PROMPT" "$NEW_ROOT"
 
-    write_output_files     $OUTPUT_DIR
-    old_write_output_files $OUTPUT_DIR
+    [ "$NO_NEW_OUTPUT" ] || write_output_files     $OUTPUT_DIR
+    [ "$NO_OLD_OUTPUT" ] || old_write_output_files $OUTPUT_DIR
 
     # FIXME: since we are using the real persist-save we can do these either
     # before or after we run the init scripts!
@@ -440,6 +444,10 @@ read_cmdline_params()
         value=${param#*=}
 
         case $param in
+                         old-ai) NO_NEW_OUTPUT=true                              ;;
+                         new-ai) NO_OLD_OUTPUT=true                              ;;
+                         splash) SPLASH_PARAM=v                                  ;;
+                       splash=*) SPLASH_PARAM=$value                             ;;
                        poweroff) poweroff -f -n                                  ;;
                          reboot) reboot -f -n                                    ;;
                bootdir=*|bdir=*) BOOT_DIR=$value                                 ;;
@@ -872,6 +880,36 @@ disable_hcd() {
         echo $symlink > $dir/unbind
     done
 }
+
+set_fbcondecor() {
+    local boot_param=$1 orig_name=$2 param verbose theme=default
+    #vmsg 5 "set_fbcondecor('$1' '$2')"
+    [ "$boot_param" ] || return
+    #vmsg 5 "Got boot param: $param"
+
+    local prog=/bin/fbcondecor_ctl.static
+    test -x $prog || return
+    #vmsg 5 "found $prog"
+
+    [ "$orig_name" = "$(cat /sys/class/graphics/fb0/name 2>/dev/null)" ] && return
+
+    vmsg 5  "$_New_fb_name_"
+
+    for param in ${boot_param//,/ }; do
+        case $param in
+            v|verbose) verbose=true ;;
+          t=*|theme=*) theme=${param#*=} ;;
+        esac
+    done
+
+    [ "$verbose" ] || return
+    vmsg 6 "set fbcondecor to: $theme"
+
+    $prog -t $theme -c setcfg 2>/dev/null
+    $prog -t $theme -c setpic 2>/dev/null
+    $prog -c on 2>/dev/null
+}
+
 
 load_kernel_modules() {
     local black_list=$1 do_load=$2  list=$3 file=$CUSTOM_DIR/$DISTRO_NAME/modules.load
@@ -1954,6 +1992,7 @@ breakpoint() {
     echo "$green$tbar$nc_co"
     echo "$green==>$cyan limited shell @ breakpoint [$num_co$bp$cyan]$white $desc"
     echo "$green    Use the$white exit$green command or press$white Ctrl-d$green to continue"
+    echo "$green    Use$white safe-poweroff$green and$white safe-reboot$green to poweroff and reboot"
 
     local bp_time_1=$(get_time)
     env PS1="${green}bp $red$bp$cyan>$nc_co " BP=$bp PATH=$LIVE_BIN:$PATH \
@@ -3349,7 +3388,8 @@ _persist_makefs() {
 
     heading  "$_create_X_persistence_file_" "$(fq $file)"
     vmsg 1  "$_Default_size_X_Meg_Filesystem_type_Y_" $(nq $default_size) $(pq ext4)
-    [ "$vfat" ] &&  warn  "$_Warning_this_operation_can_take_a_few_minutes_on_a_X_file_system_" $(pqw $par_fstype)
+    vmsg 1  "$_This_default_size_will_leave_X_Meg_free_" $(nq $((avail - default_size)))
+    [ "$vfat" ] &&  warn  "$_Warning_this_can_take_several_minutes_per_Gig_on_a_X_file_system_" $(pqw $par_fstype)
 
     if [ "$AUTO_MAKE_FS" ]; then
         auto_mode=true
@@ -3390,6 +3430,7 @@ _persist_makefs() {
 
     breakpoint m "before makefs"
 
+    [ "$vfat" ] &&  warn  "$_Warning_this_can_take_several_minutes_per_Gig_on_a_X_file_system_" $(pqw $par_fstype)
     if ! time_cmd makefs $full_file $fs_type $fs_size; then
         err  "$_Failed_to_create_filesystem_Deleting_X_file_" $(pqe $file)
         rm -f $full_file
