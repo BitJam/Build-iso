@@ -196,6 +196,11 @@ main_wrapper() {
     run_init_scripts $NEW_ROOT $LIVE_SCRIPTS
     PATH=$LIVE_BIN
 
+    free -m >> $MY_LOG
+    echo 3 > /proc/sys/vm/drop_caches
+    vmsg 6  "$_drop_caches_"
+    free -m >> $MY_LOG
+
     breakpoint 9 "right before starting init"
 
     local time_1=$(get_time)
@@ -884,16 +889,17 @@ disable_hcd() {
 set_fbcondecor() {
     local boot_param=$1 orig_name=$2 param verbose theme=default
     #vmsg 5 "set_fbcondecor('$1' '$2')"
+    [ "$orig_name"  ] || return
     [ "$boot_param" ] || return
     #vmsg 5 "Got boot param: $param"
 
     local prog=/bin/fbcondecor_ctl.static
     test -x $prog || return
     #vmsg 5 "found $prog"
+    local new_name=$(cat /sys/class/graphics/fb0/name 2>/dev/null)
+    [ "$orig_name" = "$new_name" ] && return
 
-    [ "$orig_name" = "$(cat /sys/class/graphics/fb0/name 2>/dev/null)" ] && return
-
-    vmsg 5  "$_New_fb_name_"
+    vmsg 6 "Found new fb driver:$white $new_name"
 
     for param in ${boot_param//,/ }; do
         case $param in
