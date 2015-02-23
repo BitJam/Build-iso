@@ -1183,7 +1183,7 @@ do_stage_5() {
 
     if [ "$DEBIAN_RELEASE" != "wheezy" ]; then
        say "Compress /usr/share/doc then delete folder"
-       tar -jcvf doc-$full_distro_name.tar.bz2 $sqfs_dir/usr/share/doc
+       tar -jcvf doc-$full_distro_name.tar.bz2 -C / ${sqfs_dir#/}/usr/share/doc
        sleep 1
        $SUDO find $sqfs_dir/usr/share/doc -type f -name "*.gz" -delete
        $SUDO find $sqfs_dir/usr/lib -type f -name "*.pyc" -delete
