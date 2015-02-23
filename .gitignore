@@ -8,3 +8,5 @@ sqfs
 work
 initrd
 TODO
+Template/COMMON/gfxboot/isolinux.cfg
+
