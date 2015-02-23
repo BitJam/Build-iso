@@ -1,6 +1,0 @@
-live-init: 
-
-    pki desktop lang dpi usb-mount no-usb-mount
-    safebashrc safe-bashrc noxorg autox
-
-
