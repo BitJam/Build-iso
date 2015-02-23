@@ -9,15 +9,15 @@
 
 BUG_REPORT_URL="http://antix.freeforums.org"
 CODE_NAME="Killah P"
-DEBIAN_RELEASE="wheezy"
+DEBIAN_RELEASE="testing"
 DISTRO_NAME="antiX"
-DISTRO_VERSION="14.1"
+DISTRO_VERSION="15-b1-RV"
 HOME_URL="http://antix.mepis.org/"
 
-K_REVISION="*"
+K_REVISION="3"
 K_TEMPLATE="%V%G-antix.%R-%A-smp"
-K_VERSION="3.7.10"
-K_VERSION="3.18.1"
+#K_VERSION="3.7.10"
+K_VERSION="3.18.6"
 
 #K_REVISION="1"
 #K_TEMPLATE="%V%G.dmz.%R-liquorix-%A"

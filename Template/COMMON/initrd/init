@@ -2389,13 +2389,13 @@ my_select_menu() {
 do_menus() {
     local lang time_zone option persist desktop
     local option_string
-    my_select_menu 'Select Language'           0 lang
+    my_select_menu 'Select Language'          16 lang
     [ "$lang" ] && read_xlat init ${lang##*=}
     msg "lang: ${lang##*=}"
-    my_select_menu 'Select Timezone'           0 timezone
-    my_select_menu 'Select one Option'         0 options
-    my_select_menu 'Select Persistence Option' 0 persist
-    my_select_menu 'Select Desktop'            0 desktop
+    my_select_menu 'Select Timezone'           1 timezone
+    my_select_menu 'Select one Option'         1 options
+    my_select_menu 'Select Persistence Option' 1 persist
+    my_select_menu 'Select Desktop'            1 desktop
     msg "option_string:$white $option_string"
     echo "$option_string" > /live/config/cmdline
     [ "$option_string" ] && read_cmdline_params "$option_string"

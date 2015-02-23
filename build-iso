@@ -1057,7 +1057,9 @@ do_stage_4() {
 
     if do_part 18 "Run second apt-get -f install"; then
 
-        [ "$DEBIAN_RELEASE" != "wheezy" ] && apt_get_packages no-wheezy-purge Purge
+        if [ "$DEBIAN_RELEASE" != "wheezy" ]; then
+            apt-get $APT_GET_OPTS purge gcc-4.8-base systemd libsystemd0  
+        fi
 
         apt-get -f install
         # Remove unwanted apps that may have sneaked in.
@@ -1183,6 +1185,7 @@ do_stage_5() {
        tar -jcvf doc-$full_distro_name.tar.bz2 $sqfs_dir/usr/share/doc
        sleep 1
        $SUDO find $sqfs_dir/usr/share/doc -type f -name "*.gz" -delete
+       $SUDO find $sqfs_dir/usr/lib -type f -name "*.pyc" -delete
     fi
 
     say "Clean out log files and other files"

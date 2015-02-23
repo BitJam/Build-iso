@@ -120,3 +120,7 @@ LESS="-R -i"
 if [ -f /etc/bash_completion ] && ! shopt -oq posix; then
     . /etc/bash_completion
 fi
+
+# Add sbin directories to PATH.  This is useful on systems that have sudo
+
+PATH=$PATH:/sbin:/usr/sbin
