@@ -1,10 +1,9 @@
- 1) Default
- 2) Rox-Fluxbox
- 3) Space-Fluxbox
- 4) Fluxbox
- 5) Rox-Jwm
- 6) Space-Jwm
- 7) Jwm
- 8) min-Fluxbox
- 9) min-Jwm
-
+ 0) Default
+ 1) Rox-Fluxbox
+ 2) Space-Fluxbox
+ 3) Fluxbox
+ 4) Rox-Jwm
+ 5) Space-Jwm
+ 6) Jwm
+ 7) min-Fluxbox
+ 8) min-Jwm
