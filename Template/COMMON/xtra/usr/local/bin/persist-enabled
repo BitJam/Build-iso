@@ -1,5 +1,0 @@
-#!/bin/bash
-
-[ -e /live/config/persist-save.conf -o \
-    -e /live/config/save-persist ] || exit
-echo "Persist Root Enabled"
