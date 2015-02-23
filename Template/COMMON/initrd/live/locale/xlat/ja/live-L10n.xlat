@@ -1,8 +1,0 @@
-_Configuring_console_for_a_X_keymap_="コンソールのキーマップを %s へ設定"
-_Localizing_console_and_timezone_="コンソーン・タイムゾーンの言語設定"
-_Setting_console_font_to_X_="コンソールのフォントを %s へ設定"
-_Setting_hostname_to_X_="ホスト名を %s へ設定"
-_Setting_locale_to_X_="言語を %s へ設定"
-_Setting_timezone_and_localtime_to_X_="タイムゾーンのローカルタイムを %s へ設定"
-_Unknown_console_font_X_="コンソールフォント %s は無効です"
-_Unknown_time_zone_X_="タイムゾーン %s は無効です"

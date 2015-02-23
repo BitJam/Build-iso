@@ -1,9 +1,0 @@
-1:none
-2:checkmd5
-3:checkfs
-4:toram
-5:from=usb
-6:automount
-7:mount=usb
-8:mount=all
-9:nousb2

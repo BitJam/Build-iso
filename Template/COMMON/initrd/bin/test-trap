@@ -1,4 +1,0 @@
-#!/bin/sh
-
-trap "exit" 2 15
-sleep 30
