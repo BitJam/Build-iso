@@ -7,5 +7,6 @@ iso
 sqfs
 work
 TODO
-Template/COMMON/gfxboot/isolinux.cfg
+Template/COMMON/initrd/*
+Template/COMMON/isolinux/*
 
