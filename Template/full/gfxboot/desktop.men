@@ -7,5 +7,7 @@ Fluxbox        `desktop=fluxbox
 Rox-Jwm        `desktop=rox-jwm
 Space-Jwm      `desktop=space-jwm
 Jwm            `desktop=jwm
-Wmii           `desktop=wmii
-
+Herbstluftwm   `desktop=min-herbstluftwm
+min-IceWM      `desktop=min-icewm
+min-Fluxbox    `desktop=min-fluxbox
+min-Jwm        `desktop=min-jwm
