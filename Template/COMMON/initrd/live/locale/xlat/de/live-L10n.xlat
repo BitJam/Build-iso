@@ -1,8 +1,0 @@
-_Configuring_console_for_a_X_keymap_="Konfigurieren der Konsole für eine %s Tastenbelegung"
-_Localizing_console_and_timezone_="Lokalisierung der Konsole und Zeitzone"
-_Setting_console_font_to_X_="Einstellung der Konsolen-Schriftart auf %s"
-_Setting_hostname_to_X_="Einstellung des hostname auf %s"
-_Setting_locale_to_X_="Einstellung des Gebietsschema auf %s"
-_Setting_timezone_and_localtime_to_X_="Einstellung der Zeitzone und der Ortszeit auf %s"
-_Unknown_console_font_X_="Unbekannte Konsolen-Schriftart %s"
-_Unknown_time_zone_X_="Unbekannte Zeitzone %s"

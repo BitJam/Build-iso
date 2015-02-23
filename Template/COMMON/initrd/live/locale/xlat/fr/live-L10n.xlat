@@ -1,8 +1,0 @@
-_Configuring_console_for_a_X_keymap_="Configuration de la console pour une carte clavier %s"
-_Localizing_console_and_timezone_="Localisation de la console et du fuseau horaire"
-_Setting_console_font_to_X_="Configuration de la police de console de %s"
-_Setting_hostname_to_X_="Configuration nom d'hôte pour %s"
-_Setting_locale_to_X_="Configuration locale de %s"
-_Setting_timezone_and_localtime_to_X_="Configurer le fuseau horaire et l'heure locale à %s"
-_Unknown_console_font_X_="Police de console inconnue %s"
-_Unknown_time_zone_X_="Fuseau horaire inconnu %s"
