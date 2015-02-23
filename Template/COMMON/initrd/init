@@ -449,8 +449,8 @@ read_cmdline_params()
         value=${param#*=}
 
         case $param in
-                         old-ai) NO_NEW_OUTPUT=true                              ;;
-                         new-ai) NO_OLD_OUTPUT=true                              ;;
+                       old-conf) NO_NEW_OUTPUT=true                              ;;
+                       new-conf) NO_OLD_OUTPUT=true                              ;;
                          splash) SPLASH_PARAM=v                                  ;;
                        splash=*) SPLASH_PARAM=$value                             ;;
                        poweroff) poweroff -f -n                                  ;;
