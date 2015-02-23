@@ -434,7 +434,7 @@ read_distro_release() {
 #------------------------------------------------------------------------------
 read_cmdline_params()
 {
-    local ev param value
+    local ev param value cmdline=${1:-$(cat /proc/cmdline)}
 
     # unset almost all env variables
     for ev in $(printenv | sed 's/=.*//'); do
@@ -444,7 +444,7 @@ read_cmdline_params()
         unset $ev
     done
 
-    for param in $(cat /proc/cmdline); do
+    for param in $cmdline; do
         value=${param#*=}
 
         case $param in
@@ -2398,6 +2398,7 @@ do_menus() {
     my_select_menu 'Select Desktop'            1 desktop
     msg "option_string:$white $option_string"
     echo "$option_string" > /live/config/cmdline
+    [ "$option_string" ] && read_cmdline_params "$option_string"
 
 }
 
