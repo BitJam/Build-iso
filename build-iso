@@ -1352,7 +1352,7 @@ do_stage_7() {
 
     say "Clear /run directory"
     $SUDO rm -rf $sqfs_dir/run
-    mkdir -p $sqfs_dir/run
+    $SUDO mkdir -p $sqfs_dir/run
 
     say "Build the xz compressed linuxfs file. This takes time and uses a lot of CPU power."
 
