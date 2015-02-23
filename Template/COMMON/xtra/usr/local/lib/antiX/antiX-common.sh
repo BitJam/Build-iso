@@ -278,29 +278,30 @@ read_conf() {
         old_read_conf "$@"
         return $?
     fi
+    local conf_dir=$(dirname $INITRD_CONF)
 
     vmsg "Using new initrd interface"
     local quiet=$SET_QUIET
     [ "$1" = "-q" ] && quiet=true && shift
-    local self=$(basename $ME .sh) flag_file=$1
+    local self=$(basename $ME .sh) flag_file=initrd.out
     case $self in
         live-remaster|remaster-live) : ${flag_file:=remasterable} ;;
                        persist-save) : ${flag_file:=save-persist} ;;
     esac
 
+    local full_file=$conf_dir/$flag_file
     if ! [ "$quiet" ]; then
-        local dir=$(dirname $flag_file)
-        [ -d "$dir" ] || error_box                                                              \
+        [ -d "$conf_dir" ] || error_box                                                         \
             "$(pfgt_ac "This script can only be run in a %s environment." "[b]$SYS_TYPE[/b]")"  \
-            "$(pfgt_ac "The %s directory does not exist" "[f]$dir[/]")"                         \
+            "$(pfgt_ac "The %s directory does not exist" "[f]$conf_dir[/]")"                    \
             "$(pfgt_ac "indicating this is not a %s environment." "[b]$SYS_TYPE[/b]")"          \
             ""                                                                                  \
             "$(gt_ac "Exiting.")"
 
-        [ -f "$flag_file" ] || return 1
+        [ -f "$full_file" ] || return 1
     fi
 
-    [ -f "$flag_file" ] || vexit "config file: %s not found." "[f]$flag_file[/]"
+    [ -f "$full_file" ] || vexit "config file: %s not found." "[f]$full_file[/]"
 
     vpf "reading config file: %s" "[f]$INITRD_CONF[/]"
     source $INITRD_CONF
@@ -333,7 +334,7 @@ old_read_conf() {
 read_conf_error() {
     local file="$1"
     local script="$2"
-    [ "$script" ] || script=$CONF_DIR/$(basenaem $ME .sh).conf
+    [ "$script" ] || script=$CONF_DIR/$(basename $ME .sh).conf
     error_box \
     "$(pfgt "This script can only be run in a %s environment" "$SYS_TYPE")"            \
     "$(pfgt "where the device holding the %s file can be written to." "[f]$file[/]")"  \
