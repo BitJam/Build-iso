@@ -1,0 +1,115 @@
+#!/bin/bash
+
+# Create a minimal xorg.conf that sets the resolution and/or the video driver.
+#
+# If boot parameter "xorgconf" is given or an "xres=xxx" is given then we set
+# the resolution.
+#
+# If an "xdrvr=xxx" is given then we set the video driver.
+#
+# If both conditions are met then we set both
+#
+# Whenever we set the resolution then we also add other modes as fallbacks.
+
+
+XORG_CONF=./xorg.conf
+DO_XORG=
+
+main() {
+    local xorg_conf=${1:-$XORG_CONF}
+
+    read_cmdline
+
+    [ -n "$DO_XORG" ] || exit
+
+    [ -n "$SET_RES" ] && set_resolution $X_RES
+    [ -n "$X_DRVR"  ] && set_driver     $X_DRVR
+
+    write_xorg_conf "$xorg_conf" "$MODES" "$DRIVER"
+}
+
+read_cmdline() { 
+    local param value
+    for param in ${CMDLINE:-$(cat /proc/cmdline)}; do
+        value=${param#*=}
+        case $param in
+            xdrvr=*|drvr=*)  X_DRVR=$value ; SET_DRVR=true ; DO_XORG=true ;;
+              xres=*|res=*)  X_RES=$value  ; SET_RES=true  ; DO_XORG=true ;;
+                  xorgconf)                                  DO_XORG=true ;;
+                    noxorg)                                  DO_XORG=     ;;
+          esac
+    done
+}
+
+set_resolution() {
+    local res_regex="[0-9]\+x[0-9]\+"
+    local x_res=$(echo "$1" | grep -o "$res_regex")
+
+    local hwinfo auto_res modes add_modes 
+    
+    hwinfo=$(hwinfo --monitor 2>/dev/null | grep Resolution)
+    
+    auto_res=$(echo "$hwinfo" | grep Max)
+    [ -n "$auto_res" ] || auto_res=$hw_info
+    
+    auto_res=$(echo "$auto_res" | tail -n 1 | grep -o "$res_regex")
+
+    [ -z "$auto_res" -a -n "$x_res" ] && auto_res=$x_res
+
+    case $auto_res in
+         1024x768) add_modes=' "800x600"'                                                           ;;
+        1280x1024) add_modes=' "1024x768"  "800x600"'                                               ;;
+         1280x800) add_modes=' "1280x768"  "1024x768"  "800x600"'                                   ;;
+        1920x1200) add_modes=' "1680x1050" "1440x900"  "1280x1024" "1280x800" "1024x768" "800x600"' ;;
+        1680x1050) add_modes=' "1440x900"  "1280x1024" "1280x800"  "1024x768" "800x600"'            ;;
+        1600x1200) add_modes=' "1450x1050" "1280x1024" "1024x768"  "800x600"'                       ;;
+        1450x1050) add_modes=' "1280x1024" "1024x768"  "800x600"'                                   ;;
+         1440x900) add_modes=' "1280x1024" "1280x800"  "1024x768"  "800x600"'                       ;;
+         1280x768) add_modes=' "1280x800"  "1024x768"  "800x600"'                                   ;;
+                *) add_modes=' "1280x1024" "1024x768"  "800x600"'                                   ;;
+    esac
+    
+    add_modes="$(echo "$add_modes" | sed -r -e "s/\s+/ /g" -e "s/ \"$x_res\"//")"
+
+    [ -n "$auto_res" -a "$auto_res" = "$x_res" ] && auto_res=
+    modes="        Modes"
+    [ -n "$x_res"     ] && modes="$modes \"$x_res\""
+    [ -n "$auto_res"  ] && modes="$modes \"$auto_res\""
+    [ -n "$add_modes" ] && modes="$modes$add_modes"
+
+    MODES="$(printf "\n$modes")"
+}
+
+set_driver() {
+    local driver=$1
+    DRIVER="$(printf "\n    Driver     \"$driver\"")"
+}
+
+write_xorg_conf() {
+    local file=$1  modes=$2  driver=$3
+
+    [ -e "$file" -a ! -e "$file.bak" ] && mv $file $file.bak
+    cat <<Xorg_Conf > $file
+Section "Monitor"
+    Identifier "Monitor0"
+    Option "DPMS" "true"
+    HorizSync    30-75
+    VertRefresh  55-70 
+EndSection
+
+Section "Device"
+    Identifier "Device0"$driver
+EndSection
+
+Section "Screen"
+    Identifier "Screen0"
+    Monitor "Monitor0"
+    Device  "Device0"
+
+    SubSection "Display"$modes
+    EndSubSection
+EndSection
+Xorg_Conf
+}
+
+main "$@"

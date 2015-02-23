@@ -6,7 +6,6 @@ Output
 iso
 sqfs
 work
-initrd
 TODO
 Template/COMMON/gfxboot/isolinux.cfg
 

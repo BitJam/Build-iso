@@ -1,0 +1,7 @@
+#!/bin/sh
+
+depmod
+
+find /sys/devices -name uevent -exec sed -n 's/^MODALIAS=//p' '{}' + 2>/dev/null \
+    | sort -u | xargs modprobe -a -q -b
+

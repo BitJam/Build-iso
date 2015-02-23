@@ -1,0 +1,5 @@
+_Customizing_services_="Personnalisation des services "
+_Disabling_dbus_X_="Désactivation de dbus %s"
+_Disabling_more_services_X_="Désactivation de plus de services %s"
+_Disabling_network_auto_start_X_="Désactivation du démarrage automatique de réseau %s"
+_Disabling_services_X_="Désactivation des services %s"

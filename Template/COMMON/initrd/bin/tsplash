@@ -1,0 +1,731 @@
+#!/bin/sh
+
+PATH=/bin
+ME=${0##*/}
+
+export LANG=en_US.UTF-8
+
+#        HUP INT QUIT SEGV TERM
+trap ""    1   2    3   11   15
+
+  DIR=/live/tsplash
+  mkdir -p $DIR
+
+  STATE_FILE=$DIR/state
+    PID_FILE=$DIR/pid
+    GEO_FILE=$DIR/geo
+    ENV_FILE=$DIR/env
+     FIFO_IN=$DIR/"fifo-in"
+
+     LIST_Y0=6
+     LIST_X0=20
+  LIST_WIDTH=40
+   LIST_YOFF=2
+   MAX_ITEMS=7
+    MAX_YOFF=3
+    LOG_FMT_1="  %-16s %s"
+
+    # https://en.wikipedia.org/wiki/Geometric_Shapes
+    # https://en.wikipedia.org/wiki/Unicode_symbols
+       CIRCLE="●"
+     TRIANGLE="▶"
+
+   SPIN_DELAY=100000
+SPIN_DURATION=60
+   ITEM_ICON=$TRIANGLE
+   FAIL_ICON=$TRIANGLE
+  ITEM_COUNT=0
+
+main() {
+    local cmd=$1
+
+    [ -e $ENV_FILE ] && . $ENV_FILE
+
+    set_color
+    read_xlat $ME $ULANG
+    #export LANG=UTF
+    [ -z "$UID" -o "$UID" = 0 ] && stty cbreak -echo
+
+    log "\n\n$bold$yellow>>>>>$cyan $ME started $(date) $yellow<<<<<$NC"
+    log "$0 $*"
+
+    screen_set box=-s border=1
+    screen_init
+
+    read_state
+    kill_previous
+    printf $cursor_off
+    local cmd=$1 
+    shift
+
+    write_state "$cmd" "$@"
+    run_command "$cmd" "$@"
+}
+
+run_command() {
+    local cmd=$1; shift
+    do_clear_alert
+
+    case $cmd in
+                      #     "") exit               ;;  # FIXME?
+                      welcome) do_welcome    "$*" ;;
+                      startup) do_startup    "$*" ;;
+               warn|item|spin) do_item  $cmd "$*" ;;
+               pass|fail|okay) do_item  $cmd "$*" ;;
+                         fifo) do_fifo       "$*" ;;
+                        close) do_close           ;;
+                         stop) do_stop            ;;
+                       redraw) do_redraw          ;;
+                  clear_alert) do_clear_alert     ;;
+        fatal|non_fatal|input) do_alert $cmd "$*" ;;
+                            *) log    'bad command: %s' $cmd
+                               db_msg 'bad command: %s' $cmd ;;
+    esac
+}
+
+do_welcome() {
+    do_startup "$(printf  "$_Welcome_to_X_" "${1:-Linux}")"
+}
+
+do_startup() {
+    _first_screen "$1" start_subtitle  "$_Press_X_to_see_boot_process_"  "$_Press_X_to_return_here_"
+
+}
+
+_first_screen() {
+    local title=${1:-title}  subtitle=$2  press_f1=$3 press_f10=$4
+    ITEM_COUNT=0
+    screen_set title1="$(get_string "$title")"
+    screen_set title3="$(get_string "$subtitle")"
+
+    clear
+
+    SCREEN_BOX="1 1 $SCREEN_RAW_WIDTH $SCREEN_RAW_HEIGHT"
+    #cruler 3,5,7 $nc$rev$white
+    screen_draw_box
+    screen_draw_titles
+
+
+    left_text  $((SCREEN_HEIGHT + 1 )) $lt_grey "$press_f1" "$(mk_key Alt-F1 )"
+
+    right_text $((SCREEN_HEIGHT + 1 )) $lt_grey "$press_f10" "$(mk_key Alt-F10 )"
+}
+
+mk_key() {
+    local text=$1 color=${2:-$NC$lt_grey} color2=${3:-$NC$lt_grey}
+    echo -n "<$KEY_COLOR$text$color>"
+}
+
+do_item() {
+    echo "do_item($*)" >&2
+    local cmd=$1  msg=$(get_string "$2")  cnt=$ITEM_COUNT
+
+    case $cmd in
+        pass|fail|warn) cnt=$((cnt - 1)) ;;
+    esac
+
+    local y=$((LIST_Y0 + LIST_YOFF * cnt))
+    local x=$((LIST_X0 + 2 ))
+
+    [ "$msg" ] && text_right $x $y "$TEXT_COLOR$msg"
+
+    printf "\e[$y;${LIST_X0}H"
+    case $cmd in
+             item) printf "$ITEM_COLOR$ITEM_ICON" ;;
+             warn) printf "$WARN_COLOR$ITEM_ICON" ;;
+        pass|okay) printf "$PASS_COLOR$ITEM_ICON" ;;
+             fail) printf "$FAIL_COLOR$FAIL_ICON" ;;
+             spin) spinner $LIST_X0 $y ;;
+    esac
+}
+
+do_alert() {
+    local cmd=$1; shift
+    local height=4
+    local title=$(get_string $cmd)
+    local cnt=$ITEM_COUNT
+    local a_msg=$(get_string "$*")
+    local b_msg=$(get_string  "$_press_enter_")
+    local width=$(str_len "$a_msg")
+    local width2=$(str_len "$b_msg")
+    [ $width -lt $width2 ] && width=$width2
+    local bwidth=$((width + 4))
+    local x=$((( SCREEN_RAW_WIDTH - bwidth + 2)/2))
+    local y0=$((LIST_Y0 + LIST_YOFF * cnt - LIST_YOFF + 1))
+    local top_pad=$(((SCREEN_BOTTOM - y0 - height) /4))
+    [ $top_pad -lt 0 ] && top_pad=0
+    local y=$((y0 + top_pad))
+
+    local bcolor tcolor
+    case $cmd in
+            fatal) bcolor=$NC$cyan;   tcolor=$NC$white ;;
+        non_fatal) bcolor=$NC$amber;  tcolor=$NC$white ;;
+            input) bcolor=$NC$white;  tcolor=$NC$white ;;
+    esac
+
+    #local answer
+    #read -t 1 -N 10000 answer
+    ALERT_BOX="$x $y $bwidth 4"
+    box -s $ALERT_BOX $bcolor
+    ctext $y "" " $title " $tcolor
+    ctext $((y + 1)) "" "$a_msg" $NC$white
+    ctext $((y + 2)) "" "$b_msg" $NC$white
+}
+
+do_clear_alert() {
+    [ "$ALERT_BOX" ] || return
+    log "clear: $ALERT_BOX"
+    clear_box $ALERT_BOX
+    ALERT_BOX=
+}
+
+clear_box() {
+    local x0=$1 y0=$2 width=$3 height=$4 color=${4:-$nc}
+    printf $color
+    local y
+    for y in $(seq $y0 $(($y0 + height -1 ))); do
+        printf "\e[$y;${x0}H"
+        printf "%${width}s" "" 
+    done
+}
+
+do_redraw() {
+    local last_cmd cmd arg file=${1:-$STATE_FILE}
+    screen_init
+    ITEM_COUNT=0
+    IN_REDRAW=true
+    while read cmd arg; do
+        run_command "$cmd" "$arg"
+        case $cmd in
+            okay|spin|item) ITEM_COUNT=$((ITEM_COUNT + 1)) ;;
+        esac
+        last_cmd=$cmd
+    done <<Redraw
+$(cat $file 2>/dev/null)
+Redraw
+    log "end redraw on: $last_cmd"
+    unset IN_REDRAW
+    [ "$last_cmd" == spin ] || return
+    local y=$((LIST_Y0 + LIST_YOFF * ($ITEM_COUNT - 1)))
+    spinner $LIST_X0 $y
+}
+
+do_stop() {
+    exit
+}
+
+do_close() {
+    rm -f $STATE_FILE $GEO_FILE $PID_FILE $FIFO_IN $FIFO_OUT
+    exit
+}
+
+do_fifo() {
+    local cmd line 
+    rm -f $FIFO_IN 
+    mkfifo $FIFO_IN
+    log 'start FIFO'
+    read_state
+    local stdin=$(readlink -f /proc/$$/fd/0)
+    log "stdin: $stdin"
+    while : ; do
+        while read cmd line; do
+            log "fifo: cmd=$cmd line=$line"
+            case $cmd in
+                pass|fail|warn) line="$(prepend_time "$line")"
+            esac
+            SPIN_T1=
+            kill_previous
+            write_state "$cmd" "$line"
+            run_command "$cmd" "$line" < $stdin
+            case $cmd in
+                okay|spin|item) ITEM_COUNT=$((ITEM_COUNT + 1)) ;;
+            esac
+        done < $FIFO_IN
+    done
+}
+
+prepend_time() {
+    local line=$(get_str "$1")
+    if [ -z "$SPIN_T1" ]; then
+        local t2=$(cut -d" " -f22 /proc/self/stat)
+        local dt=$((t2 - SPIN_T1))
+        if [ $dt -ge 1000 ]; then
+            local secs=$(printf "%03d" "$dt" | sed -r 's/(..)$/.\1/' )
+            printf "[%6ss] " "$secs"
+        fi
+    fi
+    echo "$line"
+}
+
+get_string() {
+    case $1 in
+               title) printf  "$_Welcome_to_X_" Linux                        ;;
+      start_subtitle) printf  "$_Please_wait_while_the_system_boots_up_"       ;;
+#       stop_subtitle) printf "Please wait while the system shuts down"     ;;
+        load_modules) printf  "$_Loading_kernel_modules_"                      ;;
+      modules_loaded) printf  "$_Kernel_modules_loaded_"                       ;;
+        find_linuxfs) printf  "$_Looking_for_Linux_filesystem_"                ;;
+        linuxfs_pass) printf  "$_Found_Linux_filesystem_"                      ;;
+        linuxfs_fail) printf  "$_Could_not_find_Linux_filesystem_"             ;;
+      frugal_install) printf  "$_Doing_frugal_install_Please_wait_"      ;;
+         frugal_pass) printf  "$_Frugal_install_successful_"                   ;;
+         frugal_fail) printf  "$_Frugal_install_failed_"                       ;;
+               toram) printf  "$_Copying_filesystem_to_RAM_Please_wait_" ;;
+          toram_pass) printf  "$_Copy_to_RAM_was_successful_"                  ;;
+          toram_fail) printf  "$_Copy_to_RAM_failed_"                          ;;
+           check_md5) printf  "$_Verifying_integrity_Please_wait_"       ;;
+            md5_pass) printf  "$_Integrity_verified_"                          ;;
+            md5_fail) printf  "$_Verification_error_"                         ;;
+            md5_skip) printf  "$_Skipped_verification_"                        ;;
+          start_init) printf  "$_Starting_system_initialization_"              ;;
+           init_pass) printf  "$_System_initialized_"                          ;;
+          start_desk) printf  "$_Starting_desktop_environment_"                ;;
+               fatal) printf  "$_Cant_Boot_"                                  ;;
+           non_fatal) printf  "$_Warning_"                                     ;;
+               input) printf  "$_Input_Required_"                              ;;
+         press_enter) printf  "$_Press_X_to_go_to_the_boot_text_screen_" $(mk_key  "$_Alt_F1_" $NC$white) ;;
+                   *) printf "$@"                                               ;;
+    esac
+}
+
+gq() { echo "$green$*$NC$lt_grey"    ;}
+
+read_write_state() {
+    read_state
+    write_state "$@"
+}
+
+read_state() {
+    local file=$STATE_FILE
+    # Count previous items
+    ITEM_COUNT=0
+    [ -r $file ] && ITEM_COUNT=$(egrep -c "^okay|spin|item" $file)
+}
+
+write_state() {
+    local cmd=$1  file=$STATE_FILE
+    case $cmd in
+            startup|welcome) echo "$*" >  $file ;;
+   item|spin|pass|fail|okay) echo "$*" >> $file ;;
+    esac
+}
+
+kill_pid() {
+    [ -e $PID_FILE ] || return 1
+    local pid=$(cat $PID_FILE 2>/dev/null)
+    rm -f $PID_FILE
+    [ -d /proc/$pid ] || return 1
+    kill -9 $pid &>/dev/null
+    return 0
+}
+
+kill_previous() {
+    kill_pid || return
+    do_item pass
+}
+
+screen_draw_titles() {
+    screen_set "$@"
+    if [ "$SCREEN_DID_BOX" ]; then
+        ctext 1 "" " $SCREEN_TITLE_1 " $SCREEN_TITLE1_COLOR
+    else
+        cline 1 "$SCREEN_TITLE_1"      $SCREEN_TITLE1_COLOR
+    fi
+    #return
+    cline 2 "$SCREEN_TITLE_2"          $SCREEN_TITLE2_COLOR
+    cline 3 "$SCREEN_TITLE_3"          $SCREEN_TITLE3_COLOR
+
+}
+
+spinner() {
+    log "spinner($*)"
+    local x=$1  y=$2
+    if [ "$IN_REDRAW" ]; then
+        printf "$PASS_COLOR\e[$y;${x}H$ITEM_ICON"
+        return
+    fi
+    local stdin=$(readlink -f /proc/$$/fd/0)
+    SPIN_T1=$(cut -d" " -f22 /proc/self/stat)
+    (_spinner $stdin "$@")&
+    echo $! > $PID_FILE
+}
+
+_spinner() {
+    local stdin=$1 x=$2 y=$3 i char
+    local max=$((SPIN_DURATION * 1000000 / $SPIN_DELAY / 4))
+    local t1=$(cut -d" " -f22 /proc/self/stat)
+    for i in $(seq 1 $max); do
+       for char in "|" "/" "─" "\\"; do
+            printf "$SPIN_COLOR\e[$y;${x}H$char"
+            /live/bin/usleep $SPIN_DELAY
+            [ "$GEO" = "$(stty size < $stdin)" ] && continue
+
+            GEO=$(stty size < $stdin)
+            log "Caught size change: $GEO"
+            rm -f $PID_FILE
+            [ -e $FIFO_IN ] && echo redraw > $FIFO_IN
+            exit
+        done
+    done
+    local t2=$(cut -d" " -f22 /proc/self/stat)
+    log "spinner took: $((t2 - t1)) hundreths of a second"
+    printf "$PASS_COLOR\e[$y;${x}H$ITEM_ICON"
+}
+
+screen_set() {
+    local nam val v1 v2
+    while [ $# -gt 0 ]; do
+        [ -z "${1##*=*}" ] || fatal 'illegal screen_set argument: %s.  Must be name=value' "$white$1"
+        nam=${1%%=*}
+        val=${1#*=}
+        v1=${val%%,*}
+        v2=${val#*,}
+        case $nam in
+            title1)        SCREEN_TITLE_1=$val ;;
+            title2)        SCREEN_TITLE_2=$val ;;
+            title3)        SCREEN_TITLE_3=$val ;;
+            border)         SCREEN_BORDER=$val ;;
+               box)      SCREEN_BOX_STYLE=$val ;;
+
+                 *) fatal 'Unknown screen_set parameter: %s' "$white$nam" ;;
+        esac
+        shift
+    done
+}
+
+
+screen_init() {
+
+    #ls -lh /proc/$$/fd >&2
+    SCREEN_X0=$((SCREEN_BORDER + 1))
+    SCREEN_Y0=$((SCREEN_BORDER + 1))
+    SCREEN_RAW_WIDTH=${WIDTH:-$(  stty size | cut -d" " -f2)}
+    SCREEN_RAW_HEIGHT=${HEIGHT:-$(stty size | cut -d" " -f1)}
+
+    SCREEN_HEIGHT=$((SCREEN_RAW_HEIGHT - 2 * SCREEN_BORDER))
+    SCREEN_WIDTH=$(( SCREEN_RAW_WIDTH  - 2 * SCREEN_BORDER))
+    SCREEN_BOTTOM=$((SCREEN_RAW_HEIGHT - 2))
+
+    [ "$LIST_WIDTH" ] && LIST_X0=$(( (SCREEN_WIDTH - LIST_WIDTH ) /2 ))
+
+    if [ "$MAX_ITEMS" ]; then
+        local yoff vspace=$((SCREEN_HEIGHT - 5))
+        for yoff in $(seq $MAX_YOFF -1 1); do
+            [ $((MAX_ITEMS * yoff)) -lt $vspace ] && break
+        done
+        LIST_YOFF=$yoff
+        LIST_HEIGHT=$((MAX_ITEMS * voff))
+        LIST_Y0=$(((vspace - LIST_HEIGHT) / 4))
+        [ $LIST_Y0 -lt 6 ] && LIST_Y0=6
+    fi
+
+    GEO=$(stty size)
+    echo "$GEO" > $GEO_FILE
+    echo "geo: $GEO" >&2
+
+    # disable console screen blanking
+    #printf "\e[9;0]\e[14;0]"
+}
+
+set_color() {
+    local e=$(printf "\e")
+
+         black="$e[30m";        red="$e[31m";      green="$e[32m";
+         amber="$e[33m";       blue="$e[34m";    magenta="$e[35m";
+          cyan="$e[36m";    lt_grey="$e[0;37m";
+
+          grey="$e[1;30m";    rose="$e[1;31m";  lt_green="$e[1;32m";
+        yellow="$e[1;33m";  violet="$e[1;34m";      pink="$e[1;35m";
+       lt_cyan="$e[1;36m";   white="$e[1;37m";
+
+            NC="$e[0m";
+
+      black_bg="$e[40m";     red_bg="$e[41m";    green_bg="$e[42m";
+      amber_bg="$e[43m";    blue_bg="$e[44m";  magenta_bg="$e[45m";
+       cyan_bg="$e[46m";   white_bg="$e[47m"
+           rev="$e[7m";  under_line="$e[4m";         bold="$e[1m"
+
+    clear="$e[2;J"; cursor_off="$e[?25l"; cursor_on="$e[?25h"
+
+    SCREEN_BORDER_COLOR=$grey
+    SCREEN_TITLE1_COLOR=$bold$white
+    SCREEN_TITLE2_COLOR=$lt_grey
+    SCREEN_TITLE3_COLOR=$lt_grey
+    SCREEN_MSG_COLOR=$yellow
+
+    TEXT_COLOR=$lt_grey
+    ITEM_COLOR=$amber
+    WARN_COLOR=$amber
+    SPIN_COLOR=$amber
+    PASS_COLOR=$green
+    OKAY_COLOR=$green
+    FAIL_COLOR=$red
+     KEY_COLOR=$NC$amber
+
+    nc=$NC$black_bg
+    printf $nc
+
+}
+
+screen_draw_box() {
+    SCREEN_DID_BOX=
+    log1 box-style $SCREEN_BOX_STYLE
+    log1 box       "$SCREEN_BOX"
+    [ -n "$SCREEN_BOX_STYLE" -a -n "$SCREEN_BOX" ] || return
+    SCREEN_DID_BOX=true
+    box $SCREEN_BOX_STYLE $SCREEN_BOX $SCREEN_BORDER_COLOR
+}
+
+# Cbox x width height color
+cbox() {
+    :
+}
+# box flag x y width heigh color
+
+box() {
+    local flag
+    while [ $# -gt 0 -a -z "${1##-*}" ]; do
+        flag=$flag${1#-}
+        shift
+    done
+
+    #return
+    local x0=$1 y0=$2 width=$3 height=$4 color=$5
+    log "box($flag $x0 $y0 $width $height ${color}XX$NC)"
+
+    [ "$color" ] && printf "$nc$color"
+
+    local iwidth=$((width - 2))
+    local x1=$((x0 + width - 1))
+
+    #-- Set up line style and colors
+
+    [ "$ASCII_ONLY" ] && flag=A$flag
+    case $flag in
+      Ac) local hbar=' ' vbar=' ' tl_corn=' ' bl_corn=' ' tr_corn=' ' br_corn=' ' ;;
+      Ad) local hbar='=' vbar='|' tl_corn='#' bl_corn='#' tr_corn='#' br_corn='#' ;;
+      A*) local hbar='-' vbar='|' tl_corn='+' bl_corn='+' tr_corn='+' br_corn='+' ;;
+       c) local hbar=' ' vbar=' ' tl_corn=' ' bl_corn=' ' tr_corn=' ' br_corn=' ' ;;
+       b) local hbar='━' vbar='┃' tl_corn='┏' tr_corn='┓' bl_corn='┗' br_corn='┛' ;;
+       d) local hbar='═' vbar='║' tl_corn='╔' tr_corn='╗' bl_corn='╚' br_corn='╝' ;;
+       *) local hbar='─' vbar='│' tl_corn='┌' tr_corn='┐' bl_corn='└' br_corn='┘' ;;
+    esac
+
+    local bar=$(printf "%${iwidth}s" | sed "s/ /$hbar/g")
+    printf "\e[$y0;${x0}H$tl_corn$bar$tr_corn"
+    local y
+    for y in $(seq $((y0 + 1)) $((y0 + height - 2))); do
+        printf "\e[$y;${x0}H$vbar"
+        printf "\e[$y;${x1}H$vbar"
+    done
+    printf "\e[$((y0 + height - 1));${x0}H$bl_corn$bar$br_corn"
+}
+
+
+cruler() {
+    local i y midx
+    for y in $(echo "$1" | sed 's/,/ /g'); do
+        y=$(($y + SCREEN_Y0)) color=$2
+        midx=$((SCREEN_RAW_WIDTH/2))
+        printf "\e[$y;1H$color"
+        for i in $(seq 1 $midx); do
+            printf $((i % 10))
+        done
+
+        for i in $(seq 1 $midx); do
+            printf "\e[$y;$((SCREEN_RAW_WIDTH -i + 1))H"
+            printf $((i % 10))
+        done
+        printf $nc
+    done
+}
+
+
+#======================================================================
+# Strings
+#======================================================================
+
+# Note, the 2nd regex helps shells that don't know about unicode as long as sed
+# is unicode-aware then you are okay.  Unfortunately BusyBox sed doesn't work
+# here for stripping colors.  So we CHEAT and use . instead of \x1B
+
+str_len() {
+    echo -n "$*" | sed -r -e 's/.\[[0-9;]+[mK]//g' | wc -m
+}
+
+str_rtrunc() {
+    local msg=$(echo "$1" | sed -r 's/.\[[0-9;]+[mK]//g')
+    local len=$2
+    echo "$msg" | sed -r "s/(.{$len}).*/\1/"
+}
+
+str_ltrunc() {
+    local msg=$(echo "$1" | sed -r 's/.\[[0-9;]+[mK]//g')
+    local len=$2
+    echo "$msg" | sed -r "s/.*(.{$len})$/\1/"
+}
+
+text_right() {
+    local x=$1  y=$2 msg=$3  len=$(str_len "$3")
+
+    local avail=$((${SCREEN_WIDTH:-78} - x + 1))
+    [ $avail -lt 0 ] && avail=78
+    local pad=$((avail - len))
+    [ $pad -lt 0 ] && pad=0
+    #msg=$(str_rtrunc "$3" $avail)
+    printf "\e[$y;${x}H%s%${pad}s" "$msg" ""
+}
+
+ctext() {
+    local y=$1 x0=${2:-$((SCREEN_RAW_WIDTH / 2))} msg=$3 color=$4
+    local len=$(str_len "$msg")
+    log "msg: $msg"
+    log "len: $len"
+    local x=$((1 + x0 - len/2))
+    printf "$color\e[$y;${x}H$msg"
+}
+
+cline() {
+    log "cline(\"$1\", \"$2$NC\")"
+    local y=$1 msg=$2 color=$3
+    [ "$msg" ] || return
+    msg=$(echo "$msg" | sed "s/<color>/$color/g")
+
+    local x=$SCREEN_X0
+    local len=$(str_len "$msg")
+    local width=$SCREEN_WIDTH
+    [ $len -ge $width ] && msg=$(str_rtrunc "$msg" $width)
+    local pad1=$(( (width - len) / 2))
+    local pad2=$((width - len - pad1))
+    printf "\e[$y;${x}H$color%${pad1}s%s%${pad2}s" "" "$msg" ""
+}
+
+left_text() {
+    local y=$1  color=$2  x=$((SCREEN_X0 + 1))
+    shift 2
+    local msg=$(printf "$@")
+    printf "\e[$y;${x}H$color$msg"
+}
+
+right_text() {
+    local y=$1  color=$2
+    shift 2
+    local msg=$(printf "$@")
+    local len=$(str_len "$msg")
+    local x=$((SCREEN_WIDTH - len + SCREEN_X0 - 1))
+    printf "\e[$y;${x}H$color$msg"
+}
+
+#==============================================================================
+# Logo stuff
+#==============================================================================
+
+read_logo() {
+    local file=$1
+    LOGO=$(cat $file)
+    LOGO_WIDTH=$( echo $file | sed -r 's/^.*-([0-9]+)x[0-9]+$/\1/')
+}
+
+draw_clogo() {
+    local y=$1  color=$2
+    local x0=$(( ($SCREEN_WIDTH - $LOGO_WIDTH) / 2))
+
+    log "draw_clogo x0:$x0"
+
+    while read line; do
+        printf "$color\e[$y;${x0}H$line"
+        y=$((y + 1))
+    done<<DRAW_LOGO
+$(echo  "$LOGO")
+DRAW_LOGO
+}
+
+cycle_clogo_v() {
+    local y0=$1
+    shift
+    local x0=$(( ($SCREEN_WIDTH - $LOGO_WIDTH) / 2))
+    log "cycle_clogo_v x0:$x0"
+
+    while true; do
+        for color; do
+            y=$y0
+            while read line; do
+                printf "$color\e[$y;${x0}H$line"
+                #if [ ! -x /live/bin/usleep ]; then
+                #    read ans
+                #fi
+                /live/bin/usleep 100000
+
+                y=$((y + 1))
+            done<<DRAW_LOGO
+$(echo  "$LOGO")
+DRAW_LOGO
+
+        if [ ! -x /live/bin/usleep ]; then
+            read ans
+        else
+            /live/bin/usleep 1000000
+        fi
+        done
+    done
+}
+
+#==============================================================================
+# Utilites
+#==============================================================================
+read_xlat() {
+    log "read_xlat($*)"
+    local prog=$1  lang=${2%%[_.]*}
+    local xdir=/live/locale/xlat
+    local fdir=/live/locale/fonts
+
+    local xlat=$xdir/en/$prog.xlat
+    [ -r $xlat ] && . $xlat
+
+    [ "$lang" ] || return
+
+    lang=$(echo $lang | sed 's/[_.].*//')
+
+    xlat=$xdir/$lang/$prog.xlat
+    [ -r "$xlat" ] || return
+    . $xlat
+
+    local font=$fdir/$lang
+    [ -e "$font" ] || return
+
+    ITEM_ICON="*"
+    FAIL_ICON="*"
+
+    setfont $font -C $(tty)
+}
+
+
+fatal() {
+    printf "$ME:$red Error:$cyan $@"
+    echo $nc
+    exit 10
+}
+
+log1n() { log "$NC$LOG_FMT_1" "$1:" "$2"        ;}
+log1()  { log "$NC$LOG_FMT_1" "$1:" "\"$2$NC\"" ;}
+
+log_err() { log "$NC${red}Error:$cyan $@" ;}
+log_warn() { log "$NC$bold${yellow}Warning:$nc$cyan $@" ;}
+log() {
+    [ "$log_file" ] || return
+    printf "$@" >&2
+    echo    $NC >&2
+}
+
+db_msg() {
+    local y=$(( SCREEN_Y0 + SCREEN_HEIGHT - TTY_OFFSET - 1))
+    local msg=$(printf "$@")
+    printf "\e[$y;${SCREEN_X0}H$nc$SCREEN_MSG_COLOR"
+    printf "%-${SCREEN_WIDTH}s" "$msg"
+}
+
+DEBUG=true
+log_file=$DIR/log
+[ "$DEBUG" ] || log_file=/dev/null
+
+main "$@" 2>> $log_file

@@ -1,0 +1,364 @@
+#!/bin/sh
+
+### BEGIN INIT INFO
+# Provides:          live-init
+# Required-Start:    checkroot checkroot-bootclean
+# Required-Stop:
+# Should-Start:
+# Should-Stop:
+# Default-Start:     S
+# Default-Stop:
+# Short-Description: live-init
+# Description: localize /etc/skel, create /home/demo, customize X, mirrors, set default desktop
+### END INIT INFO
+
+XSESSION_DIR=/usr/share/xsessions
+    MENU_WMs="fluxbox icewm jwm"
+    FF_PREFS="/etc/skel/.mozilla/firefox/*/prefs.js"
+   AUTOMOUNT=
+
+#-jbb For debugging
+CMDLINE=${CMDLINE:-$(cat /proc/cmdline)}
+for param in $CMDLINE; do
+    value=${param#*=}
+    case "$param" in
+             desktop=*)  CMD_DESKTOP=$value                         ;;
+                 dpi=*)      CMD_DPI=$value                         ;;
+                 kbd=*)      CMD_KBD=$value ;          DO_XKBD=true ;;
+               kbopt=*)   XKBOPTIONS=$value ;          DO_XKBD=true ;;
+               kbvar=*)   XKBVARIANT=$value ;          DO_XKBD=true ;;
+                lang=*)     CMD_LANG=$value ;          DO_XKBD=true ;;
+              mirror=*)   CMD_MIRROR=$value                         ;;
+         hwclock=local)   CMD_CLOCK=$value                          ;;
+           hwclock=utc)   CMD_CLOCK=$value                          ;;
+              xorgconf)                              MAKE_XORG=true ;;
+                xres=*)                              MAKE_XORG=true ;;
+                drvr=*)                              MAKE_XORG=true ;;
+               xdrvr=*)                              MAKE_XORG=true ;;
+
+automount=off|amnt=off)                          AUTOMOUNT_OFF=true ;;
+        automount|amnt)                              AUTOMOUNT=true ;;
+    automount=*|amnt=*)    CMD_MOUNT=$value ;        AUTOMOUNT=true ;;
+               mount=*)    CMD_MOUNT=$value ;        AUTOMOUNT=true ;;
+               fstab=*)    CMD_FSTAB=$value                         ;;
+
+    esac
+done
+
+PATH="/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R6/bin:/live/bin"; export PATH
+
+umask 022
+
+# . /usr/share/antiX/lib/live-init-utils.sh
+. /live/lib/live-init-utils.sh
+
+start_init_logging
+load_translation
+
+main() {
+    case "$1" in
+        start)
+            do_start
+            ;;
+        stop)
+            exit 0
+            ;;
+        *)
+            echo "Usage: $0 {start|stop}"
+            exit 1
+            ;;
+    esac
+}
+
+create_home() {
+    local demo=/home/demo hfile
+    rmdir $demo 2>/dev/null
+
+    if grep -q "^demo:[^:]*:[^:]*:[^:]*:[^:]*:/home/demo:" /etc/passwd; then
+        for hfile in .config .local .bashrc .zshrc; do
+            test -e $demo/$hfile || continue
+            echo_live "$_Files_already_exist_under_X_" $(pquote $demo)
+            echo_live "$_Not_creating_or_populating_X_" $(pquote $demo)
+            return
+        done
+    fi
+
+    echo_live "$_Populating_X_directory_" $(pquote $demo)
+
+    mkdir -p $demo
+    cp -r -P -p mode /etc/skel/* /etc/skel/.[a-zA-Z]* $demo 2>/dev/null
+    chown -R demo:users $demo 2>/dev/null
+}
+
+localize_skel() {
+    local l10n_dir=/usr/share/antiX/localisation
+    local from=$l10n_dir/$1
+    local dest=/etc/skel
+
+    # Silently skip systems which have no localisation directory
+    [ -d "$l10n_dir" ] || return
+
+    if ! [ -d $from ]; then
+        error "$_Unknown_menu_localization_language_X_" $(pquote $1)
+        error "$_Directory_not_found_X_" $from
+        return
+    fi
+
+    echo_live "$_Localizing_menus_to_X_in_Y_" $(pquote $0) $(pquote $dest)
+
+    # Basically a cp -a but make all top level files and directories hidden
+    for file in $(ls $from); do
+       if [ -d $from/$file ]; then
+           mkdir -p /$dest/.$file
+           cp -a $from/$file/* $dest/.$file
+       else
+           rm -rf $dest/.$file
+           cp -a $from/$file $dest/.$file
+       fi
+    done
+}
+
+#FIXME:
+localize_firefox() {
+    local pref_files file lang=$1
+    local string="user_pref(\"spellchecker.dictionary\","
+
+    pref_files=$(ls $FF_PREFS 2>/dev/null)
+    [ "$pref_files" ] || return
+    sed -i  "/$string/d" $pref_files
+    for file in $pref_files; do
+        echo "$string \"$lang\");" >> $file
+    done
+}
+
+set_dpi() {
+    local dpi=$1
+
+    if ! echo $dpi | grep -q "^[[:digit:]]\+$"; then
+        error "$_Invalid_X_boot_parameter_Y_" $(pquote dpi) $(pquote $dpi)
+        return
+    fi
+
+    echo_live "$_Setting_X_to_Y_" $(pquote dpi) $(pquote $dpi)
+
+    local file
+    for file in /etc/slim.conf /usr/share/slim/themes/antiX/slim-install.conf; do
+        [ -e $file ] || continue
+        sed -i -e "s/^xserver_arguments.*/xserver_arguments -dpi $dpi -nolisten tcp/" $file
+    done
+
+    for file in /etc/lightdm/lightdm.conf; do
+        [ -e $file ] || continue
+        sed -i -r "s/^#?\s*(xserver-command=X).*/\1 -dpi $dpi/" $file
+    done
+}
+
+set_mirror() {
+    local mirror=$1
+
+    case "$mirror" in
+        [a-zA-Z][a-zA-Z]) ;;
+        *)
+            error "$_Bad_mirror_code_X_expected_two_letters_" $(pquote $mirror)
+            return;;
+    esac
+
+    source_list=/etc/apt/sources.list.d/debian.list
+
+    first_write $source_list || [ "$CMD_MIRROR" ] || return
+
+    echo_live "$_Localizing_X_to_Y_mirror_" $(pquote $source_list) $(pquote $MIRROR)
+    sed -i "s=/ftp\.\(..\.\)\\?debian\.org/=/ftp.$mirror.debian.org/=" $source_list
+}
+
+set_utc_local() {
+    local new=$1 file=/etc/adjtime
+    #grep -i -q $new $file && return
+
+    echo_live "$_Assuming_X_is_set_to_Y_time_" hwclock $(pquote $new)
+
+    case $new in
+        local) sed -i 's/^UTC\s*$/LOCAL/' $file
+               hwclock --hctosys --localtime      ;;
+          utc) sed -i 's/^LOCAL\s*$/UTC/' $file
+               hwclock --hctosys --utc            ;;
+    esac
+}
+
+set_default_desktop() {
+    local desktop=$1 desktop_file=/home/demo/.desktop-session/default-desktop
+    echo_live "$_Setting_X_to_Y_" desktop $(pquote $desktop)
+    echo $desktop > $desktop_file
+}
+
+add_fstab_swap() {
+    echo_live 'Possibly adding swap partitions to fstab'
+    make-fstab --quiet --swap-only
+}
+
+automount_and_fstab() {
+
+   local        am_file=/etc/fstab.automount
+   local     mount_file=/etc/fstab.mount
+   local        hp_file=/etc/fstab.hotplug
+   local  hp_state_file=$hp_file.state
+
+    # "off" means "off"
+    if [ "$CMD_MOUNT" = 'off' -o -n "$AUTOMOUNT_OFF" ]; then
+        echo_live "$_Turning_all_boot_mount_options_off_"
+        rm -f $mount_file
+        CMD_MOUNT=
+
+        if [ -n "$AUTOMOUNT_OFF" ]; then
+            echo_live "$_Turning_automount_off_"
+            AUTOMOUNT=
+            rm -f $am_file
+        fi
+    fi
+
+    # Read in previous value (persistent systems only)
+    if [ -z "$CMD_MOUNT" -a -e $mount_file ]; then
+        CMD_MOUNT=$(cat $mount_file)
+    else
+        [ "$CMD_MOUNT" ] && echo $CMD_MOUNT > $mount_file
+    fi
+
+    # Mount partitions while building fstab file
+    local fstab_opt=
+    case ",$CMD_MOUNT" in
+        ,all|,usb)
+            fstab_opt="$fstab_opt --mount=$CMD_MOUNT" ;;
+        ,)
+            ;;
+        *)
+            error "$_Invalid_X_option_Y_" 'mount/automount' $(pquote $CMD_MOUNT)
+    esac
+
+    if [ -e /etc/fstab  ]; then
+        grep -q -e ^/dev -e ^UUID= -e ^LABEL=  /etc/fstab || rm /etc/fstab
+    fi
+
+    make-fstab --quiet $fstab_opt
+
+    [ "$AUTOMOUNT" ] && touch $am_file
+
+    if [ -e $am_file ]; then
+        echo_live "$_Automount_enabled_"
+    else
+        echo_live "$_Automount_disabled_"
+    fi
+
+    # The hp_file is removed by /init
+    # The hp_state_file carries over "off" setting on persistent systems
+    [ -z "$CMD_FSTAB" -a -e $hp_state_file ] && CMD_FSTAB=$(cat $hp_state_file)
+
+    case ",$CMD_FSTAB" in
+        ,off)
+            echo_live "$_Disabling_fstab_hotplugging_this_will_also_disable_automount_"
+            echo $CMD_FSTAB > $hp_state_file
+            rm -f $hp_file  ;;
+
+        ,on|,)
+            echo_live "$_Enabling_fstab_hotplugging_"
+            rm -f $hp_state_file
+            touch $hp_file;;
+
+        *)
+            error "$_Bad_fstab_option_X_" $(pquote $CMD_FSTAB)
+            echo_live "$_Enabling_fstab_hotplugging_"
+            touch $hp_file;;
+    esac
+}
+
+#----- Main code starts here --------------------------------------------------
+
+do_start() {
+    echo_script "$_Localizing_configuring_X_Windows_" $0
+
+    local DISTRO="unknown"
+    get_init_param DISTRO
+
+    case $DISTRO in
+        antiX) automount_and_fstab;;
+      MX|MX-*) add_fstab_swap     ;;
+            *) error 'Unknown_distro %s' "$(pquote $DISTRO)"
+    esac
+
+    #-jbb: for debugging
+    unset COUNTRY WM_LANG KEYBOARDS KEYTABLE LANG MIRROR TZ XKBLAYOUT CONSOLE_FONT
+    [ "$CMD_LANG" ] && get_init_lang $CMD_LANG error
+
+    usb_rules=/etc/udev/rules.d/99-usbstorage.rules
+    usb_unused=$usb_rules.unused
+
+
+    MIRROR=${CMD_MIRROR:-$MIRROR}
+    [ "$MIRROR" ] && set_mirror $MIRROR
+
+    [ "$WM_LANG" ] && localize_skel $WM_LANG
+
+    # Always create keyboard file in non-perisistent system even with no X
+    kb_file=/etc/default/keyboard
+    default_xkb_opts="grp:alt_shift_toggle,terminate:ctrl_alt_bksp,grp_led:scroll"
+
+    if first_write $kb_file || [ "$DO_XKBD" ]; then
+        XKBLAYOUT=${CMD_KBD:-$XKBLAYOUT}
+        [ "$XKBLAYOUT"  ] && echo_live "$_Setting_X_to_Y_" $(pquote xkb-layout)  $(pquote $XKBLAYOUT)
+        [ "$XKBMODEL"   ] && echo_live "$_Setting_X_to_Y_" $(pquote xkb-model)   $(pquote $XKBMODEL)
+        [ "$XKBVARIANT" ] && echo_live "$_Setting_X_to_Y_" $(pquote xkb-variant) $(pquote $XKBVARIANT)
+        [ "$XKBOPTIONS" ] && echo_live "$_Setting_X_to_Y_" $(pquote xkb-options) $(pquote $XKBOPTIONS)
+
+        cat > $kb_file <<Keyboard_Out
+XKBMODEL="${XKBMODEL:=pc105}"
+XKBLAYOUT="${XKBLAYOUT:=us}"
+XKBVARIANT="${XKBVARIANT}"
+XKBOPTIONS="${XKBOPTIONS:=$default_xkb_opts}"
+Keyboard_Out
+    fi
+
+    # Don't bother with X stuff on systems without X
+    #--------------------------------------------------------------------------
+    if [ ! -d "$XSESSION_DIR" ]; then
+        create_home
+        exit 0
+    fi
+    #--------------------------------------------------------------------------
+
+    [ "$CMD_DPI" ] && set_dpi $CMD_DPI
+
+    xorg_conf=/etc/X11/xorg.conf
+
+    if [ "$MAKE_XORG" ]; then
+        echo_live "$_Configuring_X_file_" $(pquote $xorg_conf)
+        [ -f "$xorg_conf" ] && mv -f $xorg_conf $xorg_conf.bak
+        /usr/sbin/buildxconfig $xorg_conf
+        sed -i "s/XkbLayout.*/XkbLayout \"$XKBLAYOUT\"/g" $xorg_conf
+    fi
+
+    create_home
+
+    [ "$CMD_DESKTOP" ] && set_default_desktop $CMD_DESKTOP
+    [ "$CMD_CLOCK"   ] && set_utc_local $CMD_CLOCK
+
+    #localize_firefox $LANG
+
+    enable_xkb="s/^#\?setxkbmap.*/setxkbmap -layout \"$XKBLAYOUT\" -option \"$XKBOPTIONS\" -variant \"$XKBVARIANT\"/"
+
+    for wm in $MENU_WMs;  do
+        f1=/home/demo/.$wm/startup
+        f2=/etc/skel/.$wm/menu
+        f3=/etc/skel/.config/rox.sourceforge.net/ROX-Filer/pb_antiX-$wm
+        f4=/etc/skel/.$wm/startup
+        [ -e $f1 ] && sed -i -e "$enable_xkb"             $f1
+        [ -e $f2 ] && sed -i -e "/gksu antixsources.sh/d" $f2
+        [ -e $f3 ] && sed -i -e "/antixsources.desktop/d" $f3
+        [ -e $f4 ] && sed -i -e "/toram-eject/d"          $f4
+        [ -e $f4 ] && sed -i -e "/persist-config/d"       $f4
+        rm -f /etc/skel/Desktop/Install.desktop
+    done
+
+}
+
+main "$@" 2>&1 | tee -a $INIT_LOG_FILE
+
+exit 0

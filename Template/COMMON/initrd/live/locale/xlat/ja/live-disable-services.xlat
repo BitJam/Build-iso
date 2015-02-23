@@ -1,0 +1,5 @@
+_Customizing_services_="サービスの編集"
+_Disabling_dbus_X_="dbus の無効 %s"
+_Disabling_more_services_X_="(続き)サービスの無効 %s"
+_Disabling_network_auto_start_X_="ネットワークの自動起動を無効 %s"
+_Disabling_services_X_="サービスを無効 %s"

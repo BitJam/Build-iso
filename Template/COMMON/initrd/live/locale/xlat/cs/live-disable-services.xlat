@@ -1,0 +1,5 @@
+_Customizing_services_="Úprava služeb"
+_Disabling_dbus_X_="Zakazování dbus %s"
+_Disabling_more_services_X_="Zakazování dalších služeb %s"
+_Disabling_network_auto_start_X_="Vypínání automatického startu sítě %s"
+_Disabling_services_X_="Zakazování služeb %s"

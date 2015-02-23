@@ -1,0 +1,121 @@
+#!/bin/sh
+
+### BEGIN INIT INFO
+# Provides: live-shutdown
+# Required-Start:
+# Required-Stop:
+# Should-Start:
+# Should-Stop:
+# Default-Start:
+# Default-Stop: 0 6
+# Short-Description: Save live persistent information
+# Description:
+### END INIT INFO
+
+INITRD_OUT=/live/config/initrd.out
+
+#-jbb For debugging
+#  CMDLINE=${CMDLINE:-$(cat /proc/cmdline)}
+#  for param in $CMDLINE; do
+#      value=${param#*=}
+#      case "$param" in
+#      esac
+#  done
+
+PATH="/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R6/bin:/live/bin"; export PATH
+
+umask 022
+
+#. /usr/share/antiX/lib/live-init-utils.sh
+. /live/lib/live-init-utils.sh
+
+start_init_logging
+load_translation
+
+main() {
+    case $1 in
+        start) exit 0      ;;
+         stop) do_shutdown ;;
+            *) echo "Usage: $0 stop"
+               exit 1      ;;
+    esac
+}
+
+get_init_param() { eval $(grep ^$1= $INITRD_OUT) ;}
+
+do_shutdown() {
+
+    echo_script "Possibly save persistent information" $0
+
+    save_desktop
+
+    persist_save
+}
+
+persist_save() {
+    # bail early
+    test -e /live/config/persist-save.conf || return
+
+    # Don't auto-save twice in a row
+    local last_save_file=/live/config/last-auto-save
+    if test -r $last_save_file; then
+        local prev=$(cat $last_save_file)
+        local diff=$(( $(date +%s) - $(cat $last_save_file)))
+        if [ $diff -le 10 ]; then
+            echo_live "Already autosaved %s seconds ago" $diff
+            echo_live "Won't autosave again"
+            return
+        fi
+    fi
+
+    local p_config=/usr/local/bin/persist-config
+    test -x $p_config && $p_config --cli --shutdown
+}
+
+save_desktop() {
+    get_init_param REMASTERABLE
+    [ "$REMASTERABLE" ] || return
+
+    get_init_param DID_TORAM
+    if [ "$DID_TORAM" ]; then
+
+        get_init_param BOOT_UUID
+        if [ -z "$BOOT_UUID" ; then
+            echo_live "Could not find UUID of boot device for remounting"
+            echo_live "Will not save defaults desktops"
+            return
+        fi
+        mkdir -p /live/boot-dev/
+        if ! mount -U $BOOT_UUID /live/boot-dev; then
+            echo_live "Could not remount boot device"
+            echo_live "Will not save defaults desktops"
+            return
+        fi
+    fi
+
+    get_init_param SQFILE_PATH
+    local to_dir=/live/boot-dev/$SQFILE_PATH/personalize/by-user
+
+    local user from to
+    for user in $(ls /home); do
+        from="/home/$user/.desktop-session/default-desktop"
+        [ -e "$from" ] || continue
+        to="$to_dir/$user/default-desktop"
+        should_copy "$from" "$to" || continue
+        mkdir -p $(dirname "$to")
+        echo_live "Save %s desktop %s" $(pquote $user) $(pquote $(cat $from))
+        cp "$from" "$to"
+    done
+}
+
+should_copy() {
+    local from="$1"  to="$2"
+    [ -e "$from" ] || return 1
+    [ -e "$to"   ] || return 0
+    diff -q "$from" "$to" 1>/dev/null 2>/dev/null && return 1
+    return 0
+}
+
+main "$@" 2>&1 | tee -a $INIT_LOG_FILE
+
+exit 0
