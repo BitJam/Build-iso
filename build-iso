@@ -1226,14 +1226,14 @@ do_stage_6() {
     # Explicitly fill iso/boot/isolinux/
     local isolinux_dir=$iso_dir/boot/isolinux
     local syslinux_dir=$iso_dir/boot/syslinux
-    copy_template_dir -u gfxboot $isolinux_dir
+    copy_template_dir -u isolinux $isolinux_dir
 
     [ "$ARCH" = amd64 ] && echo 1 > $isolinux_dir/64bit
 
-    # Copy over flavour dependent isolinux.cfg
+    # Copy over flavour dependent isolinux.cfg (if needed)
     local isolinux_flav isolinux_cfg=$isolinux_dir/isolinux.cfg
-    get_template_file -e isolinux.cfg isolinux_flav
-    cp $isolinux_flav $isolinux_cfg
+    get_template_file isolinux.cfg isolinux_flav
+    [ "$isolinux_flav" ] && cp $isolinux_flav $isolinux_cfg
 
     # Fill in the blanks in the isolinux.cfg
     sed -i -e "s/%RELEASE_DATE%/$RELEASE_DATE/g" \
@@ -2252,7 +2252,7 @@ make_build_dir() {
         --exclude iso                    \
         --exclude initrd                 \
         --exclude squashfs               \
-        --exclude gfxboot  )             \
+        --exclude isolinux  )            \
         | (cd $b_dir && tar xBf -)
 
     [ "$THEME" ] && copy_theme_dir $b_dir
