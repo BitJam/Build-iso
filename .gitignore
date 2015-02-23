@@ -7,6 +7,6 @@ iso
 sqfs
 work
 TODO
-Template/COMMON/initrd/*
-Template/COMMON/isolinux/*
+Template/*/initrd/*
+Template/*/isolinux/*
 
