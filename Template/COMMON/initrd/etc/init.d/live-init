@@ -18,7 +18,7 @@ XSESSION_DIR=/usr/share/xsessions
    AUTOMOUNT=
 
 #-jbb For debugging
-CMDLINE=${CMDLINE:-$(cat /proc/cmdline)}
+CMDLINE=${CMDLINE:-$(cat /proc/cmdline /live/config/cmdline)}
 for param in $CMDLINE; do
     value=${param#*=}
     case "$param" in

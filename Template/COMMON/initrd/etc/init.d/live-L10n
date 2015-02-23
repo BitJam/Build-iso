@@ -25,7 +25,7 @@ case "$1" in
 esac
 
 # For debugging
-CMDLINE=${CMDLINE:-$(cat /proc/cmdline)}
+CMDLINE=${CMDLINE:-$(cat /proc/cmdline /live/config/cmdline)}
 
 for param in $CMDLINE; do
     case "$param" in
