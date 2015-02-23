@@ -940,11 +940,12 @@ do_stage_4() {
     fi
 
     if do_part 14 "!Update runlevels based on flavour"; then
-        if [ "$ISO_RESPIN_OF" = "core" ]; then
-            say "Reconfigure ejectcd run levels for $(pq $ISO_RESPIN_OF) type system"
-            update-rc.d ejectcd remove
-            update-rc.d ejectcd stop 06
-        else
+        # if [ "$ISO_RESPIN_OF" = "core" ]; then
+        #     say "Reconfigure ejectcd run levels for $(pq $ISO_RESPIN_OF) type system"
+        #     update-rc.d ejectcd remove
+        #     update-rc.d ejectcd stop 06
+        # else
+        if [ "$ISO_RESPIN_OF" != core ]; then
             say "Reconfigure SLiM run levels for $(pq $ISO_RESPIN_OF) type of system"
             update-rc.d slim remove
             update-rc.d slim start 25 stop 01346
