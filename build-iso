@@ -1247,7 +1247,7 @@ do_stage_6() {
     get_template_file gfxboot.menu boot_menu
 
     # jbb: an awful kludge for now
-    [ "$ISO_RESPIN_OF" != core ] \
+    [ "$ISO_RESPIN_OF" = core ] \
         && sed -r -i "s/^(key\.F.=console)/; \1/" $isolinux_dir/gfxboot.cfg
 
     [ "$boot_menu" ] && update_gfxboot_menu $boot_menu $isolinux_dir/gfxboot.cfg
