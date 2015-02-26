@@ -318,6 +318,8 @@ main() {
         local sqfs_dir=$work_dir/squashfs
         local sqfs_output_dir=$sqfs_dir$build_dir/Output
         local sqfs_input_dir=$sqfs_dir$build_dir/Input
+        local boot_menu_dir=$sqfs_dir/usr/local/share/boot-menus
+
         local initrd_dir=$work_dir/initrd
         local manual_selections_template=$template/COMMON/$manual_selections
 
@@ -1254,6 +1256,12 @@ do_stage_6() {
 
     # Create text-only menu
     $tools/make-isolinux-menu $isolinux_cfg >> $isolinux_dir/isolinux.msg
+
+    local desktop_men=$isolinux_dir/desktop.men
+    if test -e $desktop_men; then
+        say "Create desktop boot-menu"
+        $SUDO $tools/make-boot-menu desktop $boot_menu_dir $desktop_men
+    fi
 
     local boot_menu bootloader_bg
     get_template_file gfxboot.menu boot_menu
