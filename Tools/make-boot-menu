@@ -13,6 +13,7 @@ make_boot_menu() {
     while read line; do
         label=$(echo "$line" | cut -d\` -f1)
         param=$(echo "$line" | cut -d\` -f2)
+        [ "$param" ] || param=default
         echo $cnt:$param >> $dfile
         printf "%3d) %s\n" $cnt "$label" >> $mfile
         cnt=$((cnt + 1))
