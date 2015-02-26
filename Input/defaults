@@ -35,3 +35,4 @@ RELEASE_DATE=
 TIME_ZONE="America/New_York"
 X_TERM_EMULATOR="/usr/bin/roxterm"
 
+USE_UEFI=true

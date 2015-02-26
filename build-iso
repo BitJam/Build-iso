@@ -1240,6 +1240,18 @@ do_stage_6() {
            -e "s/%CODE_NAME%/$CODE_NAME/g" \
            -e "s/%FULL_DISTRO_NAME%/$full_distro_name/g" $isolinux_cfg
 
+    local uefi_dir
+    get_template_file UEFI uefi_dir
+    say "uefi_dir=$uefi_dir"
+    if [ "$DO_UEFI" -a "$uefi_dir" ]; then
+        say "Copying UEFI files into iso"
+        cp -a $uefi_dir/* $iso_dir/
+        sed -i -e "s/%RELEASE_DATE%/$RELEASE_DATE/g" \
+           -e "s/%CODE_NAME%/$CODE_NAME/g" \
+           -e "s/%FULL_DISTRO_NAME%/$full_distro_name/g" \
+           $iso_dir/boot/grub/grub.cfg
+    fi
+
     # Create text-only menu
     $tools/make-isolinux-menu $isolinux_cfg >> $isolinux_dir/isolinux.msg
 
