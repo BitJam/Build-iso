@@ -1245,7 +1245,7 @@ do_stage_6() {
     local uefi_dir
     get_template_file UEFI uefi_dir
     say "uefi_dir=$uefi_dir"
-    if [ "$DO_UEFI" -a "$uefi_dir" ]; then
+    if [ "$USE_UEFI" -a "$uefi_dir" ]; then
         say "Copying UEFI files into iso"
         cp -a $uefi_dir/* $iso_dir/
         sed -i -e "s/%RELEASE_DATE%/$RELEASE_DATE/g" \
