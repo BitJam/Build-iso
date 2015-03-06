@@ -37,6 +37,7 @@ Usage
 
 DEFAULT_LIST="
 aufs
+battery
 block
 btrfs
 # cdrom
