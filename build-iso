@@ -1290,6 +1290,9 @@ do_stage_6() {
 
     echo 1 > $syslinux_dir/gfxsave.on
 
+    say "Add default vga=788 parameter to syslinux.cfg"
+    sed -i -r "1, /APPEND/ s/(^\s*APPEND.*)/\1 vga=788/" $syslinux_dir/syslinux.cfg
+
     echo "$fancy_name" > $iso_dir/version
 
     if [ -z "$iso_only" ]; then
