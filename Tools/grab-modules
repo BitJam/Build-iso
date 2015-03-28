@@ -82,9 +82,9 @@ xfs
 xhci-hcd
 xhci-pci
 
-i915
-nouveau
-radeon
+# i915
+# nouveau
+# radeon
 "
 
 main() {
