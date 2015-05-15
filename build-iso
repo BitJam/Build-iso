@@ -2110,9 +2110,24 @@ write_version_files() {
     echo "$fancy_name" > $prefix/etc/antix-version
 
     local rstring=$(dd if=/dev/urandom bs=1 count=40 2>/dev/null | md5sum | cut -d" " -f1)
+    local kernels=$K_NAME
+    [ "$K_NAME2" ] && kernels="$kernels $K_NAME2"
+    local title=$LINUXFS_TITLE
+    if [ -z "$title" ]; then
+        title="Original $DISTRO_NAME $DISTRO_VERSION $ISO_ARCH"
+        [ -n "$DISTRO_NAME" -a -z "${DISTRO_NAME##antiX*}" -a -n "$FLAV" ] && title="$title $FLAV"
+    fi
     local linuxfs_version_file=$prefix/etc/live/version/linuxfs.ver
     mkdir -p $(dirname $linuxfs_version_file)
-    echo "=== $rstring" > $linuxfs_version_file
+    cat > $linuxfs_version_file <<Linuxfs_Version
+=== $rstring
+
+title: $title
+creation date: $(date +"%e %B %Y %T %Z")
+kernel: $kernels
+inxi version: $fancy_name
+Linuxfs_Version
+
 }
 
 write_version_info() {
