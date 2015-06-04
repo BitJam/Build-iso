@@ -1290,6 +1290,13 @@ do_stage_6() {
 
     echo 1 > $syslinux_dir/gfxsave.on
 
+    local opt_menu=$syslinux_dir/options.men  sep='`'
+    if test -e $opt_menu && ! grep -q savestate $opt_menu; then
+        say "Add savestate options to options.men"
+        echo "savestate       ${sep}savestate"   >> $opt_menu
+        echo "nosavestate     ${sep}nosavestate" >> $opt_menu
+    fi
+
     #say "Add default vga=788 parameter to syslinux.cfg"
     #sed -i -r "1, /APPEND/ s/(^\s*APPEND.*)/\1 vga=788/" $syslinux_dir/syslinux.cfg
 
