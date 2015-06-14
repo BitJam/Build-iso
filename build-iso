@@ -2099,6 +2099,9 @@ collect_live_files() {
     #echo "$list"
 
     $SUDO mkdir -p $dest_dir
+    # This hard-codes the live-files dir but it is safer in case
+    # $dest_dir is empty.
+    $SUDO rm -rf $(dirname $dest_dir)/live-files/*
 
     local file dest
     for file in $list; do
