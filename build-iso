@@ -112,6 +112,7 @@ main() {
     local err_file=$output_dir/$ME.err
     local make_xinitrc=/usr/share/antiX/lib/make-xinitrc
 
+    local live_files_list=$input_dir/live-files.list
     local initrd_modules_file=$input_dir/initrd-modules
     local strict_regex_file=$input_dir/strict-exceptions.regex
     local lax_regex_file=$input_dir/lax-errors.regex
@@ -1212,6 +1213,8 @@ do_stage_5() {
     say "Delete $(pq /etc/mtab)"
     $SUDO rm -f $sqfs_dir/etc/mtab
 
+    collect_live_files $live_files_list /usr/local/share/live-files
+
     leave_stage
 }
 
@@ -2087,6 +2090,25 @@ gather_deb() {
     done
 }
 
+collect_live_files() {
+    local list_file=$1 dest_dir=$sqfs_dir$2
+    test -r $list_file || return
+    echo "Collecting Live-files"
+    local list=$(cat $list_file | grep -v "^\s*#\s*" | sed 's/\s*#.*//' \
+        | grep "^/" | sed "s=^=$sqfs_dir=")
+    #echo "$list"
+
+    $SUDO mkdir -p $dest_dir
+
+    local file dest
+    for file in $list; do
+        test -e $file || continue
+        dest_file=${file#$sqfs_dir}
+        dest=$dest_dir$dest_file
+        $SUDO mkdir -p $(dirname $dest)
+        $SUDO cp -a $file $dest
+    done
+}
 
 #==============================================================================
 # Routines for preparing and making the iso file
