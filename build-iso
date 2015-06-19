@@ -1392,6 +1392,9 @@ do_stage_7() {
     $SUDO rm -rf $sqfs_dir/run
     $SUDO mkdir -p $sqfs_dir/run
 
+    say "Run updatedb one last time"
+    $SUDO chroot $sqfs_dir /usr/bin/updatedb
+
     say "Build the xz compressed linuxfs file. This takes time and uses a lot of CPU power."
 
     local linuxfs_file=$iso_dir/antiX/linuxfs
