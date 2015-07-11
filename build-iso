@@ -1350,7 +1350,7 @@ Initrd_Version
 
         rm -rf $initrd_dir/lib/modules/
 
-        $tools/grab-modules --quiet --kernel $K_NAME --from $sqfs_dir --to $initrd_dir \
+        $tools/copy-initrd-modules --quiet --kernel $K_NAME --from $sqfs_dir --to $initrd_dir \
             --count --dir kernel/drivers/ata $initrd_modules_file*
     fi
 
