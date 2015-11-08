@@ -36,42 +36,60 @@ Usage
 }
 
 DEFAULT_LIST="
+ahci
 aufs
 battery
 block
 btrfs
-# cdrom
+cdrom
+crc16
+crct10dif-pclmul
+crct10dif_common
+crct10dif_generic
+ehci_hcd
+ehci_pci
+ext2
+ext3
 ext4
-# fat
+fat
+fotg210_hcd
 fusbh200-hcd
 fuse
-# hid
+hid
 hid-generic
-# i2c-core
 isofs
-# jbd2
+jbd
+jbd2
 jfs
+libahci
+libata
+libcrc32c
 loop
-# mbcache
+mbcache
 msdos
 nls-cp437
 nls-utf8
 ntfs
 ohci-pci
+ohci_hcd
 pcie-aspm
 printk
 pstore
 reiserfs
+rts5139
+scsi_mod
 sd-mod
 sg
+shpchp
 squashfs
 sr-mod
 udf
 ufshcd-pci
 uhci-hcd
-# usb-common
+ums-realtek
+usb-common
 usb-storage
-# usbcore
+usbcore
 usbhid
 usbmon
 vfat
@@ -81,11 +99,11 @@ xcbc
 xfs
 xhci-hcd
 xhci-pci
+"
 
 # i915
 # nouveau
 # radeon
-"
 
 main() {
 
