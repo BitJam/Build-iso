@@ -1279,19 +1279,19 @@ do_stage_6() {
 
     [ "$boot_menu" ] && update_gfxboot_menu $boot_menu $isolinux_dir/gfxboot.cfg
 
-    # Create cpio archive for syslinux bootloader
-    : ${BL_ARCHIVE_NAME:=gfx-cpio}
-    : ${BL_ARCHIVE_LIST:=*.tr *.hlp *.fnt *.jpg gfxtheme gfxboot.cfg languages}
-    local cpio_dir=$work_dir/syslinux-cpio
+    #-- jbb # Create cpio archive for syslinux bootloader
+    #-- jbb : ${BL_ARCHIVE_NAME:=gfx-cpio}
+    #-- jbb : ${BL_ARCHIVE_LIST:=*.tr *.hlp *.fnt *.jpg gfxtheme gfxboot.cfg languages}
+    #-- jbb local cpio_dir=$work_dir/syslinux-cpio
 
-    sed -i -r "s/^(\s*UI\s+gfxboot\s+)[^ ]+(\s)/\1$BL_ARCHIVE_NAME\2/" $isolinux_dir/isolinux.cfg
-    rm -rf $cpio_dir
-    mkdir -p $cpio_dir
-    local files
-    for files in $(echo "$BL_ARCHIVE_LIST" | sed -r "s=^|\s+= $isolinux_dir/=g"); do
-        mv $files $cpio_dir/
-    done
-    (cd $cpio_dir && find . -depth | cpio --create --quiet) > $isolinux_dir/$BL_ARCHIVE_NAME
+    #-- jbb sed -i -r "s/^(\s*UI\s+gfxboot\s+)[^ ]+(\s)/\1$BL_ARCHIVE_NAME\2/" $isolinux_dir/isolinux.cfg
+    #-- jbb rm -rf $cpio_dir
+    #-- jbb mkdir -p $cpio_dir
+    #-- jbb local files
+    #-- jbb for files in $(echo "$BL_ARCHIVE_LIST" | sed -r "s=^|\s+= $isolinux_dir/=g"); do
+    #-- jbb     mv $files $cpio_dir/
+    #-- jbb done
+    #-- jbb (cd $cpio_dir && find . -depth | cpio --create --quiet) > $isolinux_dir/$BL_ARCHIVE_NAME
 
    # say "Update Live bootloader background image"
    # get_template_file -e gfxboot/back.jpg bootloader_bg
