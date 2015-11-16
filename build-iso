@@ -1311,12 +1311,12 @@ do_stage_6() {
 
     #echo 1 > $syslinux_dir/gfxsave.on
 
-    local opt_menu=$syslinux_dir/options.men  sep='`'
-    if test -e $opt_menu && ! grep -q savestate $opt_menu; then
-        say "Add savestate options to options.men"
-        echo "savestate       ${sep}savestate"   >> $opt_menu
-        echo "nosavestate     ${sep}nosavestate" >> $opt_menu
-    fi
+    #-- jbb local opt_menu=$syslinux_dir/options.men  sep='`'
+    #-- jbb if test -e $opt_menu && ! grep -q savestate $opt_menu; then
+    #-- jbb     say "Add savestate options to options.men"
+    #-- jbb     echo "savestate       ${sep}savestate"   >> $opt_menu
+    #-- jbb     echo "nosavestate     ${sep}nosavestate" >> $opt_menu
+    #-- jbb fi
 
     copy_template_dir -u syslinux $syslinux_dir
 
