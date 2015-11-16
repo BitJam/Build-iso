@@ -1309,7 +1309,7 @@ do_stage_6() {
         mv $file $syslinux_dir/syslinux.$ext
     done
 
-    echo 1 > $syslinux_dir/gfxsave.on
+    #echo 1 > $syslinux_dir/gfxsave.on
 
     local opt_menu=$syslinux_dir/options.men  sep='`'
     if test -e $opt_menu && ! grep -q savestate $opt_menu; then
