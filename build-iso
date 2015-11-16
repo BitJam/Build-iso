@@ -1213,7 +1213,11 @@ do_stage_5() {
     say "Delete $(pq /etc/mtab)"
     $SUDO rm -f $sqfs_dir/etc/mtab
 
-    collect_live_files $live_files_list /usr/local/share/live-files
+    #collect_live_files $live_files_list /usr/local/share/live-files
+    say "Save Live files for snapshot"
+
+    $SUDO rm -rf $sqfs_dir/usr/local/share/live-files
+    $SUDO $tools/installed-to-live populate-live-files $sqfs_dir $sqfs_dir
 
     leave_stage
 }
