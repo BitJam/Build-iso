@@ -37,7 +37,7 @@ PRETEND=
 
 PW_FILES="/etc/passwd /etc/shadow /etc/gshadow /etc/group"
 MUNGE_FILES="/etc/slim.conf /etc/lightdm/lightdm.conf"
-BIND_FILES="$PW_FILES $MUNGE_FILES"
+BIND_FILES="$PW_FILES"
 
 LIVE_FILE_LIST="
 /etc/desktop-session/startup
@@ -55,7 +55,9 @@ LIVE_FILE_LIST="
 /etc/skel/.fluxbox/menu
 /etc/skel/.icewm/menu
 /etc/skel/.jwm/menu
+/etc/skel/Desktop/Installer.desktop
 /etc/udev/rules.d/90-fstab-automount.rules
+/usr/share/applications/mx/minstall.desktop
 "
 
 GENERAL_LIVE_FILE_LIST="
@@ -79,11 +81,12 @@ Commands:
 
     live-files          bind mount files under $TEMPLATE_DIR/files
     general-files       bind mount files under $TEMPLATE_DIR/general-files
-    all-files           same as "live-files general-files"
 
     passwd              Make general purpose password/group files
 
     add=<dir1,dir2,..>  Add files from the dirs template
+
+    bind=<dir1,dir2,..>  Bind mount each dir IF it is a mountpoint
 
     general             Same as "all-files passwd"
 
@@ -198,16 +201,16 @@ main() {
     [ $# -eq 0 ] && fatal "Expected as least one commmand"
 
     while [ $# -gt 0 ]; do
-    local val cmd=$1
-    shift
-    val=${cmd#*=}
+        local val cmd=$1
+        shift
+        val=${cmd#*=}
         case $cmd in
               start) do_start         $CONF_FILE $WORK_DIR             ;;
              status) do_status        $CONF_FILE                       ;;
               add=*) do_add           $CONF_FILE $WORK_DIR "$val"      ;;
+             bind=*) do_bind          $CONF_FILE $WORK_DIR "$val"      ;;
          live-files) do_live_files    $CONF_FILE $WORK_DIR             ;;
       general-files) do_general_files $CONF_FILE $WORK_DIR             ;;
-          all-files) do_all_files     $CONF_FILE $WORK_DIR             ;;
             general) do_general       $CONF_FILE $WORK_DIR             ;;
              passwd) do_passwd        $CONF_FILE                       ;;
             cleanup) do_cleanup       $CONF_FILE $WORK_DIR             ;;
@@ -312,7 +315,7 @@ do_start() {
     test -e $work_dir && rm -rf $work_dir
 
     mkdir -p $BIND_ROOT || fatal "Could not make bind root directory $BIND_ROOT"
-    if mountpoint -q $BIND_ROOT &>/dev/null; then
+    if is_mounted $BIND_ROOT &>/dev/null; then
 
         [ -z "$FORCE" ] && fatal "bind-root: $BIND_ROOT is already a mount point"
 
@@ -328,10 +331,11 @@ do_add() {
 
     read_conf_file $conf_file
 
-    local dir
+    local dir real_dir real_root=${REAL_ROOT%/}
     echo "$dirs" | tr ',' '\n' | while read dir; do
 	    [ "$dir" ] || continue
-        test -d $dir || fatal "Add dir: $dir is not a directory"
+        real_dir=$real_root/${dir#/}
+        test -d $real_dir || fatal "Add dir: $real_dir is not a directory"
         bind_mount_template "$dir" "$BIND_ROOT" "$REAL_ROOT"
     done
 
@@ -339,12 +343,31 @@ do_add() {
 
 }
 
+do_bind() {
+    local conf_file=$1  work_dir=$2  dirs=$3
+
+    read_conf_file $conf_file
+
+    local dir real_dir real_root=${REAL_ROOT%/}
+    echo "$dirs" | tr ',' '\n' | while read dir; do
+        dir=${dir#/}
+	    [ "$dir" ] || continue
+
+        real_dir=$real_root/$dir
+
+        mountpoint -q $real_dir || continue
+        pretend mount --bind $real_dir $BIND_ROOT/$dir
+    done
+
+    write_conf_file $CONF_FILE
+}
+
 do_empty() {
     local conf_file=$1  work_dir=$2  dirs=$3
 
     read_conf_file $conf_file
 
-    bind_empty_dirs "$WORK_DIR/empty" "$BIND_ROOT" "$REAL_ROOT" "$dir"
+    bind_empty_dirs "$WORK_DIR/empty" "$BIND_ROOT" "$REAL_ROOT" "$dirs"
 }
 
 do_status() {
@@ -360,7 +383,7 @@ do_status() {
 
     if ! test -d $BIND_ROOT; then
         echo "  BIND_ROOT: $BIND_ROOT is not a directory"
-    elif mountpoint -q $BIND_ROOT; then
+    elif is_mounted $BIND_ROOT; then
         echo "  BIND_ROOT: $BIND_ROOT is mounted"
     else
         echo "  BIND_ROOT: $BIND_ROOT is not mounted"
@@ -410,7 +433,6 @@ _do_files() {
     write_conf_file $CONF_FILE
 }
 
-
 do_all_files() {
     do_live_files "$@"
     do_general_files "$@"
@@ -438,12 +460,14 @@ do_cleanup() {
 
     local i
     for i in $(seq 1 10); do
-        mountpoint $BIND_ROOT -q &>/dev/null || break
+        is_mounted $BIND_ROOT &>/dev/null || break
         pretend umount --recursive $BIND_ROOT
         [ "$PRETEND" ] && break
     done
 
-    [ -z "$PRETEND" ] && mountpoint $BIND_ROOT -q &>/dev/null && fatal "Could not umount $BIND_DIR"
+    [ -z "$PRETEND" ] && is_mounted $BIND_ROOT &>/dev/null && fatal "Could not umount $BIND_DIR"
+
+    pretend rmdir $BIND_ROOT
 
     local file dir
     echo "$RM_FILES" | tr ',' '\n' | tac | while read file; do
@@ -643,7 +667,7 @@ set_password() {
     local pw=${user_pw#*:}
     : ${pw:=$user}
     local hash=$(mkpasswd -m sha-512 "$pw")
-    pretend sed -n -r "s=^($user):[^:]*:=\1:$hash=p" $dir/etc/shadow
+    pretend sed -i -r "s=^($user):[^:]*:=\1:$hash=" $dir/etc/shadow
 }
 
 write_conf_file() {
