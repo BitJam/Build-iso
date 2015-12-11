@@ -1192,6 +1192,9 @@ do_stage_5() {
        $SUDO find $sqfs_dir/usr/lib -type f -name "*.pyc" -delete
     fi
 
+    say "Write initrd-release file"
+    write_initrd_release $sqfs_dir
+
     say "Clean out log files and other files"
     for f in $(gather delete-files); do
         eval $SUDO rm -rf $sqfs_dir/$f 2>/dev/null
@@ -1353,17 +1356,8 @@ do_stage_6() {
         error "No $initrd_src/ or $initrd_src.gz found"
     fi
 
-    mkdir -p $initrd_dir/etc
-    cat << Initrd_Version > $initrd_dir/etc/initrd-release
-NAME="$DISTRO_NAME"
-VERSION="$DISTRO_VERSION ($CODE_NAME)"
-ID="$(echo $DISTRO_NAME | tr 'A-Z' 'a-z')"
-VERSION_ID="$(echo $DISTRO_VERSION | sed -r 's/^([0-9._-]+).*/\1/')"
-PRETTY_NAME="$DISTRO_NAME $DISTRO_VERSION ($CODE_NAME)"
-ANSI_COLOR="0;34"
-HOME_URL="$HOME_URL"
-BUG_REPORT_URL="$BUG_REPORT_URL"
-Initrd_Version
+    say "Write initrd-release file"
+    write_initrd_release $initrd_dir
 
     if [ -z "$iso_only_xxx" ]; then
         say "Copy $(pq $K_NAME) modules into initrd"
@@ -2199,6 +2193,23 @@ Release date:$RELEASE_DATE
 Made by:$ME version $VERSION ($VERSION_DATE)
 Version-Info
 }
+
+write_initrd_release() {
+    local dir=$1
+    [ ${#dir} -eq 0 ] && fatal "Empty directory passed to write_initrd_version()"
+
+    mkdir -p $dir/etc
+    cat << Initrd_Version > $dir/etc/initrd-release
+NAME="$DISTRO_NAME"
+VERSION="$DISTRO_VERSION ($CODE_NAME)"
+ID="$(echo $DISTRO_NAME | tr 'A-Z' 'a-z')"
+VERSION_ID="$(echo $DISTRO_VERSION | sed -r 's/^([0-9._-]+).*/\1/')"
+PRETTY_NAME="$DISTRO_NAME $DISTRO_VERSION ($CODE_NAME)"
+ANSI_COLOR="0;34"
+HOME_URL="$HOME_URL"
+BUG_REPORT_URL="$BUG_REPORT_URL"
+Initrd_Version
+
 
 busybox_depmod() {
     local targ=$1  kernel=$2  cmd=${3:-depmod}
