@@ -50,8 +50,10 @@ LIVE_FILE_LIST="
 /etc/init.d/keyboard-setup
 /etc/init.d/umountfs
 /etc/init.d/sendsigs
+/etc/initrd-release
 /etc/issue
 /etc/rc.local
+/etc/rc?.d/*virtualbox*
 /etc/skel/.fluxbox/menu
 /etc/skel/.icewm/menu
 /etc/skel/.jwm/menu
@@ -77,10 +79,14 @@ This is needed because sometimes we create directories and touch files.
 
 Commands:
     start               Do the main bind mount and create cleanup.conf
+
     status              Show status including contents of cleanup.conf
 
     live-files          bind mount files under $TEMPLATE_DIR/files
+
     general-files       bind mount files under $TEMPLATE_DIR/general-files
+
+    read-only           Remount the bind root directory as read-only
 
     passwd              Make general purpose password/group files
 
@@ -96,18 +102,19 @@ Commands:
                         Bind mount empty directories at these locations
 
     exclude[=<prefix>] file1 file2 ...
-                        Generate an exclude list from the files listed.
-                        Prepend each entry with <prefix> if it is given.
+                        Generate an exclude list from the files listed. Prepend
+                        each entry with <prefix> if it is given.  (This is a
+                        convenience routine for use with mksquashfs).
 
     version-file[=<title>]
-                        Create a standard linuxfs.ver file and bind mount it
-                        at the appropriate location: $VERSION_FILE
+                        Create a standard linuxfs.ver file and bind mount it at
+                        the appropriate location: $VERSION_FILE
 
     populate-live-files <from-dir> [<to-dir>]
                         Populate the $TEMPLATE_DIR with files extracted from
                         <from-dir>.  This is usually a mounted linuxfs file.
-                        The optional <to-dir> is the top level directory
-                        under which we will put the template directory.
+                        The optional <to-dir> is the top level directory under
+                        which we will put the template directory.
 Options:
 
     -b --bind-root=<dir>       The root of the new fs.   Default: $BIND_ROOT
@@ -122,8 +129,7 @@ Options:
     -u --user=<user:password>  Default username and optional password
     -w --work=<dir>            Temporary directory to hold our work: $WORK_DIR
 
-    -v --verbose                Print more
-    -q --quiet                  Print less
+    -v --verbose               Print more
 
 Note: if passwords aren't given then the username is used as the password.
 
@@ -144,7 +150,7 @@ main() {
     [ $# -eq 0 ] && usage
 
     local param val
-    local short_stack="bdefFhoprtuvq"
+    local short_stack="bdefFhoprtuv"
     while [ $# -gt 0 -a -n "$1" -a -z "${1##-*}" ]; do
         param=${1#-}
         shift
@@ -182,7 +188,6 @@ main() {
              -output=*|o=*) OUTPUT_FILE=$val                  ;;
                  -output|o) OUTPUT_FILE=$val                  ;;
                 -pretend|p) PRETEND=true                      ;;
-                  -quiet|q) QUIET=true                        ;;
                -root=*|r=*) ROOT_PW=$val                      ;;
                    -root|r) ROOT_PW=$val                      ;;
            -template=*|t=*) TEMPLATE_DIR=$val                 ;;
@@ -213,6 +218,7 @@ main() {
       general-files) do_general_files $CONF_FILE $WORK_DIR             ;;
             general) do_general       $CONF_FILE $WORK_DIR             ;;
              passwd) do_passwd        $CONF_FILE                       ;;
+          read-only) do_read_only     $CONF_FILE                       ;;
             cleanup) do_cleanup       $CONF_FILE $WORK_DIR             ;;
             empty=*) do_empty         $CONF_FILE $WORK_DIR "$val"      ;;
        version-file) do_version_file  $CONF_FILE $WORK_DIR             ;;
@@ -324,6 +330,16 @@ do_start() {
     fi
 
     write_conf_file $conf_file
+}
+
+do_read_only() {
+    local conf_file=$1  work_dir=$2  dirs=$3
+
+    read_conf_file $conf_file
+
+    is_mounted $BIND_ROOT &>/dev/null || fatal "read-only: $BIND_ROOT is not mounted"
+
+    mount -o remount,bind,ro $BIND_ROOT
 }
 
 do_add() {
@@ -467,7 +483,7 @@ do_cleanup() {
 
     [ -z "$PRETEND" ] && is_mounted $BIND_ROOT &>/dev/null && fatal "Could not umount $BIND_DIR"
 
-    pretend rmdir $BIND_ROOT
+    test -d $BIND_ROOT && pretend rmdir $BIND_ROOT
 
     local file dir
     echo "$RM_FILES" | tr ',' '\n' | tac | while read file; do
@@ -501,7 +517,7 @@ bind_mount_template() {
         is_mounted $targ && error "File $targ is already mounted"
         pretend mount --bind $file $targ
     done <<Bind_Template
-$(find $template_dir -type f)
+$(find $template_dir -type f -o -type l)
 Bind_Template
 }
 
@@ -546,7 +562,7 @@ munge_files() {
     local template_dir=$1  bind_root=$2  work_dir=$3  user_pw=${4:-demo}  root_pw=${5:-root}
     local bind_from=$work_dir/bind
 
-    local def_user=${user_pw%%=*}
+    local def_user=${user_pw%%:*}
 
     local empty_dir=$work_dir/empty
     mkdir -p $empty_dir
@@ -613,6 +629,8 @@ munge_files() {
         pretend sed -i -r -e "s/:$user_1000(,|$)/:$def_user/" -e "s/,$user_1000(,|$)/,$def_user\1/" $grp_files
     fi
 
+    update_home $def_user /home/$def_user $bind_from
+
     set_password $user_pw $bind_from
     set_password $root_pw $bind_from
 
@@ -626,8 +644,10 @@ munge_files() {
     done
 }
 
+# Note: this code is no longer called/used.  We use fresh copies which
+# a lot of problems.  Although we will need to call it if the name of
+# the default user changes.
 do_xorg_login() {
-    #FIXME!
     exit 10
     do_sed $bind_from/etc/slim.conf \
         -e "s/^(\s#)*(default_user +).*/\2$def_user/" \
@@ -667,7 +687,12 @@ set_password() {
     local pw=${user_pw#*:}
     : ${pw:=$user}
     local hash=$(mkpasswd -m sha-512 "$pw")
-    pretend sed -i -r "s=^($user):[^:]*:=\1:$hash=" $dir/etc/shadow
+    pretend sed -i -r "s=^($user):[^:]*:=\1:$hash:=" $dir/etc/shadow
+}
+
+update_home() {
+    local user=$1  home=$2  dir=$3
+    pretend sed -i -r "s=^($user:[^:]*:[^:]*:[^:]*:[^:]*:)[^:]*=\1$home=" $dir/etc/passwd
 }
 
 write_conf_file() {
