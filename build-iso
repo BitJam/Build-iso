@@ -1448,11 +1448,27 @@ do_stage_8() {
         test -e $full && md5sum_file $full
     done
 
+    local iso2_dir
+    if true; then
+        iso2_dir=$iso_dir-2
+        say "Moving linuxfs file to $(basename $iso2_dir)/antiX"
+        test -d $iso2_dir && fatal "The $iso2_dir directory already exists".
+        mkdir -p $iso2_dir/antiX
+        mv $iso_dir/antiX/linuxfs* $iso2_dir/antiX/
+    fi
+
     start_timer
     $MAKE_ISO -l -V antiXlive -R -J -pad -no-emul-boot -boot-load-size 4  \
         -boot-info-table -gid 0 -uid 0 -b boot/isolinux/isolinux.bin      \
-        -c boot/isolinux/isolinux.cat -o $full_iso_file $iso_dir     2>&1 \
+        -c boot/isolinux/isolinux.cat -o $full_iso_file $iso_dir $iso2_dir 2>&1 \
         || error "iso file creation failed"
+
+    if test -d $iso2_dir; then
+        say "Restoring linuxfs to iso directory"
+        mv $iso2_dir/antiX/linuxfs* $iso_dir/antiX/
+        say "Removing $(basename $iso2_dir)/"
+        rm -r $iso2_dir
+    fi
 
     isohybrid $full_iso_file
     size=$(du_size $full_iso_file)
