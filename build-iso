@@ -1312,6 +1312,8 @@ do_stage_6() {
         mv $file $syslinux_dir/syslinux.$ext
     done
 
+    sed -i '/harddisk/,$ s/ hd0/ hd1' $syslinux_dir/syslinux.cfg
+
     #echo 1 > $syslinux_dir/gfxsave.on
 
     #-- jbb local opt_menu=$syslinux_dir/options.men  sep='`'
