@@ -1451,7 +1451,7 @@ do_stage_8() {
     done
 
     local iso2_dir
-    if false; then
+    if true; then
         iso2_dir=$iso_dir-2
         say "Moving linuxfs file to $(basename $iso2_dir)/antiX"
         test -d $iso2_dir && fatal "The $iso2_dir directory already exists".
