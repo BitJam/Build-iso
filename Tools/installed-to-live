@@ -22,7 +22,7 @@ ME=${0##*/}
 USER_PW=demo:demo
 ROOT_PW=root:root
 
-BIND_ROOT=/bind-root
+BIND_ROOT=/.bind-root
 REAL_ROOT=/
 WORK_DIR=/tmp/$ME
 
@@ -88,6 +88,8 @@ Commands:
 
     read-only           Remount the bind root directory as read-only
 
+    read-write          Remount the bind root directory as read-write
+
     passwd              Make general purpose password/group files
 
     add=<dir1,dir2,..>  Add files from the dirs template
@@ -95,6 +97,8 @@ Commands:
     bind=<dir1,dir2,..>  Bind mount each dir IF it is a mountpoint
 
     general             Same as "all-files passwd"
+
+    adjtime             Reset the adjtime file but leave the utc / local selection
 
     cleanup             Clean up all that we did
 
@@ -219,10 +223,12 @@ main() {
             general) do_general       $CONF_FILE $WORK_DIR             ;;
              passwd) do_passwd        $CONF_FILE                       ;;
           read-only) do_read_only     $CONF_FILE                       ;;
+         read-write) do_read_write    $CONF_FILE                       ;;
             cleanup) do_cleanup       $CONF_FILE $WORK_DIR             ;;
             empty=*) do_empty         $CONF_FILE $WORK_DIR "$val"      ;;
        version-file) do_version_file  $CONF_FILE $WORK_DIR             ;;
      version-file=*) do_version_file  $CONF_FILE $WORK_DIR "$val"      ;;
+            adjtime) do_adjtime       $CONF_FILE $WORK_DIR             ;;
           exclude=*) do_exclude       "$val" "$@" ; exit 0             ;;
             exclude) do_exclude       ""     "$@" ; exit 0             ;;
 
@@ -342,6 +348,16 @@ do_read_only() {
     mount -o remount,bind,ro $BIND_ROOT
 }
 
+do_read_write() {
+    local conf_file=$1  work_dir=$2  dirs=$3
+
+    read_conf_file $conf_file
+
+    is_mounted $BIND_ROOT &>/dev/null || fatal "read-only: $BIND_ROOT is not mounted"
+
+    mount -o remount,bind,rw $BIND_ROOT
+}
+
 do_add() {
     local conf_file=$1  work_dir=$2  dirs=$3
 
@@ -392,7 +408,7 @@ do_status() {
     echo "$ME status:"
     if ! read_conf_file $conf_file force; then
         echo "  unstarted"
-        exit 1
+        exit 0
     fi
 
     echo "  started"
@@ -417,6 +433,20 @@ do_status() {
     df -a | grep $BIND_ROOT | awk '{print $6}'
 
     exit 0
+}
+
+do_adjtime() {
+    local conf_file=$1  work_dir=$2
+    read_conf_file $conf_file
+    local orig_file=/etc/adjtime
+    test -r $orig_file || return 0
+
+    local template_dir=$work_dir/adjtime
+    local targ_file=$template_dir$orig_file
+    mkdir -p $(dirname $targ_file)
+    cp $orig_file $targ_file
+    sed -i -e "1 s/.*/0.0 0 0.0/" -e "2 s/.*/0/" $targ_file
+    bind_mount_template "$template_dir"  "$BIND_ROOT" "$REAL_ROOT"
 }
 
 do_passwd() {
@@ -474,11 +504,14 @@ do_cleanup() {
     local conf_file=$1  work_dir=$2
     read_conf_file $conf_file $FORCE
 
+    is_mounted $BIND_ROOT &>/dev/null && pretend umount --recursive $BIND_ROOT
+
     local i
     for i in $(seq 1 10); do
         is_mounted $BIND_ROOT &>/dev/null || break
         pretend umount --recursive $BIND_ROOT
         [ "$PRETEND" ] && break
+        sleep 0.1
     done
 
     [ -z "$PRETEND" ] && is_mounted $BIND_ROOT &>/dev/null && fatal "Could not umount $BIND_DIR"
@@ -513,9 +546,26 @@ bind_mount_template() {
     while read file; do
         local base=${file#$template_dir}
         local targ=$bind_root$base
-        touch_file "$targ" "$real_root$base"
-        is_mounted $targ && error "File $targ is already mounted"
-        pretend mount --bind $file $targ
+        local orig=$real_root$base
+        if test -L "$file"; then
+            # Symlinks
+            test -e "$orig" && continue
+            pretend cp -a "$file" "$orig"
+
+            [ "$PRETEND" ] && continue
+
+            # Don't add broken links
+            if test -e $(readlink -f $orig); then
+                RM_FILES="$RM_FILES${RM_FILES:+,}$orig"
+            else
+                pretend rm -f $orig
+            fi
+        else
+            # Normal files
+            touch_file "$targ" "$orig"
+            is_mounted "$targ" && error "File $targ is already mounted"
+            pretend mount --bind "$file" "$targ"
+        fi
     done <<Bind_Template
 $(find $template_dir -type f -o -type l)
 Bind_Template
@@ -741,7 +791,7 @@ error() {
 
 is_mounted() {
     local file=$1
-    cut -d" " -f2 /proc/mounts | grep -q "^$file$"
+    cut -d" " -f2 /proc/mounts | grep -q "^$(readlink -f $file)$"
     return $?
 }
 
