@@ -311,9 +311,9 @@ main() {
         done
 
         # Variables derived from output files
-        local full_distro_name=$DISTRO_NAME-${DISTRO_VERSION}_$ISO_ARCH-$ISO_FLAV
+        local full_distro_name=$DISTRO_NAME-${DISTRO_VERSION}_$ISO_ARCH
         local fancy_name="$full_distro_name $CODE_NAME $RELEASE_DATE"
-        local work_name=$DISTRO_NAME-${DISTRO_VERSION}-$ISO_ARCH-$DEBIAN_RELEASE-$ISO_FLAV
+        local work_name=$DISTRO_NAME-${DISTRO_VERSION}-$ISO_ARCH-$DEBIAN_RELEASE
         local work_dir=$remaster_dir/work/$work_name
         local iso_dir=$work_dir/iso
         local sqfs_dir=$work_dir/squashfs
@@ -526,7 +526,7 @@ Remaster_Blurb
 
     # repeated code
     remaster_dir=$(readlink -f $script_dir/Remaster)
-    local full_distro_name=$DISTRO_NAME-${DISTRO_VERSION}_$ISO_ARCH-$ISO_FLAV
+    local full_distro_name=$DISTRO_NAME-${DISTRO_VERSION}_$ISO_ARCH
     local iso_file=$full_distro_name.iso
 
     local dir
@@ -911,10 +911,17 @@ do_stage_4() {
             dpkg -i $deb
         done
         #Put syslinux on hold here
+<<<<<<< HEAD
+        #say "Holding syslinux to Wheezy version"
+        #echo syslinux hold | dpkg --set-selections        
+        #say "Another$nc apt-get -f install"
+        #apt-get -f install
+=======
         say "Holding syslinux to Wheezy version"
         echo syslinux hold | dpkg --set-selections
         say "Another$nc apt-get -f install"
         apt-get -f install
+>>>>>>> upstream/master
         end_part_lax
     else
         skip_part 10 "Install latest antiX debs"
@@ -943,18 +950,14 @@ do_stage_4() {
     fi
 
     if do_part 14 "!Update runlevels based on flavour"; then
-        # if [ "$ISO_RESPIN_OF" = "core" ]; then
-        #     say "Reconfigure ejectcd run levels for $(pq $ISO_RESPIN_OF) type system"
+        #if [ "$ISO_RESPIN_OF" = "core" ]; then
+        #    say "Reconfigure ejectcd run levels for $(pq $ISO_RESPIN_OF) type system"
         #     update-rc.d ejectcd remove
         #     update-rc.d ejectcd stop 06
-        # else
-        if [ "$ISO_RESPIN_OF" != core ]; then
-            say "Reconfigure SLiM run levels for $(pq $ISO_RESPIN_OF) type of system"
-            update-rc.d slim remove
-            update-rc.d slim start 25 stop 01346
-
-            say "Enable demo as live user in slim.conf"
-            sed -i -r '/default_user/ s/^#+//' /etc/slim.conf
+        #else
+            say "Reconfigure Lightdm run levels for $(pq $ISO_RESPIN_OF) type of system"
+            update-rc.d lightdm remove
+            update-rc.d lightdm start 25 stop 01346
 
             if [ -n "$X_TERM_EMULATOR" -a -x $X_TERM_EMULATOR ]; then
                 say "Set x-terminal-emulator to $(pq $X_TERM_EMULATOR)"
@@ -962,7 +965,6 @@ do_stage_4() {
             else
                 error "Missing or unknown x-term-emulator $(pqw $X_TERM_EMULATOR)"
             fi
-        fi
         end_part_strict
     fi
 
@@ -983,6 +985,24 @@ do_stage_4() {
         say "Adding correct suffix to $udev_file.live"
         mv $udev_file.live $udev_file.rules
     fi
+
+    # for 64 bit set multiarch
+    if [ "$ARCH" = "amd64" ] ; then
+        say "Adding multiarch support"
+        sudo dpkg --add-architecture i386 
+        #sudo apt-get update && apt-get install grub-efi-amd64-bin
+    #else
+        #sudo apt-get update && apt-get install grub-efi-ia32-bin
+    fi
+  
+    #update icons cache files
+    local update_icons="gtk-update-icon-cache-3.0"
+    local icon_folder="/usr/share/icons"
+    say "Updating icons cache"   
+    $update_icons $icon_folder/elementaryXubuntu-dark
+    $update_icons $icon_folder/Faenza
+    $update_icons $icon_folder/Faenza-Cupertino
+    $update_icons $icon_folder/Faenza-Cupertino-mini
 
     if [ "$interactive" ] &&  do_part 16 "Manual configuration"; then
 
@@ -1061,9 +1081,15 @@ do_stage_4() {
 
     if do_part 18 "Run second apt-get -f install"; then
 
+<<<<<<< HEAD
+        #if [ "$DEBIAN_RELEASE" != "wheezy" ]; then
+        #   apt-get $APT_GET_OPTS purge rpcbind 
+        #fi
+=======
         if [ "$DEBIAN_RELEASE" != "wheezy" ]; then
             apt-get $APT_GET_OPTS purge gcc-4.8-base systemd libsystemd0
         fi
+>>>>>>> upstream/master
 
         apt-get -f install
         # Remove unwanted apps that may have sneaked in.
@@ -1281,20 +1307,6 @@ do_stage_6() {
         && sed -r -i "s/^(key\.F.=console)/; \1/" $isolinux_dir/gfxboot.cfg
 
     [ "$boot_menu" ] && update_gfxboot_menu $boot_menu $isolinux_dir/gfxboot.cfg
-
-    #-- jbb # Create cpio archive for syslinux bootloader
-    #-- jbb : ${BL_ARCHIVE_NAME:=gfx-cpio}
-    #-- jbb : ${BL_ARCHIVE_LIST:=*.tr *.hlp *.fnt *.jpg gfxtheme gfxboot.cfg languages}
-    #-- jbb local cpio_dir=$work_dir/syslinux-cpio
-
-    #-- jbb sed -i -r "s/^(\s*UI\s+gfxboot\s+)[^ ]+(\s)/\1$BL_ARCHIVE_NAME\2/" $isolinux_dir/isolinux.cfg
-    #-- jbb rm -rf $cpio_dir
-    #-- jbb mkdir -p $cpio_dir
-    #-- jbb local files
-    #-- jbb for files in $(echo "$BL_ARCHIVE_LIST" | sed -r "s=^|\s+= $isolinux_dir/=g"); do
-    #-- jbb     mv $files $cpio_dir/
-    #-- jbb done
-    #-- jbb (cd $cpio_dir && find . -depth | cpio --create --quiet) > $isolinux_dir/$BL_ARCHIVE_NAME
 
    # say "Update Live bootloader background image"
    # get_template_file -e gfxboot/back.jpg bootloader_bg
