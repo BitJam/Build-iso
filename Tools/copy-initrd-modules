@@ -179,7 +179,7 @@ main() {
         list1=$(cat "$@" | grep -v "^\s*#" | sed 's/\s*#.*//')
     fi
 
-    [ "$default_mode" -a -z "$DIRS" ] && DIRS=kernel/drivers/ata
+    [ "$default_mode" -a -z "$DIRS" ] && DIRS="kernel/drivers/ata kernel/drivers/mmc"
     local d
     for d in $(echo $DIRS | sed 's/,/ /g'); do
         local dir=$mod_dir/$d
