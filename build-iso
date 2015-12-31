@@ -911,17 +911,10 @@ do_stage_4() {
             dpkg -i $deb
         done
         #Put syslinux on hold here
-<<<<<<< HEAD
-        #say "Holding syslinux to Wheezy version"
-        #echo syslinux hold | dpkg --set-selections        
-        #say "Another$nc apt-get -f install"
-        #apt-get -f install
-=======
         say "Holding syslinux to Wheezy version"
         echo syslinux hold | dpkg --set-selections
         say "Another$nc apt-get -f install"
         apt-get -f install
->>>>>>> upstream/master
         end_part_lax
     else
         skip_part 10 "Install latest antiX debs"
@@ -1081,15 +1074,9 @@ do_stage_4() {
 
     if do_part 18 "Run second apt-get -f install"; then
 
-<<<<<<< HEAD
-        #if [ "$DEBIAN_RELEASE" != "wheezy" ]; then
-        #   apt-get $APT_GET_OPTS purge rpcbind 
-        #fi
-=======
         if [ "$DEBIAN_RELEASE" != "wheezy" ]; then
             apt-get $APT_GET_OPTS purge gcc-4.8-base systemd libsystemd0
         fi
->>>>>>> upstream/master
 
         apt-get -f install
         # Remove unwanted apps that may have sneaked in.
