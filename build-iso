@@ -1235,6 +1235,12 @@ do_stage_5() {
     $SUDO rm -rf $sqfs_dir/usr/local/share/live-files
     $SUDO $tools/installed-to-live populate-live-files $sqfs_dir $sqfs_dir
 
+    local vim_bin=$sqfs_dir/usr/bin/vim
+    if [ -x $vim_bin.tiny -a ! -e $vim_bin ]; then
+        say "Making /usr/bin/vim symlink to vim.tiny"
+        ln -s vim.tiny $vim_bin
+    fi
+
     leave_stage
 }
 
