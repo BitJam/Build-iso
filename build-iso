@@ -1266,22 +1266,40 @@ do_stage_6() {
     get_template_file isolinux.cfg isolinux_flav
     [ "$isolinux_flav" ] && cp $isolinux_flav $isolinux_cfg
 
-    # Fill in the blanks in the isolinux.cfg
-    sed -i -e "s/%RELEASE_DATE%/$RELEASE_DATE/g" \
-           -e "s/%CODE_NAME%/$CODE_NAME/g" \
-           -e "s/%FULL_DISTRO_NAME%/$full_distro_name/g" $isolinux_cfg
+    say "Fill in bootloader template files"
 
-    local uefi_dir
-    get_template_file UEFI uefi_dir
-    say "uefi_dir=$uefi_dir"
-    if [ "$USE_UEFI" -a "$uefi_dir" ]; then
-        say "Copying UEFI files into iso"
-        cp -a $uefi_dir/* $iso_dir/
-        sed -i -e "s/%RELEASE_DATE%/$RELEASE_DATE/g" \
-           -e "s/%CODE_NAME%/$CODE_NAME/g" \
-           -e "s/%FULL_DISTRO_NAME%/$full_distro_name/g" \
-           $iso_dir/boot/grub/grub.cfg
-    fi
+    local bootloader_data=$output_dir/bootloader-data
+
+    eval local boot_options=\$${DISTRO_NAME}_LIVE_BOOT_OPTIONS
+    cat <<Bootloader_Data > $bootloader_data
+      DISTRO_NAME="$DISTRO_NAME"
+   DISTRO_VERSION="$DISTRO_VERSION"
+ FULL_DISTRO_NAME="$full_distro_name"
+         ISO_ARCH="$ISO_ARCH"
+        CODE_NAME="$CODE_NAME"
+             FLAV="$FLAV"
+          OPTIONS="$boot_options"
+     RELEASE_DATE="$RELEASE_DATE"
+Bootloader_Data
+
+    $tools/bootloader-template -i --data=$bootloader_data $iso_dir 
+
+    #-- # Fill in the blanks in the isolinux.cfg
+    #-- sed -i -e "s/%RELEASE_DATE%/$RELEASE_DATE/g" \
+    #--        -e "s/%CODE_NAME%/$CODE_NAME/g" \
+    #--        -e "s/%FULL_DISTRO_NAME%/$full_distro_name/g" $isolinux_cfg
+
+    #-- local uefi_dir
+    #-- get_template_file UEFI uefi_dir
+    #-- say "uefi_dir=$uefi_dir"
+    #-- if [ "$USE_UEFI" -a "$uefi_dir" ]; then
+    #--     say "Copying UEFI files into iso"
+    #--     cp -a $uefi_dir/* $iso_dir/
+    #--     sed -i -e "s/%RELEASE_DATE%/$RELEASE_DATE/g" \
+    #--        -e "s/%CODE_NAME%/$CODE_NAME/g" \
+    #--        -e "s/%FULL_DISTRO_NAME%/$full_distro_name/g" \
+    #--        $iso_dir/boot/grub/grub.cfg
+    #-- fi
 
     # Create text-only menu
     $tools/make-isolinux-menu $isolinux_cfg >> $isolinux_dir/isolinux.msg
