@@ -10,7 +10,7 @@ CODE_NAME
 DISTO_VERSION
 DISTRO
 DISTRO_NAME
-FLAVOUR
+FLAV
 FULL_DISTRO_NAME
 ISO_ARCH
 OPTIONS
@@ -105,7 +105,12 @@ main() {
     . $DATA_FILE
     
     : ${DISTRO:=$DISTRO_NAME-${DISTRO_VERSION}}
-    : ${FULL_DISTRO_NAME:=${DISTRO}_$ISO_ARCH}
+
+    if [ -z "$FULL_DISTRO_NAME" ]; then
+        : ${FULL_DISTRO_NAME:=${DISTRO}_$ISO_ARCH}
+        [ "$FLAV" ] && FULL_DISTRO_NAME=$FULL_DISTRO_NAME-$FLAV
+    fi
+
     : ${RELEASE_DATE:=$(date +"%-e %B %Y")}
  
     build_sed_exprs
