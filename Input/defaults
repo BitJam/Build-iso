@@ -36,3 +36,6 @@ TIME_ZONE="America/New_York"
 X_TERM_EMULATOR="/usr/bin/roxterm"
 
 USE_UEFI=true
+
+antiX_LIVE_BOOT_OPTIONS="quiet splash=v nosysv=LX"
+   MX_LIVE_BOOT_OPTIONS="quiet"
