@@ -1346,7 +1346,7 @@ Bootloader_Data
     #-- jbb     echo "nosavestate     ${sep}nosavestate" >> $opt_menu
     #-- jbb fi
 
-    copy_template_dir -u syslinux $syslinux_dir
+    #--bug? copy_template_dir -u syslinux $syslinux_dir
 
     #say "Add default vga=788 parameter to syslinux.cfg"
     #sed -i -r "1, /APPEND/ s/(^\s*APPEND.*)/\1 vga=788/" $syslinux_dir/syslinux.cfg
