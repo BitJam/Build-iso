@@ -1022,9 +1022,9 @@ do_stage_4() {
         fi
 
         if [ $save_cnt -gt 0 -o $reconfig_cnt -gt 0 ]; then
-            YES_no "Save these new selections"                   \
-                && debconf-get-selections                        \
-                | grep -E "^$package_re" | grep -v [[:space:]]$  \
+            YES_no "Save these new selections"                     \
+                && debconf-get-selections                          \
+                | grep -E "^$package_re" | grep -v "[[:space:]]$"  \
                 | sort > $build_dir/$manual_selections
         fi
         end_part_lax
