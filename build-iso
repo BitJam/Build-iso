@@ -987,16 +987,16 @@ do_stage_4() {
     # for 64 bit set multiarch
     if [ "$ARCH" = "amd64" ] ; then
         say "Adding multiarch support"
-        sudo dpkg --add-architecture i386 
+        sudo dpkg --add-architecture i386
         #sudo apt-get update && apt-get install grub-efi-amd64-bin
     #else
         #sudo apt-get update && apt-get install grub-efi-ia32-bin
     fi
-  
+
     #update icons cache files
     local update_icons="gtk-update-icon-cache-3.0"
     local icon_folder="/usr/share/icons"
-    say "Updating icons cache"   
+    say "Updating icons cache"
     $update_icons $icon_folder/elementaryXubuntu-dark
     $update_icons $icon_folder/Faenza
     $update_icons $icon_folder/Faenza-Cupertino
