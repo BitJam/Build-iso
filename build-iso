@@ -3033,7 +3033,7 @@ pick_prog() {
         found=true
         break
     done
-    [ "$found" ] || error "Could not find any of these progams: $(pqw $*)"
+    [ "$found" ] || error "Could not find any of these programs: $(pqw $*)"
 }
 
 select_theme() {
