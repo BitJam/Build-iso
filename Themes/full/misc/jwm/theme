@@ -1,0 +1,62 @@
+<JWM>
+
+<!-- pastel -->
+<WindowStyle>
+	<Font>Terminus Bold-14</Font>
+	<Width>5</Width>
+	<Height>22</Height>
+	<Active>
+		<Text>black</Text>
+		<Title>#5fa3d8:#C5D0DC</Title>
+	<Outline>black</Outline>
+	</Active>
+	<Inactive>
+		<Text>black</Text>
+		<Title>#7E7E8C:#C5D0DC</Title>
+	<Outline>#C5D0DC</Outline>
+	</Inactive>
+</WindowStyle>
+
+<TaskListStyle>
+	<Font>DejaVu Sans 12</Font>
+	<ActiveForeground>black</ActiveForeground>
+	<ActiveBackground>#7E7E8C</ActiveBackground>
+	<Foreground>black</Foreground>
+	<Background>#648FC2</Background>
+</TaskListStyle>
+
+<TrayStyle>
+	<Font>DejaVu Sans 12</Font>
+	<Background>#C5D0DC</Background>
+	<Foreground>black</Foreground>
+</TrayStyle>
+
+<ClockStyle>
+	<Font>Terminus Bold-16</Font>
+	<Foreground>black</Foreground>
+</ClockStyle>
+
+<PagerStyle>
+	<Outline>black</Outline>
+	<Foreground>black</Foreground>
+	<Background>#7E7E8C</Background>
+	<ActiveForeground>black</ActiveForeground>
+	<ActiveBackground>#5fa3d8</ActiveBackground>
+</PagerStyle>
+
+<MenuStyle>
+	<Font>DejaVu Sans 12</Font>
+	<Foreground>black</Foreground>
+	<Background>#C5D0DC</Background>
+	<ActiveForeground>black</ActiveForeground>
+	<ActiveBackground>#5fa3d8</ActiveBackground>
+</MenuStyle>
+
+<PopupStyle enabled="true">
+	<Font>DejaVu Sans 11</Font>
+	<Outline>black</Outline>
+	<Foreground>black</Foreground>
+	<Background>white</Background>
+</PopupStyle>
+
+</JWM>

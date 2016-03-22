@@ -1,0 +1,77 @@
+#!/bin/bash
+
+   ME=${0##*/}
+QUIET=
+
+usage() {
+    cat <<Usage
+usage: $ME [options] [pgrep options] <pattern>
+
+Display the start time in seconds from when the kernel booted
+of all running processes that match <pattern>.  The pattern
+matching is performed by pgrep which is why pgrep options
+are allowed.
+
+Options:
+
+    -h --help    Show this help
+    -n --now     Show the seconds since the kernel booted
+    -q --quiet   Supress warning messages 
+
+See also: grep psg
+Usage
+
+    exit ${1:-0}
+}
+
+main() {
+    local show_now
+    [ $# -eq 0 ] && usage 0
+    while [ $# -gt 0 -a -n "$1" -a -z "${1##-*}" ]; do
+        local arg=${1#-}
+        case $arg in
+              -help|h) usage 0                ;;
+               -now|n) show_now=true ; break  ;;
+             -quiet|q) QUIET=true             ;;
+                    *) break                  ;;
+        esac
+        shift
+    done
+    if [ "$show_now" ]; then
+        seconds $(cut -d" " -f22 /proc/self/stat)
+        exit 0
+    fi
+    [ $# -eq 0 ] && usage 0
+   
+    local pids=$(pgrep "$@")
+    [ "$pids" ] || fatal "No processes found that match: $*"
+    echo "$pids" | grep -vq "^[0-9]*$" && fatal "Bad pgrep option(s)"
+
+    local stat pid
+    for pid in $pids; do
+        stat=/proc/$pid/stat
+        if test -r $stat; then
+            seconds $(cut -d" " -f22 $stat)
+        else
+            warn "Could not read /proc/$pid"
+        fi
+    done
+
+}
+
+seconds() {
+    printf "%12s\n" $(printf "%03d" $1 | sed -r 's/(..)$/.\1/')
+}
+
+fatal() {
+    echo "$ME error: $*" >&2
+    exit 3
+}
+
+warn() {
+    [ "$QUIET" ] && return
+    echo "$ME warning: $*" >&2
+}
+
+main "$@"
+

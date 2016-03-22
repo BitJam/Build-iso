@@ -1,0 +1,48 @@
+copy desktop.wav to /etc/sound/
+Then add to the last line in icewm startup: aplay /etc/sound/desktop.wav 
+______________________________________________________________________________________________________
+Change TimeFormat=" %a %x %l:%M:%S %p " in icewm preferences
+______________________________________________________________________________________________________
+Edit /etc/timidity/timdity.cfg
+comment out line 32 source/ect/timidity/freepats.cfg
+uncomment line 35 source/etc/timidity/fluidr3_gm.cfg
+_____________________________________________________________________________________________________
+change /user/share/menu/vkeybd line 6 to command="/usr/bin/vkeybd --addr 128:0" (This menu item still did not work after adding the address, that's why I went with the desktop entry) 
+_________________________________________________________________________________________________-__
+Add to desktop: 
+
+[Desktop Entry]
+
+Name=Virtual MIDI Keyboard
+Comment=MIDI Virtual Keyboard
+Icon=vkeybd
+
+Type=Application
+Categories=AudioVideo;Audio;
+
+Exec=vkeybd --addr 128:0
+Terminal=false
+_____________________________________________________________________________________________________
+
+
+copy flaming_trebleclef.jpg to user/share/wallpaper
+copy  Music_Background.jpg to user/share/wallpaper
+copy hd_wall_music.jpg to user/share/wallpaper
+
+Change user/share/antix-settings/wallpaper/wallpaper-list.conf to the following.
+ 
+fluxbox=/usr/share/wallpaper/flaming_trebleclef.jpg
+rox-fluxbox=/usr/share/wallpaper/flaming_trebleclef.jpg
+space-fluxbox=/usr/share/wallpaper/flaming_trebleclef.jpg
+icewm=/usr/share/wallpaper/Music_Background.jpg
+rox-icewm=/usr/share/wallpaper/Music_Background.jpg
+space-icewm=/usr/share/wallpaper/Music_Background.jpg
+jwm=/usr/share/wallpaper/hd_wall_music.jpg
+rox-jwm=/usr/share/wallpaper/Music_Background.jpg
+space-jwm=/usr/share/wallpaper/hd_wall_music.jpg
+_______________________________________________________________________________________________________
+add nted driectory to home
+then copy sample.ntd to /home/user/nted
+
+
+

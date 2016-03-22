@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=pyBootchartGUI
+GenericName=Bootchart2 data viewer
+GenericName[it]=Visualizzatore dati Bootchart2
+Exec=pybootchartgui
+Terminal=false
+Type=Application
+Categories=System;Monitor;
+NoDisplay=true

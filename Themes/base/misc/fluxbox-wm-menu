@@ -1,0 +1,10 @@
+[exec] (Rox-Fluxbox) {/usr/local/lib/desktop-session/desktop-session-restart Rox-Fluxbox}
+[exec] (Space-Fluxbox) {/usr/local/lib/desktop-session/desktop-session-restart Space-Fluxbox}
+[exec] (Fluxbox) {/usr/local/lib/desktop-session/desktop-session-restart Fluxbox}
+[exec] (min-Fluxbox) {/usr/local/lib/desktop-session/desktop-session-restart min-Fluxbox}
+[exec] (Rox-Jwm) {/usr/local/lib/desktop-session/desktop-session-restart Rox-Jwm}
+[exec] (Space-Jwm) {/usr/local/lib/desktop-session/desktop-session-restart Space-Jwm}
+[exec] (Jwm) {/usr/local/lib/desktop-session/desktop-session-restart Jwm}
+[exec] (min-Jwm) {/usr/local/lib/desktop-session/desktop-session-restart min-Jwm}
+[exec] (Herbstluftwm) {/usr/local/lib/desktop-session/desktop-session-restart min-herbstluftwm}
+

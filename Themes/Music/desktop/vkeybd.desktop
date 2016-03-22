@@ -1,0 +1,12 @@
+[Desktop Entry]
+
+Name=Virtual MIDI Keyboard
+Comment=MIDI Virtual Keyboard
+Icon=vkeybd
+
+Type=Application
+Categories=AudioVideo;Audio;
+
+Exec=vkeybd --addr 128:0
+Terminal=false
+_____________________________________________________________________________________________________

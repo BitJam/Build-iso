@@ -1,0 +1,91 @@
+NTED version 24
+HEAD
+MEDIA A4
+ORIENTATION Portrait
+SPACEMENT 1.000000
+SCALE 50
+NUMERATOR 4
+DENOMINATOR 4
+TIMESIG_SYMBOL 0
+TEMPOINVERSE 600
+UPBEAT_INVERSE 0
+MEASURE_NUMBERS On
+STAFFS 2
+STAFF 0: NAME: 0 NAME_SHORT_NAME: 0 GROUP_NAME: 0 GROUP_SHORT_NAME: 0  KEY: 0 CLEF: TREBLE 0 CHANNEL: 0 DIFFERENT: Off VOL: 127 100 100 100 MIDIPGM: 2 0 0 0 PAN: 64 64 64 64 CHORUS: 20 REVERB: 20 FLAGS: 0
+PLAY_TRANSPOSED: 0
+STAFF 1: NAME: 0 NAME_SHORT_NAME: 0 GROUP_NAME: 0 GROUP_SHORT_NAME: 0  KEY: 0 CLEF: BASS 0 CHANNEL: 0 DIFFERENT: Off VOL: 127 100 100 100 MIDIPGM: 2 0 0 0 PAN: 64 64 64 64 CHORUS: 20 REVERB: 20 FLAGS: 0
+PLAY_TRANSPOSED: 0
+SPEC_MEASURES
+( 6 REPEAT_NONE  , TIMSIG ( 4, 8, 0 ) )
+MUSIC
+PAGE 0
+SYSTEM 0: 3 MEASURES
+MEASURE: 1 1.000000
+MEASURE: 2 1.000000
+MEASURE: 3 1.000000
+STAFF 0
+VOICE 0
+(nu 128, 1  { _0  } [ You  ] )(<1>nu 32, 1  { _0  } [ can  ] )(<2>nu 32, 1  { _-1  } [ add  ] )(<3>nu 64, 1  { _0  } [ lyrics  ] )(nu 256, 1  { #2  } [ to  ] )(<4>nu 64, 1  { _2  } [ your  ] )(<5>nu 64, 1  { |6| #1  } [ music  ] )(<7>nu 64, 1  { |8| _1  } )(<9>nu 32, 1  { _0  } )(<10>nu 32, 1  { _-1  } )(<11>nu 32, 1  { _-2  } )(<12>nu 32, 1  { |13| _-3  } )(<14>nu 64, 1  { |15| _-3  } )(r 128, 800000 )(<16>nu 64, 1  { _2  } )(<17>nu 64, 1  { |18| #1  } )(<19>nu 64, 1  { |20| _1  } )(<21>nu 32, 1  { _0  } )(<22>nu 32, 1  { _-1  } )(nu 256, 1  { _-2  } )
+BEAMS
+(u 1  , 2  , 3 )
+(u 4  , 5  , 7  , 9  , 10 )
+(u 11  , 12  , 14 )
+(u 16  , 17  , 19  , 21  , 22 )
+TIES
+( 6, 8, 0.000000 )
+( 13, 15, 0.000000 )
+( 18, 20, 0.000000 )
+VOICE 1
+(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )
+VOICE 2
+(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )
+VOICE 3
+(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )
+STAFF 1
+VOICE 0
+(r 512, 800000 )(r 256, 800000 )(r 64, 800000 )(nu 64, 1  { _1  , _8  } )(nu 128, 1  { _1  , _8  } )(r 128, 0 )(r 128, 800000 )(r 128, 0 )(r 128, 800000 )
+VOICE 1
+(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )
+VOICE 2
+(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )
+VOICE 3
+(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )
+SYSTEM 1: 9 MEASURES
+MEASURE: 4 1.000000
+MEASURE: 5 1.000000
+MEASURE: 6 1.000000
+MEASURE: 7 1.000000
+MEASURE: 8 1.000000
+MEASURE: 9 1.000000
+MEASURE: 10 1.000000
+MEASURE: 11 1.000000
+MEASURE: 12 1.000000
+STAFF 0
+VOICE 0
+(<23>nu 64, 1  { _2  } )(<24>nu 64, 1  { |25| #1  } )(<26>nu 64, 1  { |27| _1  } )(<28>nu 32, 1  { _0  } )(<29>nu 32, 1  { _-1  } )(<30>nu 32, 1  { _-2  } )(<31>nu 32, 1  { |32| _-3  } )(<33>nu 64, 1  { |34| _-3  } )(r 128, 800000 )(<35>nu 64, 1  { _-2  } )(<36>nu 64, 1  { |37| _-1  } )(<38>nu 64, 1  { |39| _-1  } )(<40>nu 32, 1  { _-2  } )(<41>nu 32, 1  { _-3  } )(r 256, 800000 )(r 512, 800000 )(r 512, 800000 )(r 512, 800000 )(r 512, 800000 )(r 512, 800000 )(r 512, 800000 )(r 512, 800000 )
+BEAMS
+(u 23  , 24  , 26  , 28  , 29 )
+(u 30  , 31  , 33 )
+(u 35  , 36  , 38  , 40  , 41 )
+TIES
+( 25, 27, 0.000000 )
+( 32, 34, 0.000000 )
+( 37, 39, 0.000000 )
+VOICE 1
+(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )
+VOICE 2
+(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )
+VOICE 3
+(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )
+STAFF 1
+VOICE 0
+(r 256, 800000 )(r 64, 800000 )(nu 64, 1  { _1  , _8  } )(nd 128, 0  { _8  } )(r 256, 800000 )(nd 256, 0  { _8  } )(nu 256, 1  { _1  , _8  } )(<42>nu 64, 1  { _-3  } )(<43>nu 64, 1  { _-2  } )(<44>nu 64, 1  { _-2  } )(<45>nu 64, 1  { _-4  } )(nu 256, 1  { _-6  } )(r 512, 800000 )(r 512, 800000 )(r 512, 800000 )(r 512, 800000 )
+BEAMS
+(u 42  , 43 )
+(u 44  , 45 )
+VOICE 1
+(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )
+VOICE 2
+(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )
+VOICE 3
+(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )(rh 512, 0 )

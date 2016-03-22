@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Exec=umts-panel
+Icon=network-wireless
+Terminal=false
+Name=GPRS-EDGE-UMTS-Panel
+Comment=wireless internet over cellphone
+Comment[de]=Drahtloses Internet über Mobilfunk
+Comment[it]=Internet senza fili attraverso il telefonino
+Comment[ru]=Интернет по мобильной связи GSM
+Categories=Network;
+NoDisplay=True

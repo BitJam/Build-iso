@@ -1,0 +1,14 @@
+:s0: anticapitalista
+:s1: Linux
+
+s0 http://www.newleftreview.org/ New Left Review 
+s0 http://www.democracynow.org/ Democracy Now! 
+s0 http://vineyardsaker.blogspot.com/ The Vineyard of the Saker 
+s0 http://www.leninology.co.uk/ LENIN'S TOMB 
+s1 http://antix.freeforums.org/ antiX-forum 
+s1 http://antix.mepis.org/index.php?title=Main_Page antiX-main 
+s1 http://forum.mepiscommunity.org/ MEPIS Community Forum 
+s1 http://techpatterns.com/forums/forum-33.html smxi-sgfxi-inxi 
+s1 http://distrowatch.com/index.php?dataspan=4 DistroWatch 
+s1 http://www.methods.co.nz/asciidoc/ AsciiDoc Home Page 
+s1 http://ignorantguru.github.com/spacefm/ SpaceFM 

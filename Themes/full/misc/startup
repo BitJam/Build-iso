@@ -1,0 +1,9 @@
+#!/bin/bash
+volumeicon & 
+
+#fbxkb &
+
+#search-bar-icon &
+
+(sleep 5 && toram-eject) &
+

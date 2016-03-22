@@ -1,0 +1,10 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=Njam
+Comment=pacman-like game with multiplayer support
+TryExec=njam
+Exec=njam
+Icon=/usr/share/pixmaps/njamicon.xpm
+Terminal=false
+Type=Application
+Categories=Game;ArcadeGame;

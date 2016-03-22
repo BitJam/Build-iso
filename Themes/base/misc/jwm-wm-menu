@@ -1,0 +1,11 @@
+<JWM>
+  <Program label="Rox-Fluxbox">/usr/local/lib/desktop-session/desktop-session-restart Rox-Fluxbox</Program>
+  <Program label="Space-Fluxbox">/usr/local/lib/desktop-session/desktop-session-restart Space-Fluxbox</Program>
+  <Program label="Fluxbox">/usr/local/lib/desktop-session/desktop-session-restart Fluxbox</Program>
+  <Program label="min-Fluxbox">/usr/local/lib/desktop-session/desktop-session-restart min-Fluxbox</Program>
+  <Program label="Rox-Jwm">/usr/local/lib/desktop-session/desktop-session-restart Rox-Jwm</Program>
+  <Program label="Space-Jwm">/usr/local/lib/desktop-session/desktop-session-restart Space-Jwm</Program>
+  <Program label="Jwm">/usr/local/lib/desktop-session/desktop-session-restart Jwm</Program>
+  <Program label="min-Jwm">/usr/local/lib/desktop-session/desktop-session-restart min-Jwm</Program>
+  <Program label="Herbstluftwm">/usr/local/lib/desktop-session/desktop-session-restart min-erbstluftwm</Program>
+</JWM>

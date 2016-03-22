@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# set live keyboard
+#setxkbmap -layout "$XKBLAYOUT" -variant "$XKBVARIANT" -option "$XKBOPTIONS"
+
+(sleep 5 && toram-eject) &
+(sleep 5 && sudo persist-config --startup) &

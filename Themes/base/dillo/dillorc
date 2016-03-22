@@ -1,0 +1,238 @@
+# dillorc
+# Sample dillo initialization file.
+# 
+# Lines that start with a '#' are comments.
+# "#option=..." shows the built-in default.
+# "# option=..." is an additional example.
+# "option=..." overrides the built-in value.
+
+#-------------------------------------------------------------------------
+#                             FIRST SECTION                             :)
+#-------------------------------------------------------------------------
+
+# Set the desired initial browser size
+#geometry=1280x1020
+
+# Change this if you want to have text-only browsing from the start.
+# (While browsing, this can be changed from the tools/settings menu.)
+#load_images=YES
+
+# Change this if you want to disable loading of CSS stylesheets initially.
+# (While browsing, this can be changed from the tools/settings menu.)
+#load_stylesheets=YES
+
+# Change this if you want to disable parsing of embedded CSS initially.
+# (While browsing, this can be changed from the tools/settings menu.)
+#parse_embedded_css=YES
+
+# How should Dillo restrict automatic requests (e.g., redirections,
+# pages containing images or stylesheets)?
+# allow_all
+# same_domain : Permit www.example.org to load an image from img.example.org,
+#               but not from the unrelated ad.doubleclick.net.
+#filter_auto_requests=same_domain
+
+# Change the buffering scheme for drawing
+# 0 no double buffering - useful for debugging
+# 1 light buffering using a single back buffer for all windows
+# 2 full fltk-based double buffering for all windows
+#buffered_drawing=1
+
+# Dicache is where the Decompressed Images are cached (not the original ones).
+# If you have a lot of memory and a slow CPU, use YES, otherwise use NO
+use_dicache=NO
+
+# Set your default directory for download/save operations
+save_dir=/home/
+
+#-------------------------------------------------------------------------
+#                           RENDERING SECTION
+#-------------------------------------------------------------------------
+
+# Default fonts:
+#
+# If FLTK has been configured with Xft enabled (the default), you can use
+# scalable fonts such as DejaVu or Liberation (try running
+# "fc-list : family | cut -d ',' -f 2 | sort").
+font_serif="Liberation"
+font_sans_serif="Liberation"
+#font_cursive="URW Chancery L"
+#font_fantasy="DejaVu Sans"
+font_monospace="Liberation"
+#
+# Otherwise, use bitmapped fonts like the following (for a list, try running
+# "xlsfonts -fn *-iso10646-1 | grep -v -e -0-0 | cut -d - -f 3 | sort | uniq").
+font_serif="verdana"
+font_sans_serif="verdana"
+# font_cursive="helvetica"
+# font_fantasy="helvetica"
+font_monospace="verdana"
+
+# All font sizes are scaled by this value
+# font_factor=1.5
+font_factor=1.1
+
+# Maximum font size in pixels
+#font_max_size=100
+
+# Minimum font size in pixels
+#font_min_size=6
+
+# Show tooltip popups for UI and for HTML title attributes
+show_tooltip=YES
+
+# Set this to YES if you want to limit the word wrap width to the viewport
+# width (may be useful for iPAQ)
+limit_text_width=NO
+
+
+#-------------------------------------------------------------------------
+#                            PARSING SECTION
+#-------------------------------------------------------------------------
+
+# If you prefer more accurate HTML bug diagnose, over better rendering
+# (page authors and webmasters) set the following to "NO".
+#
+w3c_plus_heuristics=YES
+
+
+#-------------------------------------------------------------------------
+#                            NETWORK SECTION
+#-------------------------------------------------------------------------
+
+# Set the start page.
+# Uncomment if you want to override the default start page.
+start_page="http://antix.freeforums.org/"
+
+# Set the home location
+home="http://antix.freeforums.org/"
+
+# Set search url to use with the search dialog.
+# %s is replaced with urlencoded keywords, and %% by '%'.
+
+search_url="https://startpage.com/do/search?q=%s"
+search_url="https://ixquick.com/do/search?q=%s"
+search_url="http://duckduckgo.com/lite/?kp=-1&q=%s"
+search_url="Wikipedia http://www.wikipedia.org/w/index.php?search=%s&go=Go"
+search_url="Free Dictionary http://www.thefreedictionary.com/%s"
+search_url="Google http://www.google.com/search?ie=UTF-8&oe=UTF-8&q=%s"
+
+
+# Set the proxy information for http
+#http_proxy=http://localhost:8080/
+
+# if you need to provide a  user/password pair for the proxy,
+# set the proxy user name here and Dillo will ask for the password later.
+#http_proxyuser="joe"
+
+# When using a proxy, this sets the domains to access without proxy.
+# (separated with a single space -- see examples below)
+#no_proxy = ".mynet.com"
+#no_proxy = ".mynet.com .other.net .foo.bar.org"
+
+
+#-------------------------------------------------------------------------
+#                            COLORS SECTION
+#-------------------------------------------------------------------------
+
+# Here we can use the HTML (standard and extended) or C syntax.
+
+# Set the background color
+# bg_color=gray
+# bg_color=0xd6d6c0
+bg_color=0xdcd1ba
+
+# Set the text color
+text_color=black
+
+# Set the link color
+link_color=blue
+
+# If your eyes suffer with white backgrounds, or you have headaches after
+# lengthy computer sessions, and you don't need high contrast to see sharply,
+# uncomment next line (it'll use 'bg_color' instead).   -- It works!
+#allow_white_bg=NO
+
+# Use the same colors with all documents?
+force_my_colors=NO
+
+# When set to YES, visited links will always have a contrasting color,
+# independent of the page author's setting.
+contrast_visited_color=YES
+
+#-------------------------------------------------------------------------
+#                        USER INTERFACE SECTION
+#-------------------------------------------------------------------------
+
+# UI theme
+# "none" is the default FLTK appearance, which "resembles old Windows...and
+# old GTK/KDE".
+# "plastic" "is inspired by the Aqua user interface on Mac OS X".
+# "gtk+" "is inspired by the Red Hat Bluecurve theme".
+#theme=none
+#theme=gtk+
+theme=plastic
+
+# Size of dillo panel (used to enlarge the browsing area)
+# tiny   :  recommended for iPAQ (with small_icons)
+# medium :  nice!
+# large  :  Traditional
+panel_size=tiny
+small_icons=YES
+
+# Here you can choose to hide some widgets of the dillo panel...
+#show_back=NO
+#show_forw=NO
+#show_home=NO   
+#show_reload=NO
+#show_save=NO
+#show_stop=NO
+#show_bookmarks=NO
+#show_menubar=NO
+#show_clear_url=NO
+#show_url=NO
+#show_search=NO
+#show_progress_box=NO
+
+load_stylesheets=NO
+middle_click_opens_new_tab=YES
+
+# Start dillo windows with a hidden panel?
+fullwindow_start=NO
+
+# Enabling this will restrain OpenUrl and FindText, but may be required
+# for the ION window manager.
+transient_dialogs=NO
+
+# When filling forms, our default behaviour is to submit on enterpress,
+# but only when there's a single text entry (to avoid incomplete submits).
+# OTOH, if you have to fill the same form lots of times, you may find
+# useful to keep away from the mouse by forcing enter to submit.
+enterpress_forces_submit=NO
+
+# Some forms lack a submit button, and dillo can generate a custom one
+# internally. Unfortunately there's no guarantee for it to work. :(
+# (my experience is that forms that lack a submit rely on Javascript)
+generate_submit=NO
+
+#-------------------------------------------------------------------------
+#                        DEBUG MESSAGES SECTION
+#-------------------------------------------------------------------------
+
+# Generic messsages (mainly for debugging specific parts)
+# Uncomment the following line to disable them.
+#show_msg=NO
+
+# Soon we'll add the "show_debug_messages=NO" option...
+
+#-------------------------------------------------------------------------
+#                        HTML BUG MESSAGES SECTION
+#-------------------------------------------------------------------------
+
+# Accepted by the W3C validator but "strongly discouraged" by the SPEC.
+# (As "TAB character inside <PRE>").
+#show_extra_warnings=YES
+
+
+# -----------------------------------------------------------------------
+# dillorc ends here.
