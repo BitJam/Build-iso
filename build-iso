@@ -314,6 +314,8 @@ main() {
 
         # Variables derived from output files
         local full_distro_name=$DISTRO_NAME-${DISTRO_VERSION}_$ISO_ARCH
+        [ "$DISTRO_NAME" = antiX ] && full_distro_name=$full_distro_name-$FLAV
+
         local fancy_name="$full_distro_name $CODE_NAME $RELEASE_DATE"
         local work_name=$DISTRO_NAME-${DISTRO_VERSION}-$ISO_ARCH-$DEBIAN_RELEASE
         local work_dir=$remaster_dir/work/$work_name
@@ -529,6 +531,7 @@ Remaster_Blurb
     # repeated code
     remaster_dir=$(readlink -f $script_dir/Remaster)
     local full_distro_name=$DISTRO_NAME-${DISTRO_VERSION}_$ISO_ARCH
+    [ "$DISTRO_NAME" = antiX ] && full_distro_name=$full_distro_name-$FLAV
     local iso_file=$full_distro_name.iso
 
     local dir
