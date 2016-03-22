@@ -16,7 +16,7 @@
     CACHE_EXPIRE="7"
 
 # Fixed amount plus X times number of packages. Both in units of 100K.
-      TMPFS_SIZE="2500 + 50"
+      TMPFS_SIZE="2500 + 70"
 
   MAKE_ISO_PROGS="mkisofs genisoimage"
       GZIP_PROGS="pigz gzip"
