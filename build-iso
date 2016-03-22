@@ -1384,7 +1384,7 @@ Bootloader_Data
 
     md5sum_file $initrd_gz
 
-    say "Write auxillary information"
+    say "Write auxiliary information"
 
     [ "$iso_only" ] && touch $work_dir/package-list.out
 
