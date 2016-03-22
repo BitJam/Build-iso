@@ -542,7 +542,7 @@ Remaster_Blurb
     local full_iso_file=$iso_file_dir/$iso_file
     if [ -e $full_iso_file ]; then
         say "The output file $(pq Remaster/iso-files/$iso_file) already exists!"
-        say "If we contiune then it will get over-written."
+        say "If we continue then it will get over-written."
         YES_no "Continue anyway" || my_exit 0
     fi
 
