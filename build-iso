@@ -2159,17 +2159,38 @@ collect_live_files() {
 # Routines for preparing and making the iso file
 #==============================================================================
 
+unpack_gfx_cpio() {
+    local type=$1  dir=${2:-$work_dir/$1-cpio}  file=${3:-$iso_dir/boot/$1/gfx-cpio}
+    say "Unpack $(pq $type) cpio archive"
+    prep_dir $dir
+    (cd $dir && cpio -idum --dot --quiet < $file 2>&1)
+}
+
+repack_gfx_cpio() {
+    local type=$1  dir=${2:-$work_dir/$1-cpio}  file=${3:-$iso_dir/boot/$1/gfx-cpio}
+    say "Repack $(pq $type) cpio archive"
+    (cd $dir && find . -depth | cpio -o --quiet --dot --file=$file) 2>&1
+}
+
+prep_dir() {
+    local dir=$1
+    [ -z "$dir" -o -n "${dir##*[a-zA-Z]*}" ] && fatal "Bad directory name: $dir"
+    rm -rf $dir
+    mkdir -p $dir
+}
+
 update_gfxboot_menu() {
-    local menu=$1 cfg=$2
+    local menu_file=$1 conf_file=$2
+    local subdir=$(basename $(dirname $conf_file))
     local menu_string="Function key menu"
     # Insert Function key menu into gfxboot.cfg
-    [ -e "$menu" -a -e "$cfg" ] || return
-    grep -q "$menu_string" $cfg || return
-    say "Update Fn key menu in bootloader $(basename $cfg)"
-    sed -i "/$menu_string/,$ d" $cfg
-    cat << Fn_Menu >> $cfg
+    [ -e "$menu_file" -a -e "$conf_file" ] || return
+    grep -q "$menu_string" $conf_file || return
+    say "Update Fn key menu in $(pq $subdir/$(basename $conf_file))"
+    sed -i "/$menu_string/,$ d" $conf_file
+    cat << Fn_Menu >> $conf_file
 ; >>>>>>>>>> Function key menu >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-$(cat $menu)
+$(cat $menu_file)
 ; <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 Fn_Menu
 }
