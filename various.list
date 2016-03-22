@@ -1,0 +1,8 @@
+# opera
+#deb http://deb.opera.com/opera/ stable non-free
+
+# virtualbox
+#deb http://download.virtualbox.org/virtualbox/debian jessie contrib
+
+# liquorix kernels
+#deb http://liquorix.net/debian/ sid main

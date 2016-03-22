@@ -1,0 +1,26 @@
+# Note:If you want maximum stability, keep to the default Stable/Jessie repos.
+# Jessie is the new stable release and will only recieve security 
+# updates, while Testing will be 'rolling'.
+
+# Debian Stable. Default for antiX-16.
+# Use for maximum stability INSTEAD of the 'rolling' TESTING release concept.
+deb http://ftp.gr.debian.org/debian/ jessie main contrib non-free 
+deb http://security.debian.org/ jessie/updates main contrib non-free
+#deb-src http://ftp.gr.debian.org/debian/ jessie main contrib non-free 
+
+# Debian Testing. 
+# Testing enabled for 'rolling' release.
+#deb http://ftp.gr.debian.org/debian/ testing main contrib non-free
+#deb http://security.debian.org/ testing/updates main contrib non-free 
+#deb-src http://ftp.gr.debian.org/debian/ testing main contrib non-free
+
+# Multimedia Stable and Testing
+# Use to install libdvdcss2 and codecs.
+#deb http://www.deb-multimedia.org jessie main non-free
+#deb http://www.deb-multimedia.org testing main non-free
+
+###### Debian Unstable/Sid##########
+###### Use at your own risk! ########
+#deb http://ftp.gr.debian.org/debian/ unstable main contrib non-free
+#deb http://www.deb-multimedia.org unstable main non-free
+
