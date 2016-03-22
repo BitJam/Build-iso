@@ -1254,27 +1254,43 @@ do_stage_5() {
 #------------------------------------------------------------------------------
 do_stage_6() {
     enter_stage 6 "Prepare iso directory"
-    # Populate iso dir with boilerplate files
+    # (0) Populate iso dir with boilerplate files
+    # (1) Copy flavour-dependent bootloader.cfg files via inheritance
     copy_template_dir -u iso $iso_dir
 
-    say "Make/customize isolinux bootloader configuration"
+    say "Make/customize bootloader configuration"
 
-    # Explicitly fill iso/boot/isolinux/
+    # Directories under iso/
     local isolinux_dir=$iso_dir/boot/isolinux
     local syslinux_dir=$iso_dir/boot/syslinux
-    #- copy_template_dir -u isolinux $isolinux_dir
 
-    [ "$ARCH" = amd64 ] && echo 1 > $isolinux_dir/64bit
+    # Directories with unpacked cpio archives
+    local isolinux_cpio=$work_dir/isolinux-cpio
+    local syslinux_cpio=$work_dir/syslinux-cpio
 
-    # Copy over flavour dependent isolinux.cfg (if needed)
-    local isolinux_flav isolinux_cfg=$isolinux_dir/isolinux.cfg
-    get_template_file isolinux.cfg isolinux_flav
-    [ "$isolinux_flav" ] && cp $isolinux_flav $isolinux_cfg
+    unpack_gfx_cpio isolinux $isolinux_cpio
+    unpack_gfx_cpio syslinux $syslinux_cpio
 
+    # (2) Let bootloader know if we use a 64-bit kernel
+    [ "$ARCH" = amd64 ] && echo 1 > $isolinux_cpio/64bit
+    [ "$ARCH" = amd64 ] && echo 1 > $syslinux_cpio/64bit
+
+    # (3) Update Fn menu in bootloader
+    local boot_menu
+    get_template_file gfxboot.menu boot_menu
+    if [ "$boot_menu" ]; then
+        update_gfxboot_menu $boot_menu $isolinux_cpio/gfxboot.cfg
+        update_gfxboot_menu $boot_menu $syslinux_cpio/gfxboot.cfg
+    fi
+
+    # (4) Mostly for flavour dependent desktop.men file
+    #     could also be used to over-write add other files in the gfx-cpio
+    copy_template_dir -u gfx-cpio $isolinux_cpio
+    copy_template_dir -u gfx-cpio $syslinux_cpio
+
+    # (5)
     say "Fill in bootloader template files"
-
     local bootloader_data=$output_dir/bootloader-data
-
     eval local boot_options=\$${DISTRO_NAME}_LIVE_BOOT_OPTIONS
     cat <<Bootloader_Data > $bootloader_data
       DISTRO_NAME="$DISTRO_NAME"
@@ -1287,74 +1303,34 @@ do_stage_6() {
      RELEASE_DATE="$RELEASE_DATE"
 Bootloader_Data
 
-    $tools/bootloader-template -i --data=$bootloader_data $iso_dir 
+    $tools/bootloader-template -i --data=$bootloader_data $iso_dir
 
-    #-- # Fill in the blanks in the isolinux.cfg
-    #-- sed -i -e "s/%RELEASE_DATE%/$RELEASE_DATE/g" \
-    #--        -e "s/%CODE_NAME%/$CODE_NAME/g" \
-    #--        -e "s/%FULL_DISTRO_NAME%/$full_distro_name/g" $isolinux_cfg
+    # (6) Create/append-to text-only bootloader menu (.msg file)
+    local isolinux_cfg=$isolinux_dir/isolinux.cfg
+    local syslinux_cfg=$syslinux_dir/syslinux.cfg
+    $tools/make-isolinux-menu $isolinux_cfg >> $isolinux_dir/readme.msg
+    $tools/make-isolinux-menu $syslinux_cfg >> $syslinux_dir/readme.msg
 
-    #-- local uefi_dir
-    #-- get_template_file UEFI uefi_dir
-    #-- say "uefi_dir=$uefi_dir"
-    #-- if [ "$USE_UEFI" -a "$uefi_dir" ]; then
-    #--     say "Copying UEFI files into iso"
-    #--     cp -a $uefi_dir/* $iso_dir/
-    #--     sed -i -e "s/%RELEASE_DATE%/$RELEASE_DATE/g" \
-    #--        -e "s/%CODE_NAME%/$CODE_NAME/g" \
-    #--        -e "s/%FULL_DISTRO_NAME%/$full_distro_name/g" \
-    #--        $iso_dir/boot/grub/grub.cfg
-    #-- fi
+    # (7) Enabled "Save" menu on syslinux side only
+    sed -r -i "/key\.F.=save/ s/^\s*;+\s*//" $syslinux_cpio/gfxboot.cfg
 
-    # Create text-only menu
-    $tools/make-isolinux-menu $isolinux_cfg >> $isolinux_dir/isolinux.msg
-
-    local desktop_men=$isolinux_dir/desktop.men
+    # (8) Create/update text (UEFI) desktop menu based on menu in isolinux cpio archive
+    local desktop_men=$isolinux_cpio/desktop.men
     if test -e $desktop_men; then
-        say "Create desktop boot-menu"
+        say "Create desktop text boot-menu"
         $SUDO $tools/make-boot-menu desktop $boot_menu_dir $desktop_men
     fi
 
-    local boot_menu bootloader_bg
-    get_template_file gfxboot.menu boot_menu
-
-    # jbb: an awful kludge for now
-    [ "$ISO_RESPIN_OF" = core ] \
-        && sed -r -i "s/^(key\.F.=console)/; \1/" $isolinux_dir/gfxboot.cfg
-
-    [ "$boot_menu" ] && update_gfxboot_menu $boot_menu $isolinux_dir/gfxboot.cfg
-
-   # say "Update Live bootloader background image"
-   # get_template_file -e gfxboot/back.jpg bootloader_bg
-   # $tools/add-border.sh $ADD_BORDER_OPTS $bootloader_bg $isolinux_dir/back.jpg
-
-    say "Copy isolinux directory to syslinux"
-    rm -rf $syslinux_dir
-    cp -r $isolinux_dir $syslinux_dir
-
-    # Rename isolinux.* to syslinux.* in syslinux directory
-    local file ext
-    for file in $syslinux_dir/isolinux.*; do
-        ext=${file##*.}
-        [ "$ext" ] || continue
-        mv $file $syslinux_dir/syslinux.$ext
-    done
-
+    # (9)
     sed -i 's/APPEND hd0/APPEND hd1/' $syslinux_dir/syslinux.cfg
 
-    #echo 1 > $syslinux_dir/gfxsave.on
-
-    #-- jbb local opt_menu=$syslinux_dir/options.men  sep='`'
-    #-- jbb if test -e $opt_menu && ! grep -q savestate $opt_menu; then
-    #-- jbb     say "Add savestate options to options.men"
-    #-- jbb     echo "savestate       ${sep}savestate"   >> $opt_menu
-    #-- jbb     echo "nosavestate     ${sep}nosavestate" >> $opt_menu
-    #-- jbb fi
-
-    #--bug? copy_template_dir -u syslinux $syslinux_dir
-
-    #say "Add default vga=788 parameter to syslinux.cfg"
-    #sed -i -r "1, /APPEND/ s/(^\s*APPEND.*)/\1 vga=788/" $syslinux_dir/syslinux.cfg
+    # (10)
+    if [ "$FLAV" = "core" ]; then
+        say "Use large font in bootloader for $(pq $FLAV) system"
+        sed -i "s/16x16.fnt/16x16aa.fnt/"  $isolinux_cpio/gfxboot.cfg $syslinux_cpio/gfxboot.cfg
+    fi
+    repack_gfx_cpio isolinux $isolinux_cpio
+    repack_gfx_cpio syslinux $syslinux_cpio
 
     echo "$fancy_name" > $iso_dir/version
 
@@ -1389,7 +1365,7 @@ Bootloader_Data
     say "Write initrd-release file"
     write_initrd_release $initrd_dir
 
-    if [ -z "$iso_only_xxx" ]; then
+    if [ -z "$iso_only" ]; then
         say "Copy $(pq $K_NAME) modules into initrd"
 
         rm -rf $initrd_dir/lib/modules/
