@@ -3,4 +3,5 @@ key.F2=lang
 key.F3=timezone
 key.F4=options
 key.F5=persist
-key.F6=console
+key.F7=console
+;; key.F8=save
