@@ -1,19 +1,24 @@
 antix-archive-keyring 
 antix-libs
-antix-snapshot-cli
+#antix-snapshot-cli - replaced by iso-snapshot
 apt-antix
+#aufs-tools #not needed since we use overlayfs
+bootchart-antix
 btrfs-tools
 busybox
 ceni
-cli-installer-antix
+cli-installer-antix 
 console-common 
 console-data
 console-setup
 console-setup-linux
+consolekit
 cryptsetup
 cryptsetup-bin
-#dbus
+dbus
 debconf-utils
+deb-multimedia-keyring
+#devuan-keyring
 #desktop-file-utils
 dmsetup
 dosfstools
@@ -23,7 +28,7 @@ elinks
 fbcat 
 file
 firmware-linux-free
-flashrom
+#flashrom
 fuse
 #fuse-utils
 gawk
@@ -45,7 +50,7 @@ keyboard-configuration
 less
 libmtp-runtime
 libnss-myhostname
-#live-init-antix
+live-init-antix 
 live-usb-cli-antix
 lockfile-progs
 #lsb-release - do not use in core
@@ -73,15 +78,18 @@ perl
 perl-modules
 pkg-mozilla-archive-keyring
 #ppp
-#pppconfig
+pppoeconf
 psmisc
 psutils
+pybootchartgui 
 reiser4progs
 reiserfsprogs
 remaster-antix
 rfkill
+resolvconf
 rsync
-screen
+#screen #replaced by tmux
+siduction-archive-keyring
 smartmontools
 smxi-inxi-antix
 squashfs-tools
@@ -92,11 +100,14 @@ sysvinit-core
 sysvinit-utils
 testdisk
 ttf-bitstream-vera
+tmux
 ucf
-uuid-runtime
+#uuid-runtime
+upower
+vim-tiny
 vrms
 whois
-wpasupplicant
+#wpasupplicant
 xdelta3
 xdg-user-dirs 
 xfsprogs

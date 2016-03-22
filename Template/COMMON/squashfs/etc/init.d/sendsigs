@@ -26,28 +26,17 @@ report_unkillable() {
 
 do_stop () {
 
-    # -jbb for antiX since fix below did not work
-    live_prog=/live/bin/umount-live
-
-    # For testing only
-    [ -x $live_prog ] && \
-        exec $live_prog --sendsigs </dev/console >/dev/console
-    
-    #[ "$(pgrep 'mount.ntfs|ntfs-3g')" -a -x $live_prog ] && \
-    #    exec $live_prog --sendsigs </dev/console >/dev/console
+    local live_prog full_live live_dir=/live
+    read live_dir 2>/dev/null < /etc/live/live-dir
+    for live_prog in live-umount umount-live; do
+        full_live=$live_dir/bin/$live_prog
+        [ -x $full_live ] || continue
+        # Don't use exec here so the rest of sendsigs code runs
+        $full_live --run-scripts </dev/console >/dev/console
+        break
+    done
 
 	OMITPIDS=
-
-    #- # -jbb for antiX Live
-    #- # Omit process needed for ntfs and ntfs-3g mounts
-    #- for prog in mount.ntfs; do
-    #-     prog_pids=$(pgrep $prog)
-    #-     [ "$prog_pids" ] || continue
-    #-     dir=/run/sendsigs.omit.d/$prog
-    #-     mkdir -p $dir
-    #-     rm -f $dir/*
-    #-     echo $prog_pids > $dir/pids
-    #- done
 
 	for omitfile in /run/sendsigs.omit; do
 		if [ -e $omitfile ]; then
@@ -129,7 +118,7 @@ do_stop () {
 }
 
 case "$1" in
-  start)
+  start|status)
 	# No-op
 	;;
   restart|reload|force-reload)

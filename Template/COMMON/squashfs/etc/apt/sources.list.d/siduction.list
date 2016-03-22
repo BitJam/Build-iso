@@ -1,0 +1,5 @@
+#siduction 
+#deb ftp://ftp.spline.de/pub/siduction/base unstable main contrib non-free
+#deb ftp://ftp.spline.de/pub/siduction/fixes unstable main contrib non-free
+#deb-src ftp://ftp.spline.de/pub/siduction/base unstable main contrib non-free
+#deb-src ftp://ftp.spline.de/pub/siduction/fixes unstable main contrib non-free

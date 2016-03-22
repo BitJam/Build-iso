@@ -97,7 +97,7 @@ if [ -x /usr/bin/dircolors ]; then
 fi
 
 # some more ls aliases
-alias ll='ls -l'
+alias ll='ls -lh'
 alias la='ls -A'
 alias l='ls -CF'
 
@@ -123,4 +123,4 @@ fi
 
 # Add sbin directories to PATH.  This is useful on systems that have sudo
 
-PATH=$PATH:/sbin:/usr/sbin
+[ -z "${PATH##*/sbin*}" ] || PATH=$PATH:/sbin:/usr/sbin

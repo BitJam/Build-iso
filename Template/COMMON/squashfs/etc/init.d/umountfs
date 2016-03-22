@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /bin/sh
 ### BEGIN INIT INFO
 # Provides:          umountfs
 # Required-Start:
@@ -17,44 +17,28 @@ PATH=/sbin:/usr/sbin:/bin:/usr/bin
 umask 022
 
 do_stop () {
-    LIVE_DIR="/live";
-	#exec 9<&0 </proc/mounts
+   
+    local live_prog full_live live_dir=/live
+    read live_dir 2>/dev/null < /etc/live/live-dir
+    for live_prog in live-umount umount-live; do
+        full_live=/live/bin/$live_prog
+        [ -x $full_live ] || continue
+        exec $full_live --umountfs </dev/console >/dev/console
+    done
 
-	PROTECTED_MOUNTS="$(sed -n '0,/^\/[^ ]* \/ /p' /proc/mounts)"
+	PROTECTED_MOUNTS="$(sed -n ':a;/^[^ ]* \/ /!{H;n;ba};{H;s/.*//;x;s/\n//;p}' /proc/mounts)"
 	WEAK_MTPTS="" # be gentle, don't use force
 	REG_MTPTS=""
 	TMPFS_MTPTS=""
-    READ_ONLY_MTPTS=""
-
 	while read -r DEV MTPT FSTYPE REST
 	do
 		echo "$PROTECTED_MOUNTS" | grep -qs "^$DEV $MTPT " && continue
-
-        # Skip /live and everything under it -jbb
-        case "$DEV" in 
-        $LIVE_DIR*)
-            LIVE_MTPTS="$MTPT $LIVE_MTPTS"
-            continue;
-            ;;
-        esac
-
 		case "$MTPT" in
-		  /|/proc|/dev|/.dev|/dev/pts|/dev/shm|/dev/.static/dev|/proc/*|/sys|/sys/*|/lib/init/rw)
+		  /|/proc|/dev|/.dev|/dev/pts|/dev/shm|/dev/.static/dev|/proc/*|/sys|/sys/*|/run|/run/*|/dev/vcs)
 			continue
 			;;
-
-		  /var/run)
-			if [ yes = "$RAMRUN" ] ; then
-				continue
-			fi
-			;;
-		  /var/lock)
-			if [ yes = "$RAMLOCK" ] ; then
-				continue
-			fi
-			;;
 		esac
-		case "$FSTYPE" in 
+		case "$FSTYPE" in
 		  proc|procfs|linprocfs|sysfs|usbfs|usbdevfs|devpts)
 			continue
 			;;
@@ -69,21 +53,15 @@ do_stop () {
 			fi
 			;;
 		esac
-	done <<End_Read
-$(cat /proc/mounts)
-End_Read
+	done < /proc/mounts
 
-	#exec 0<&9 9<&-
-	
 	#
 	# Make sure tmpfs file systems are umounted before turning off
 	# swap, to avoid running out of memory if the tmpfs filesystems
 	# use a lot of space.
 	#
-
 	if [ "$TMPFS_MTPTS" ]
 	then
-
 		if [ "$VERBOSE" = no ]
 		then
 			log_action_begin_msg "Unmounting temporary filesystems"
@@ -113,9 +91,7 @@ End_Read
 	#
 	# Unmount local filesystems
 	#
-    echo "Starting to umount local file systems"
 	if [ "$WEAK_MTPTS" ]; then
-        echo "UMOUNTING WEAK: $WEAK_MTPTS"
 		# Do not use -f umount option for WEAK_MTPTS
 		if [ "$VERBOSE" = no ]
 		then
@@ -130,7 +106,6 @@ End_Read
 	fi
 	if [ "$REG_MTPTS" ]
 	then
-        echo "UMOUNTING REG: $REG_MTPTS"
 		if [ "$VERBOSE" = no ]
 		then
 			log_action_begin_msg "Unmounting local filesystems"
@@ -142,16 +117,6 @@ End_Read
 			log_end_msg $?
 		fi
 	fi
-
-	#if [ "$LIVE_MTPTS" ]
-	#then
-	#    echo "Mounting remaining LIVE filesystems read-only"
-	#    for MTPT in $LIVE_MTPTS; do
-    #        mount -o remount,ro $MTPT
-    #    done
-	#fi
-
-    echo "Done umounting local file systems"
 }
 
 case "$1" in
@@ -163,8 +128,6 @@ case "$1" in
 	exit 3
 	;;
   stop)
-     targ=/live/bin/umount-live
-     [ -x $targ ] && exec $targ --umountfs </dev/console >/dev/console
 	do_stop
 	;;
   *)

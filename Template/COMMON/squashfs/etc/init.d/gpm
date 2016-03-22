@@ -77,7 +77,8 @@ gpm_stop () {
   CMDLINE=${CMDLINE:-$(cat /proc/cmdline)}
   for param in $CMDLINE; do
     case "$param" in
-      lean|antiX=*[Ll]*|aX=*[Ll]*) LEAN="true";;
+        lean|antiX=*[Ll]*|aX=*[Ll]*)               LEAN=true ;;
+        disable_srv=*[lL]*|disable_service=*[lL]*) LEAN=true ;;
     esac
   done
     

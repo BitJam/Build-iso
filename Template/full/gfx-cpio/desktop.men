@@ -12,3 +12,5 @@ Herbstluftwm   `desktop=min-herbstluftwm
 min-IceWM      `desktop=min-icewm
 min-Fluxbox    `desktop=min-fluxbox
 min-Jwm        `desktop=min-jwm
+Dark theme       `desktheme=dark
+Light theme      `desktheme=light

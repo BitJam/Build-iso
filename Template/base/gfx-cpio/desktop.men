@@ -8,3 +8,5 @@ Jwm            `desktop=jwm
 Herbstluftwm   `desktop=min-herbstluftwm
 min-Fluxbox    `desktop=min-fluxbox
 min-Jwm        `desktop=min-jwm
+Dark theme       `desktheme=dark
+Light theme      `desktheme=light

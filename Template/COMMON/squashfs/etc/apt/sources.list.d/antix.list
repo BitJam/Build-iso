@@ -1,4 +1,3 @@
-# Use with Debian Testing (or Sid) repositories. Set as default for antiX-14R.
-deb http://antix.daveserver.info/testing testing main dev nosystemd
-# Use with Debian Stable/Jessie repositories.
-deb http://antix.daveserver.info/stable stable main nosystemd
+# Use with Debian Stable/Jessie repositories. Set as default for antiX-16.
+deb http://antix.daveserver.info/jessie jessie main nosystemd dev 
+#deb http://antix.daveserver.info/testing testing main nosystemd  

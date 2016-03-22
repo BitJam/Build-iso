@@ -9,6 +9,3 @@
 
 # latest (beta) iceweasel
 #deb http://mozilla.debian.net/ experimental iceweasel-beta 
-
-# yad
-deb http://debs.slavino.sk testing main non-free

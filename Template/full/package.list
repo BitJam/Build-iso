@@ -1,11 +1,9 @@
 acl
 acpi
-#acpi-fakekey
 acpi-support
-alpine
+#alpine #removed to save space
 antix-cc-full-antix
 apt-show-versions
-#apt-xapian-index
 aspell
 aspell-en
 asunder
@@ -17,6 +15,7 @@ bluetooth
 bluez
 cclive
 cdparanoia
+#cherrytree
 claws-mail
 claws-mail-i18n
 claws-mail-pdf-viewer
@@ -36,22 +35,16 @@ dkms
 dosbox
 e3
 ethtool
-file-roller
 fonts-dejavu
 #fonts-dejavu-extra
 #fonts-lyx
 fonts-opensymbol
 fonts-vlgothic # Japanese
 fonts-wqy-microhei # Chinese
-gcc
-gcc-4.9 
+gcc 
 gcolor2
-gdebi
-gdebi-core
 ghostscript
-gnome-mime-data
 gnome-mplayer
-#gnome-themes-standard
 gsettings-desktop-schemas
 gsfonts
 gsfonts-x11
@@ -60,8 +53,8 @@ gufw
 guvcview
 gweled
 hardinfo 
+hexchat
 html2text
-icedtea-7-plugin
 icewm
 icewm-common
 icewm-themes-antix
@@ -69,25 +62,18 @@ icewmcc-antix
 irqbalance
 iso-codes
 keyutils
-lbreakout2
-lbreakout2-data
 libgpod-common
-libreoffice-base-core
 libreoffice-calc
-libreoffice-common
-libreoffice-core
-libreoffice-draw
 libreoffice-gtk
 #libreoffice-help-en-us
 libreoffice-impress
 libreoffice-math
-libreoffice-style-galaxy
 libreoffice-writer
 lp-solve
 lua-filesystem
 luckybackup
 luckybackup-data
-menu-icewm-antix
+menu-icewm-antix # needs changing- obsolete?
 mirage
 mpg123
 mpg321
@@ -124,7 +110,6 @@ printer-driver-ptouch
 printer-driver-pxljr
 printer-driver-sag-gdi
 printer-driver-splix   
-poppler-utils
 pv 
 #python-apt
 #python-debian
@@ -135,19 +120,21 @@ pv
 python-smbc
 #python-vte
 #python-xapian
+qpdfview
 radeontool
 rfkill
-samba-common-bin
+#samba-common-bin
 sane-utils
 simple-scan
-smbclient
+#smbclient
+#smplayer
+#smplayer-l10n
 spawn-fcgi
 ssl-cert
 streamtuner2
 synaptic
 system-config-printer
 system-config-printer-udev 
-tk8.5
 transmission
 transmission-cli
 transmission-common
@@ -155,13 +142,11 @@ transmission-common
 transmission-gtk
 unar
 unclutter
+unetbootin
 uno-libs3
 ure
 uvcdynctrl
 uvcdynctrl-data
-vim
-vim-common
-vim-runtime
 wamerican
 wavpack
 wicd
@@ -175,5 +160,5 @@ wordgrinder
 xclip
 xfce-keyboard-shortcuts
 xfconf
-xsane
-xsane-common
+#xsane
+#xsane-common
