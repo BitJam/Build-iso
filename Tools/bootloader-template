@@ -79,7 +79,7 @@ eval_argument() {
 
 takes_param() {
     case $1 in
-        -data|flavour|-release|[dfr]) return 0 ;;
+        -data|-flavour|-release|[dfr]) return 0 ;;
     esac
     return 1
 }
