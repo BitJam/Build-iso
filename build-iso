@@ -1235,7 +1235,7 @@ do_stage_5() {
     local vim_bin=$sqfs_dir/usr/bin/vim
     if [ -x $vim_bin.tiny -a ! -e $vim_bin ]; then
         say "Making /usr/bin/vim symlink to vim.tiny"
-        ln -s vim.tiny $vim_bin
+        $SUDO ln -s vim.tiny $vim_bin
     fi
 
     leave_stage
