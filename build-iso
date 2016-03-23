@@ -1471,6 +1471,12 @@ do_stage_8() {
     isohybrid $full_iso_file
     size=$(du_size $full_iso_file)
     end_timer "create $(pqn $size) iso file"
+
+    if [ "$SIGN_FILES" ]; then
+        say "Sign $(basename $full_iso_file)"
+        gpg --output $full_iso_file.sig --detach-sign $full_iso_file
+    fi
+
     md5sum_file $full_iso_file
 
     if [ "$ISO_SYMLINK" -a -L "$ISO_SYMLINK" ];then
