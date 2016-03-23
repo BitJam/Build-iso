@@ -938,22 +938,19 @@ do_stage_4() {
         skip_part 13 "Reinstall some packages"
     fi
 
-    if do_part 14 "!Update runlevels based on flavour"; then
-        #if [ "$ISO_RESPIN_OF" = "core" ]; then
-        #    say "Reconfigure ejectcd run levels for $(pq $ISO_RESPIN_OF) type system"
-        #     update-rc.d ejectcd remove
-        #     update-rc.d ejectcd stop 06
-        #else
-            say "Reconfigure Lightdm run levels for $(pq $ISO_RESPIN_OF) type of system"
-            update-rc.d lightdm remove
-            update-rc.d lightdm start 25 stop 01346
+    if do_part 14 "!Update/configure X-related programs"; then
 
-            if [ -n "$X_TERM_EMULATOR" -a -x $X_TERM_EMULATOR ]; then
-                say "Set x-terminal-emulator to $(pq $X_TERM_EMULATOR)"
-                update-alternatives --set x-terminal-emulator $X_TERM_EMULATOR
-            else
-                error "Missing or unknown x-term-emulator $(pqw $X_TERM_EMULATOR)"
-            fi
+        if [ -n "$(which slim)" -a -e /etc/slim.conf ]; then
+            say "Enable demo as live user in slim.conf"
+            sed -i -r '/default_user/ s/^#+//' /etc/slim.conf
+        fi
+
+        if [ -n "$X_TERM_EMULATOR" -a -x $X_TERM_EMULATOR ]; then
+            say "Set x-terminal-emulator to $(pq $X_TERM_EMULATOR)"
+            update-alternatives --set x-terminal-emulator $X_TERM_EMULATOR
+        else
+            error "Missing or unknown x-term-emulator $(pqw $X_TERM_EMULATOR)"
+        fi
         end_part_strict
     fi
 
