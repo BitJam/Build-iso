@@ -1046,7 +1046,11 @@ do_stage_4() {
         : ${NEW_HOSTNAME:=antiX1}
         say "Set hostname to $(pq $NEW_HOSTNAME)"
         echo $NEW_HOSTNAME > /etc/hostname
-        hostname -F /etc/hostname
+
+        if [ -z "$NO_SET_HOSTNAME" ]; then
+            say "run hostname command"
+            hostname -F /etc/hostname
+        fi
 
         local user=${LIVE_USER:-demo}
         if ! grep -q "^$user:" /etc/passwd; then
