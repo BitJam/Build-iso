@@ -1292,6 +1292,7 @@ do_stage_6() {
         CODE_NAME="$CODE_NAME"
              FLAV="$FLAV"
           OPTIONS="$boot_options"
+     CORE_OPTIONS="$CORE_LIVE_BOOT_OPTIONS"
      RELEASE_DATE="$RELEASE_DATE"
 Bootloader_Data
 

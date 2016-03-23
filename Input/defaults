@@ -42,4 +42,5 @@ NO_SET_HOSTNAME=""
 SIGN_FILES="true"
 
 antiX_LIVE_BOOT_OPTIONS="quiet splash=v nosysv=LX"
+ CORE_LIVE_BOOT_OPTIONS="quiet splash=v nosysv=LXD"
    MX_LIVE_BOOT_OPTIONS="quiet"
