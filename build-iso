@@ -901,11 +901,6 @@ do_stage_4() {
         end_part_lax
     fi
 
-    #We want to downgrade syslinux, syslinux-common, extlinux and later hold
-    #First, remove
-    #say "Removing syslinux."
-    #apt-get purge syslinux syslinux-common extlinux
-
     local debs=$(ls $build_dir/Deb/*.deb 2>/dev/null)
     local cnt=$(echo "$debs" | wc -w)
     if [ $cnt -gt 0 ] \
@@ -916,11 +911,6 @@ do_stage_4() {
             say "install $(pq ${deb##*/})"
             dpkg -i $deb
         done
-        #Put syslinux on hold here
-        say "Holding syslinux to Wheezy version"
-        echo syslinux hold | dpkg --set-selections
-        say "Another$nc apt-get -f install"
-        apt-get -f install
         end_part_lax
     else
         skip_part 10 "Install latest antiX debs"
