@@ -9,6 +9,7 @@
 
 BUG_REPORT_URL="http://antix.freeforums.org"
 CODE_NAME="Berta Cáceres"
+ASCII_CODE_NAME="Berta Caceres"
 DEBIAN_RELEASE="jessie"
 DISTRO_NAME="antiX"
 DISTRO_VERSION="16-a2"

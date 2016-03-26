@@ -6,6 +6,7 @@ DATA_FILE=antiX-data
 SEP="/"
 
 VAR_NAMES="
+ASCII_CODE_NAME
 CODE_NAME
 CORE_OPTIONS
 DISTO_VERSION
@@ -110,6 +111,7 @@ main() {
     . $DATA_FILE
     
     : ${DISTRO:=$DISTRO_NAME-${DISTRO_VERSION}}
+    : ${ASCII_CODE_NAME:=$CODE_NAME}
 
     if [ -z "$FULL_DISTRO_NAME" ]; then
         : ${FULL_DISTRO_NAME:=${DISTRO}_$ISO_ARCH}
