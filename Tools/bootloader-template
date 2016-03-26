@@ -20,6 +20,8 @@ RELEASE_DATE
 
 CONF_FILES="
 boot/grub/grub.cfg
+boot/grub/grub.cfg
+boot/grub/theme/theme.txt
 boot/isolinux/isolinux.cfg
 boot/isolinux/readme.msg
 boot/syslinux/readme.msg
