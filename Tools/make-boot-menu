@@ -9,7 +9,7 @@ make_boot_menu() {
     rm -f $dfile $mfile
 
     mkdir -p $dir
-    local line label param cnt=0
+    local line label param cnt=1
     while read line; do
         label=$(echo "$line" | cut -d\` -f1)
         param=$(echo "$line" | cut -d\` -f2)
