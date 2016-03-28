@@ -1311,7 +1311,7 @@ Bootloader_Data
     local desktop_men=$isolinux_cpio/desktop.men
     if test -e $desktop_men; then
         say "Create desktop text boot-menu"
-        $SUDO $tools/make-text-menu desktop $boot_menu_dir $desktop_men
+        $SUDO $tools/make-text-menu Desktop $boot_menu_dir $desktop_men
     fi
 
     # (9)

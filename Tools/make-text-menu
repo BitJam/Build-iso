@@ -14,7 +14,11 @@ make_boot_menu() {
         label=$(echo "$line" | cut -d\` -f1)
         param=$(echo "$line" | cut -d\` -f2)
         [ "$param" ] || param=default
-        echo $cnt:$param >> $dfile
+        if [ $cnt -eq 1 ]; then
+            echo "$cnt:$param"        >> $dfile
+        else
+            echo "$cnt:$param:$label" >> $dfile
+        fi
         printf "%3d) %s\n" $cnt "$label" >> $mfile
         cnt=$((cnt + 1))
     done <<Old_menu
