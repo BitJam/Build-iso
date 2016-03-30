@@ -26,7 +26,8 @@ make_boot_menu() {
 $(cat "$@")
 Old_menu
 
-    cat $tfile | column -c 75 > $mfile
+    # FIXME: I'm not certain the sed will always work
+    cat $tfile | column -c 75  | sed "s/\t/   /g" > $mfile
     rm $tfile
 }
 
