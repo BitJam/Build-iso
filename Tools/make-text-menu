@@ -6,7 +6,8 @@ make_boot_menu() {
 
     local dfile=$dir/$name.data
     local mfile=$dir/$name.menu
-    rm -f $dfile $mfile
+    local tfile=$dir/$name.menu.tmp
+    rm -f $dfile $mfile $tfile
 
     mkdir -p $dir
     local line label param cnt=1
@@ -19,11 +20,14 @@ make_boot_menu() {
         else
             echo "$cnt:$param:$label" >> $dfile
         fi
-        printf "%3d) %s\n" $cnt "$label" >> $mfile
+        printf "%3d) %s\n" $cnt "$label" >> $tfile
         cnt=$((cnt + 1))
     done <<Old_menu
 $(cat "$@")
 Old_menu
+
+    cat $tfile | column -c 75 > $mfile
+    rm $tfile
 }
 
 make_boot_menu "$@"
