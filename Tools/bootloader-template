@@ -14,6 +14,7 @@ DISTRO
 DISTRO_NAME
 FLAV
 FULL_DISTRO_NAME
+FULL_DISTRO_NAME_SPACE
 ISO_ARCH
 OPTIONS
 RELEASE_DATE
@@ -118,7 +119,10 @@ main() {
     fi
 
     : ${RELEASE_DATE:=$(date +"%-e %B %Y")}
- 
+
+    : ${FULL_DISTRO_NAME_SPACE:=$FULL_DISTRO_NAME}
+    FULL_DISTRO_NAME_SPACE=${FULL_DISTRO_NAME_SPACE//_/ }
+
     build_sed_exprs
 
     #echo $SED; echo $SED_P
