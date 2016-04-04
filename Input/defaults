@@ -42,6 +42,6 @@ USE_UEFI=true
 NO_SET_HOSTNAME=""
 SIGN_FILES="true"
 
-antiX_LIVE_BOOT_OPTIONS="quiet splash=v disable=LX"
- CORE_LIVE_BOOT_OPTIONS="quiet splash=v disable=LXD"
+antiX_LIVE_BOOT_OPTIONS="quiet splash=v disable=lx"
+ CORE_LIVE_BOOT_OPTIONS="quiet splash=v disable=lxd"
    MX_LIVE_BOOT_OPTIONS="quiet"
