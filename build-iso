@@ -1238,6 +1238,9 @@ do_stage_5() {
         $SUDO ln -s vim.tiny $vim_bin
     fi
 
+    say "Deleting /etc/motd"
+    $SUDO rm -f $sqfs_dir/etc/motd
+
     leave_stage
 }
 
