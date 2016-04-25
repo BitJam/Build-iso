@@ -1272,7 +1272,7 @@ do_stage_6() {
     get_template_file gfxboot.menu boot_menu
     if [ "$boot_menu" ]; then
         update_gfxboot_menu $boot_menu $isolinux_cpio/gfxboot.cfg
-        update_gfxboot_menu $boot_menu $syslinux_cpio/gfxboot.cfg
+        update_gfxboot_menu $boot_menu $syslinux_cpio/gfxboot.cfg "key.F8=save"
     fi
 
     # (4) Mostly for flavour dependent desktop.men file
@@ -2180,6 +2180,7 @@ prep_dir() {
 
 update_gfxboot_menu() {
     local menu_file=$1 conf_file=$2
+    shift 2
     local subdir=$(basename $(dirname $conf_file))
     local menu_string="Function key menu"
     # Insert Function key menu into gfxboot.cfg
@@ -2190,6 +2191,7 @@ update_gfxboot_menu() {
     cat << Fn_Menu >> $conf_file
 ; >>>>>>>>>> Function key menu >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 $(cat $menu_file)
+$*
 ; <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 Fn_Menu
 }
