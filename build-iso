@@ -1312,6 +1312,14 @@ Bootloader_Data
     if test -e $desktop_men; then
         say "Create desktop text boot-menu"
         $SUDO $tools/make-text-menu desktop $boot_menu_dir $desktop_men
+        local append_menu dir targ
+        get_template_file append-to-desktop.men append_menu
+        for dir in $isolinux_cpio $syslinux_cpio; do
+            targ=$dir/desktop.men
+            test -e $targ || continue
+            say "Append to $(basename $dir)/$(basename $targ)"
+            cat $append_menu >> $targ
+        done
     fi
 
     # (9)
