@@ -96,12 +96,12 @@ main() {
         -pointsize $size_1 -draw \
         "text $pos_1 'Welcome to $DISTRO ($CODE_NAME)!'" \
         -pointsize $size_2 -draw \
-        "text $pos_2 'Press \'e\' to edit, \'P\' to poweroff, \'R\' to reboot, \'H\' for help'" \
-        -draw \
-        "text $pos_3 'Press <Esc> to return to main menu'" \
+        "text $pos_3 'Press \'e\' to edit, <Esc> to return to main menu'" \
         -fill "$COLOR" $file_1 $file_2
 }
 
+        # "text $pos_2 'Press \'e\' to edit, \'P\' to poweroff, \'R\' to reboot, \'H\' for help'" \
+        # -draw \
 
 #-------------------------------------------------------------------------------
 # Send "$@".  Expects
