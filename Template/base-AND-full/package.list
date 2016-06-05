@@ -9,6 +9,7 @@ alsamixer-equalizer-antix
 alsa-base 
 alsa-tools 
 alsa-utils 
+#antix-cc-antix renamed to control-centre-antix
 antix-goodies 
 antix-installer 
 arandr 
@@ -16,6 +17,7 @@ asciidoc
 ash 
 atmel-firmware 
 b43-fwcutter
+bc
 binutils 
 bluez-firmware
 br2684ctl
@@ -29,8 +31,9 @@ cdw
 cifs-utils
 clearlooks-phenix-theme
 clipit
-conky-std
+conky-all
 connectshares-antix
+control-centre-antix
 cpp
 cpulimit
 dbus-x11
@@ -52,6 +55,8 @@ ds-mouse-antix
 dvd+rw-tools
 dzen2
 esound-common
+exfat-fuse
+exfat-utils 
 extlinux
 faenza-cupertino-mini-icons
 faq-docs-antix
@@ -59,24 +64,28 @@ fbsplash-antix
 fbxkb
 feh
 file-roller
-#firmware-misc-nonfree use in testing
 firmware-adi #not in testing
+#firmware-amd-graphics #testing 
 firmware-atheros
 firmware-b43-installer
 firmware-bnx2
 firmware-bnx2x
 firmware-brcm80211
+#firmware-cavium #testing 
+#firmware-intel-sound #testing 
 firmware-intelwimax
 firmware-ipw2x00
 firmware-iwlwifi
 firmware-libertas
 firmware-linux-free
 firmware-linux-nonfree
+#firmware-misc-nonfree #testing 
 firmware-myricom
 firmware-netxen
 firmware-qlogic
 firmware-ralink #not in testing
-firmware-realtek
+firmware-realtek 
+#firmware-ti-connectivity #testing 
 firmware-zd1211
 flac
 flashplugin-nonfree # replaced by pepperflashplugin-nonfree and freshplayerplugin, but too big
@@ -116,6 +125,7 @@ hicolor-icon-theme
 icedax
 iceweasel
 ifplugd
+#imagemagick
 install-meta-antix # use packageinstaller?
 intltool-debian
 inxi-gui-antix
@@ -243,7 +253,7 @@ xbase-clients
 xdg-utils
 xdotool
 xf86-video-sis-antix
-xfburn 
+xfburn
 xfonts-100dpi
 xfonts-base
 xfonts-encodings

@@ -46,6 +46,7 @@ crc32c-generic
 crct10dif-pclmul
 crct10dif-common
 crct10dif-generic
+dm_mod
 ehci-hcd
 ehci-pci
 ext2
@@ -85,6 +86,7 @@ sg
 shpchp
 squashfs
 sr-mod
+uas
 udf
 ufshcd-pci
 uhci-hcd

@@ -17,7 +17,7 @@ PATH=/sbin:/usr/sbin:/bin:/usr/bin
 umask 022
 
 do_stop () {
-   
+
     local live_prog full_live live_dir=/live
     read live_dir 2>/dev/null < /etc/live/live-dir
     for live_prog in live-umount umount-live; do
@@ -120,7 +120,7 @@ do_stop () {
 }
 
 case "$1" in
-  start)
+  start|status)
 	# No-op
 	;;
   restart|reload|force-reload)

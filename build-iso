@@ -951,6 +951,13 @@ do_stage_4() {
         else
             error "Missing or unknown x-term-emulator $(pqw $X_TERM_EMULATOR)"
         fi
+
+	if [ -n "$CURSOR_ICON_THEME" -a -e $CURSOR_ICON_THEME ]; then
+            say "Set cursor icon theme to $(pq $CURSOR_ICON_THEME)"
+            update-alternatives --set x-cursor-theme $CURSOR_ICON_THEME
+        else
+            error "Missing or unknown cursor icon theme $(pqw $CURSOR_ICON_THEME)"
+        fi
         end_part_strict
     fi
 
@@ -958,11 +965,11 @@ do_stage_4() {
     if which $update_flash 2>/dev/null && do_part 15 "Get Latest Flash"; then
         $update_flash
 
-        local flash_selector="flashplayer-selector.sh"
-        if [ "$ARCH" = "i386" ] && which $flash_selector 2>/dev/null; then
-            say "Set old flash"
-            $flash_selector
-        fi
+        #local flash_selector="flashplayer-selector.sh"
+        #if [ "$ARCH" = "i386" ] && which $flash_selector 2>/dev/null; then
+        #   say "Set old flash"
+        #   $flash_selector
+        #fi
         end_part_lax
     fi
 
@@ -1043,7 +1050,7 @@ do_stage_4() {
             error "Unknown time zone $(pqw $TIME_ZONE)"
         fi
 
-        : ${NEW_HOSTNAME:=antiX1}
+        : ${NEW_HOSTNAME:=antix1}
         say "Set hostname to $(pq $NEW_HOSTNAME)"
         echo $NEW_HOSTNAME > /etc/hostname
 
@@ -1119,7 +1126,7 @@ do_stage_4() {
     write_version_files
 
     dpkg-query -l | sed -n 's/^ii\s\+//p' > $output_dir/package-list.out
-    dpkg-query -l | sed -n 's/^ii\s\+//p' > /usr/share/antiX/installed.txt
+    dpkg-query -l | sed -n 's/^ii\s\+//p' > /usr/share/antiX/installed-packages.txt
 
     # It is easier to do this outside the chroot but by doing it here, the
     # updatedb database will contain the theme files
@@ -1431,7 +1438,7 @@ do_stage_7() {
     $SUDO mksquashfs $sqfs_dir $linuxfs_file -comp xz -b 262144 $arg
     local size=$(du_size $linuxfs_file)
     end_timer "create $(pqn $size) squashfs file"
-    md5sum_file $linuxfs_file
+    md5sum_file $linuxfs_file 
 
     leave_stage
 }
@@ -1441,7 +1448,7 @@ do_stage_7() {
 #------------------------------------------------------------------------------
 do_stage_8() {
     enter_stage 8 "Create iso file"
-
+    touch $iso_dir/antiX/esp-uuid
     report_size $iso_dir
 
     local iso_file=$full_distro_name.iso

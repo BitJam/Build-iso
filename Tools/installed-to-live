@@ -791,7 +791,7 @@ error() {
 
 is_mounted() {
     local file=$1
-    cut -d" " -f2 /proc/mounts | grep -q "^$(readlink -f $file)$"
+    cut -d" " -f2 /proc/mounts | grep -q "^$file$"
     return $?
 }
 

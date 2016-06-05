@@ -69,6 +69,8 @@ main() {
     cp_dir        /etc/init.d/debian etc/init.d
     rm_dir        etc/init.d/debian
 
+    sed_line      's/^\s*(session\s+[^\s]+\s+pam_lastlog.so).*/\1/' etc/pam.d/login
+
     #idir_chroot   dpkg --purge $PURGE_PACKAGES
 
     clear_dir     media run tmp var/tmp
@@ -88,6 +90,14 @@ del_line() {
     [ -z "${file##/*}" ] || file=$IDIR/$file
     [ "$VERBOSE" ] || test -e "$file" || return
     $PRETEND sed -i "/$regex/d" "$file"
+}
+
+sed_line() {
+    local sedex=$1 file=$2
+    # We are called by del_line_skel which already adds $IDIR
+    [ -z "${file##/*}" ] || file=$IDIR/$file
+    [ "$VERBOSE" ] || test -e "$file" || return
+    $PRETEND sed -i -r "$sedex" "$file"
 }
 
 #----------------------------------------------------------------------

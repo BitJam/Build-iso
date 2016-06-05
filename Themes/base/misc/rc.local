@@ -20,7 +20,8 @@ restore=/live/etc/init.d/live-restore-services
 
 # Enable fstab auto-stuff after udev has run
 fstab_rules=/live/etc/udev/rules.d/90-fstab-automount.rules
-test -e $fstab_rules && cp $fstab_rules /etc/udev/rules.d/
+test -e /live/config/fstab-hotplug \
+    && test -e $fstab_rules && cp $fstab_rules /etc/udev/rules.d/
 
 # Detect and set up correct broadcom
 /usr/local/bin/BroadcomStartup
