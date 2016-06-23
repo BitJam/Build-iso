@@ -26,4 +26,7 @@ test -e /live/config/fstab-hotplug \
 # Detect and set up correct broadcom
 /usr/local/bin/BroadcomStartup
 
+# Automatically switch to vt2 when fdb+ cheat is used
+egrep -q "(^| )fdb\+( |$)" /proc/cmdline && chvt 2
+
 exit 0

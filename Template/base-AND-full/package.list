@@ -1,3 +1,4 @@
+automount-antix
 abcde 
 acpi-support-base 
 acpid 
@@ -64,6 +65,8 @@ fbsplash-antix
 fbxkb
 feh
 file-roller
+firefox-esr
+#firefox-esr-l10n-all
 firmware-adi #not in testing
 #firmware-amd-graphics #testing 
 firmware-atheros
@@ -96,6 +99,7 @@ fontconfig-config
 fonts-opensymbol
 freeglut3
 fxload
+galternatives
 geany
 geany-common 
 gettext
@@ -113,8 +117,11 @@ gpm
 group-management-antix
 growisofs
 grsync
+#grub-efi-ia32-bin
+#grub-efi-amd64-bin
 #grub-customizer #removed to save space
-gstreamer0.10-plugins-base
+#gstreamer0.10-plugins-base
+gstreamer1.0-plugins-base
 gtk2-engines
 gtk2-engines-murrine
 gtk2-engines-pixbuf
@@ -123,7 +130,7 @@ hdparm
 herbstluftwm 
 hicolor-icon-theme
 icedax
-iceweasel
+#iceweasel - no longer exists - now firefox
 ifplugd
 #imagemagick
 install-meta-antix # use packageinstaller?
@@ -147,11 +154,12 @@ lm-sensors
 lsb-release 
 lsof
 lxappearance
+lxmenu-data
 lzma
 manpages
 mediterranean-themes
-menu-fluxbox-antix # needs changing- obsolete?
-menu-jwm-antix # needs changing- obsolete?
+#menu-fluxbox-antix # needs changing- obsolete?
+#menu-jwm-antix # needs changing- obsolete?
 menu-manager-antix 
 menu-xdg
 mesa-utils
@@ -159,12 +167,13 @@ midisport-firmware
 mime-support
 mobile-broadband-provider-info
 moc
+moc-ffmpeg-plugin
 module-assistant
 mountbox-antix
 mp3blaster
 mpv
 mupdf
-mupdf-tools
+#mupdf-tools
 murrine-themes
 myspell-en-us
 ndisgtk
@@ -182,8 +191,9 @@ pm-utils
 pmount
 po-debconf
 powermgmt-base
+#pulseaudio #needed for html5 firefox *sigh* *maybe not*
 python-xdg
-qdbus
+#qdbus
 #ranger
 rarian-compat
 resolvconf
@@ -193,6 +203,7 @@ rtorrent
 rxvt-unicode
 samba-common
 searchmonkey
+set-dpi-antix
 screenshot-antix
 scrot
 sgml-base
@@ -225,7 +236,7 @@ usbmuxd
 usbutils
 user-management-antix  
 vbetool
-vifm
+#vifm
 virtualbox-guest-dkms
 virtualbox-guest-utils
 virtualbox-guest-x11
@@ -279,4 +290,5 @@ xserver-xorg-video-all
 xutils
 xutils-dev
 yad 
+youtube-dl
 zip

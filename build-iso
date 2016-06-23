@@ -958,6 +958,8 @@ do_stage_4() {
         else
             error "Missing or unknown cursor icon theme $(pqw $CURSOR_ICON_THEME)"
         fi
+        say "Disable bootchart-done"
+        update-rc.d bootchart-done remove
         end_part_strict
     fi
 

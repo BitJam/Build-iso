@@ -12,7 +12,7 @@ CODE_NAME="Berta Cáceres"
 ASCII_CODE_NAME="Berta Caceres"
 DEBIAN_RELEASE="jessie"
 DISTRO_NAME="antiX"
-DISTRO_VERSION="16-b5.2"
+DISTRO_VERSION="16"
 HOME_URL="http://antix.mepis.org/"
 
 #K_REVISION="2"

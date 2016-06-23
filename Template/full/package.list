@@ -74,7 +74,7 @@ lp-solve
 lua-filesystem
 luckybackup
 luckybackup-data
-menu-icewm-antix # needs changing- obsolete?
+#menu-icewm-antix # needs changing- obsolete?
 mirage
 mpg123
 mpg321
@@ -133,6 +133,7 @@ simple-scan
 #smplayer-l10n
 spawn-fcgi
 ssl-cert
+streamripper
 streamtuner2
 synaptic
 system-config-printer
@@ -142,7 +143,7 @@ transmission-cli
 transmission-common
 #transmission-daemon
 transmission-gtk
-unar
+#unar
 unclutter
 unetbootin
 uno-libs3

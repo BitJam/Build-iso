@@ -1,0 +1,9 @@
+[Desktop Entry]
+Encoding=UTF-8
+Type=Application
+Name=Calcurse
+Icon=/usr/share/icons/Faenza-Cupertino-mini/apps/48/evolution-calendar.png
+Categories=Utility;
+Exec=desktop-defaults-run -t calcurse
+Terminal=False
+

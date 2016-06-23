@@ -63,7 +63,7 @@ main() {
     rm_file       etc/udev/rules.d/90-fstab-automount.rules
 
     cp_file       /usr/share/antiX/rc.local.install etc/rc.local
-    cp_file       /usr/share/antix-install/issue etc/issue
+    cp_file       /usr/share/antiX/issue etc/issue
     #cp_file       /usr/share/slim/themes/antiX/slim-install.conf etc/slim.conf
 
     cp_dir        /etc/init.d/debian etc/init.d
