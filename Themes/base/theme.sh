@@ -4,7 +4,8 @@ THEME_DIR=$(dirname $(readlink -f $0))
 source $THEME_DIR/../theme-functions.sh
 start_theme "$@"
 
-#copy_file menu-applications 		/usr/share/desktop-menu/.jwm/
+copy_file menu-applications 		/usr/share/desktop-menu/.jwm/
+copy_file menu-applications-fb 		/usr/share/desktop-menu/.fluxbox/
 copy_file arandr.desktop 		/usr/share/applications/
 copy_file ceni.desktop 			/usr/share/applications/
 copy_file gnome-ppp.desktop 		/usr/share/applications/
@@ -46,6 +47,7 @@ copy_file hosts.ORIGINAL        	/etc/
 copy_file hosts.saved           	/etc/
 copy_file issue				/usr/share/antiX/
 copy_file jwm-wm-menu            	/usr/share/desktop-session/wm-menus/
+copy_file fluxbox-wm-menu            	/usr/share/desktop-session/wm-menus/
 
 copy_file .bashrc 			/etc/skel/
 copy_file user-dirs.defaults 		/etc/xdg 
@@ -55,7 +57,7 @@ copy_file asound.conf.PREAMP 		/etc/
 copy_file ixquick-https.xml 		/usr/share/firefox-esr/distribution/searchplugins/common/
 copy_file startpage-https.xml 		/usr/share/firefox-esr/distribution/searchplugins/common/
 copy_file distribution.ini 		/usr/share/firefox-esr/distribution/
-#copy_dir searchplugins/ 		/etc/iceweasel/searchplugins/common/
+
 copy_dir dillo/                  	/etc/skel/.dillo/     --create
 
 copy_dir icons/                  	/usr/share/antiX/icons/     --create 
