@@ -1330,6 +1330,10 @@ Bootloader_Data
         say "Use large font in bootloader for $(pq $FLAV) system"
         sed -i "s/16x16.fnt/16x16aa.fnt/"  $isolinux_cpio/gfxboot.cfg $syslinux_cpio/gfxboot.cfg
     fi
+
+    say "Make efi.img"
+    $SUDO $tools/make-efi-img $iso_dir
+
     repack_gfx_cpio isolinux $isolinux_cpio
     repack_gfx_cpio syslinux $syslinux_cpio
 
@@ -1467,6 +1471,7 @@ do_stage_8() {
     start_timer
     $MAKE_ISO -l -V antiXlive -R -J -pad -no-emul-boot -boot-load-size 4  \
         -boot-info-table -gid 0 -uid 0 -b boot/isolinux/isolinux.bin      \
+        -eltorito-alt-boot -eltorito-platform 0xEF -eltorito-boot boot/grub/efi.img -no-emul-boot \
         -c boot/isolinux/isolinux.cat -o $full_iso_file $iso_dir $iso2_dir 2>&1 \
         || error "iso file creation failed"
 
@@ -1477,7 +1482,7 @@ do_stage_8() {
         rm -r $iso2_dir
     fi
 
-    isohybrid $full_iso_file
+    isohybrid --uefo $full_iso_file
     size=$(du_size $full_iso_file)
     end_timer "create $(pqn $size) iso file"
 
