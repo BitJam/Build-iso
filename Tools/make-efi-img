@@ -1,0 +1,87 @@
+#!/bin/bash
+
+#
+#    gather files (or at least get size)
+#    make and mount filesystem
+#    copy files to fs
+#    edit grub.cfg
+#    umount
+#    copy to iso directory
+
+ME=${0##*/}
+
+WORK_DIR="/tmp/$ME"
+
+INPUT_FILE_LIST="
+efi/boot/bootx64.efi
+efi/boot/grubx64.efi
+boot/grub/grub.cfg"
+
+OUTPUT_FILE="boot/grub/efi.img"
+GRUB_CFG="boot/grub/grub.cfg"
+
+
+MARGIN=60  # in Kilobytes (min of about 28)
+
+usage() {
+    local ret=${1:-0}
+
+    cat<<Usage
+Usage: $ME <directory>
+
+Create a efi.img fat32 filesystem-on-a-file containing:
+
+$(echo "$INPUT_FILE_LIST" | sed "s/^/    /")
+Usage
+    exit $ret
+}
+
+main() {
+    [ $# -eq 1 ] || usage
+    
+    local dir=${1%/}
+
+    test -d $dir || fatal "$dir is not a directory"
+
+    local file full size=0
+    for file in $INPUT_FILE_LIST; do
+        full=$dir/$file
+        size=$((size + $(duk_size $full)))
+    done
+    echo "Size: $size"
+    local full_size=$((size + MARGIN))
+    
+    local full_out="$dir/$OUTPUT_FILE"
+    dd if=/dev/zero of="$full_out" bs=1K count=$full_size
+    mkfs.fat -n "EFI IMAGE" "$full_out"
+
+    local mp="$WORK_DIR/mp"
+    mkdir -p "$mp"
+    sudo mount -o loop "$full_out" "$mp"
+    local targ
+    for file in $INPUT_FILE_LIST; do
+        full="$dir/$file"
+        targ="$mp/$file"
+        sudo mkdir -p "$(dirname "$targ")"
+        sudo cp "$full" "$targ"
+    done
+
+    local full_grub="$mp/$GRUB_CFG"
+    sudo sed -i "1 iset root=(hd0)" "$full_grub"
+    sudo umount "$mp"
+    rmdir "$mp"
+    rmdir "$WORK_DIR"
+
+    echo -e "\nCreated $full_out"
+}
+
+duk_size() {
+    du -kc "$@" | tail -n1 | awk '{print $1}'
+}
+
+fatal() {
+    printf "$@" >&2
+    exit 3
+}
+
+main "$@"
