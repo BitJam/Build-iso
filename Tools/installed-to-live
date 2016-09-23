@@ -40,6 +40,7 @@ MUNGE_FILES="/etc/slim.conf /etc/lightdm/lightdm.conf"
 BIND_FILES="$PW_FILES"
 
 LIVE_FILE_LIST="
+/etc/grub.d/*
 /etc/desktop-session/startup
 /etc/fstab
 /etc/init.d/checkfs.sh
