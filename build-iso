@@ -1491,7 +1491,7 @@ do_stage_8() {
         rm -r $iso2_dir
     fi
 
-    isohybrid --uefo $full_iso_file
+    isohybrid --uefi $full_iso_file
     size=$(du_size $full_iso_file)
     end_timer "create $(pqn $size) iso file"
 

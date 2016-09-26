@@ -13,8 +13,9 @@ ME=${0##*/}
 WORK_DIR="/tmp/$ME"
 
 INPUT_FILE_LIST="
-efi/boot/bootx64.efi
-efi/boot/grubx64.efi
+EFI/BOOT/bootx64.efi
+EFI/BOOT/fallback.efi
+EFI/BOOT/grubx64.efi
 boot/grub/grub.cfg"
 
 OUTPUT_FILE="boot/grub/efi.img"
