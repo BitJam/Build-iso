@@ -18,7 +18,7 @@
 # Fixed amount plus X times number of packages. Both in units of 100K.
       TMPFS_SIZE="2500 + 70"
 
-  MAKE_ISO_PROGS="mkisofs genisoimage"
+  MAKE_ISO_PROGS="xorriso mkisofs genisoimage"
       GZIP_PROGS="pigz gzip"
   DUMMY_SERVICES="initctl invoke-rc.d restart start stop start-stop-daemon service"
        PS_FORMAT="pid,user,etimes,args"
