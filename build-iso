@@ -1471,6 +1471,8 @@ do_stage_8() {
             -quiet -c boot/isolinux/isolinux.cat -o $full_iso_file $iso_dir 2>&1 \
             || error "iso file creation failed"
 
+        $SUDO chown -R $UID $iso_dir
+
         isohybrid --uefi $full_iso_file
     else
         say "Using $(basename $MAKE_ISO) to make iso file"
@@ -3497,7 +3499,7 @@ update_add_list() {
 
 md5sum_file() {
     local dir=$(dirname $1) file=$(basename $1)
-    (cd $dir && md5sum $file | $SUDO tee $file.md5)
+    (cd $dir && md5sum $file > $file.md5)
 }
 
 
