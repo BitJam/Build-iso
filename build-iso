@@ -1468,30 +1468,32 @@ do_stage_8() {
         test -e $full && md5sum_file $full
     done
 
-    local iso2_dir
-    if true; then
-        iso2_dir=$iso_dir-2
-        say "Moving linuxfs file to $(basename $iso2_dir)/antiX"
-        test -d $iso2_dir && fatal "The $iso2_dir directory already exists".
-        mkdir -p $iso2_dir/antiX
-        mv $iso_dir/antiX/linuxfs* $iso2_dir/antiX/
-    fi
-
     start_timer
-    $MAKE_ISO -l -V antiXlive -R -J -pad -no-emul-boot -boot-load-size 4  \
-        -boot-info-table -gid 0 -uid 0 -b boot/isolinux/isolinux.bin      \
-        -eltorito-alt-boot -eltorito-platform 0xEF -eltorito-boot boot/grub/efi.img -no-emul-boot \
-        -c boot/isolinux/isolinux.cat -o $full_iso_file $iso_dir $iso2_dir 2>&1 \
-        || error "iso file creation failed"
 
-    if test -d $iso2_dir; then
-        say "Restoring linuxfs to iso directory"
-        mv $iso2_dir/antiX/linuxfs* $iso_dir/antiX/
-        say "Removing $(basename $iso2_dir)/"
-        rm -r $iso2_dir
+    local file_dir="$full_iso_file $iso_dir"
+    local chown_opts="-uid 0 -gid 0"
+    say "Using $(pq $(basename $MAKE_ISO)) to make iso file"
+    if [ -z "${MAKE_ISO%%*xorriso}" ]; then
+        $SUDO chown -R root:root $iso_dir
+        make_uefi_iso "$MAKE_ISO -as mkisofs" "-e" $file_dir
+        $SUDO chown -R $UID $iso_dir
+
+    elif has_option $MAKE_ISO -e; then
+        make_uefi_iso "$MAKE_ISO" "$chown_opts -e" $file_dir
+
+    elif has_option $MAKE_ISO -eltorito-platform; then
+        make_uefi_iso "$MAKE_ISO" "$chown_opts -eltorito-platform 0xEF -eltorito-boot" $file_dir
+
+    else
+        warn "Disabling 'dd' live-usb UEFI booting"
+        $MAKE_ISO -l -V antiXlive -R -J -pad -no-emul-boot -boot-load-size 4  \
+            -boot-info-table -gid 0 -uid 0 -b boot/isolinux/isolinux.bin      \
+            -c boot/isolinux/isolinux.cat -o $full_iso_file $iso_dir 2>&1 \
+            || error "iso file creation failed"
+
+            isohybrid $full_iso_file
     fi
 
-    isohybrid --uefi $full_iso_file
     size=$(du_size $full_iso_file)
     end_timer "create $(pqn $size) iso file"
 
@@ -2179,6 +2181,24 @@ collect_live_files() {
 #==============================================================================
 # Routines for preparing and making the iso file
 #==============================================================================
+
+has_option() {
+    local prog=$1  opt=$2
+    $prog --help 2>&1 | grep -q -- "$opt\s"
+    return $?
+}
+
+make_uefi_iso() {
+    local prog=$1  uefi=$2  file=$3  dir=$4
+    local cmd="$prog -l -V antiXlive -R -J -pad -no-emul-boot
+    -boot-load-size 4  -boot-info-table -b boot/isolinux/isolinux.bin
+    -eltorito-alt-boot $uefi boot/grub/efi.img -no-emul-boot
+    -quiet -c boot/isolinux/isolinux.cat -o $file $dir"
+
+    echo $cmd
+    $cmd 2>&1 || error "iso file creation failed"
+    isohybrid --uefi $file
+}
 
 unpack_gfx_cpio() {
     local type=$1  dir=${2:-$work_dir/$1-cpio}  file=${3:-$iso_dir/boot/$1/gfx-cpio}
