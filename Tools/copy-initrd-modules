@@ -46,11 +46,8 @@ crc32c-generic
 crct10dif-pclmul
 crct10dif-common
 crct10dif-generic
-<<<<<<< HEAD
 dm_mod
-=======
 ecb
->>>>>>> upstream/master
 ehci-hcd
 ehci-pci
 ext2
