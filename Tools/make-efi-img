@@ -22,7 +22,7 @@ OUTPUT_FILE="boot/grub/efi.img"
 GRUB_CFG="boot/grub/grub.cfg"
 
 
-MARGIN=60  # in Kilobytes (min of about 28)
+MARGIN=100  # in Kilobytes (60 failed on anti's system)
 
 usage() {
     local ret=${1:-0}
