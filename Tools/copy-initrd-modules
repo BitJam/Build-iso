@@ -46,7 +46,11 @@ crc32c-generic
 crct10dif-pclmul
 crct10dif-common
 crct10dif-generic
+<<<<<<< HEAD
 dm_mod
+=======
+ecb
+>>>>>>> upstream/master
 ehci-hcd
 ehci-pci
 ext2
@@ -68,6 +72,7 @@ libcrc32c
 loop
 mbcache
 msdos
+nls-ascii
 nls-cp437
 nls-utf8
 ntfs
