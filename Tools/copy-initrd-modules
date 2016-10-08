@@ -215,7 +215,7 @@ $(find "$dir" -name "*.ko" -printf "%f\n" | sed 's/\.ko//')"
 $(echo "$list2")
 List_2
 
-    [ "$SHOW_COUNT" ] && printf "$ME: %20s: %s module(s)\n" "$kernel" "$cnt"
+    [ "$SHOW_COUNT" ] && printf "$ME: %s module(s)\n" "$cnt"
 }
 
 echo_cmd() {
