@@ -103,6 +103,8 @@ Commands:
 
     cleanup             Clean up all that we did
 
+    repo[=<country>]    Reset the apt repos to the country given (default us)
+
     empty=<dir1,dir2,...>
                         Bind mount empty directories at these locations
 
@@ -232,6 +234,8 @@ main() {
             adjtime) do_adjtime       $CONF_FILE $WORK_DIR             ;;
           exclude=*) do_exclude       "$val" "$@" ; exit 0             ;;
             exclude) do_exclude       ""     "$@" ; exit 0             ;;
+               repo) do_repo          $CONF_FILE $WORK_DIR  us         ;;
+             repo=*) do_repo          $CONF_FILE $WORK_DIR  "$val"     ;;
 
  populate-live-files) do_populate_live "$@"                            ;;
 
@@ -402,6 +406,21 @@ do_empty() {
 
     bind_empty_dirs "$WORK_DIR/empty" "$BIND_ROOT" "$REAL_ROOT" "$dirs"
 }
+
+do_repo() {
+    local conf_file=$1  work_dir=$2  country=$3
+
+    read_conf_file $conf_file
+
+    real_dir="/etc/apt/sources.list.d"
+    repo_dir=$work_dir/repo
+    copy_dir=$repo_dir$real_dir
+    pretend mkdir -p $copy_dir
+    pretend cp $real_dir/*.list $copy_dir
+    pretend localize-repo --dir=$copy_dir $country
+    bind_mount_template "$repo_dir"  "$BIND_ROOT" "$REAL_ROOT"
+}
+
 
 do_status() {
     local conf_file=$1
