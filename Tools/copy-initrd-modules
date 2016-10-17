@@ -181,7 +181,7 @@ main() {
         default_mode=true
         list1=$(echo "$DEFAULT_LIST" | grep -v "^\s*#" | sed 's/\s*#.*//')
     else
-        list1=$(cat "$@" | grep -v "^\s*#" | sed 's/\s*#.*//')
+        list1=$(cat "$@" | grep -v "^\s*#" | sed -e 's/\s*#.*//' -e "s/,/ /g")
     fi
 
     [ "$default_mode" -a -z "$DIRS" ] && DIRS="kernel/drivers/ata kernel/drivers/mmc"

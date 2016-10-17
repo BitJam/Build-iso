@@ -7,6 +7,7 @@ iso
 sqfs
 work
 TODO
+Input/defaults-local
 Template/*/initrd/*
 Template/*/isolinux/*
 

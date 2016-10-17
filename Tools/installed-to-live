@@ -33,6 +33,9 @@ CONF_FILE=$WORK_DIR/cleanup.conf
 
 TEMPLATE_DIR=/usr/local/share/live-files
 
+DEF_TZ="America/New_York"
+DEF_REPO="us"
+
 PRETEND=
 
 PW_FILES="/etc/passwd /etc/shadow /etc/gshadow /etc/group"
@@ -66,6 +69,7 @@ LIVE_FILE_LIST="
 GENERAL_LIVE_FILE_LIST="
 /etc/lightdm/lightdm.conf
 /etc/slim.conf
+/etc/adjtime
 "
 
 usage() {
@@ -97,11 +101,15 @@ Commands:
 
     bind=<dir1,dir2,..>  Bind mount each dir IF it is a mountpoint
 
-    general             Same as "all-files passwd"
+    general             Same as "empty=/etc/grub.d all-files passwd repo timezone"
 
     adjtime             Reset the adjtime file but leave the utc / local selection
 
     cleanup             Clean up all that we did
+
+    repo[=<country>]    Reset the apt repos to the country given (default us)
+
+    timezone=[<zone>]   Reset the timezone back to EST or as specfied
 
     empty=<dir1,dir2,...>
                         Bind mount empty directories at these locations
@@ -209,7 +217,6 @@ main() {
     CONF_FILE=$WORK_DIR/cleanup.conf
 
     [ $# -eq 0 ] && fatal "Expected as least one commmand"
-
     while [ $# -gt 0 ]; do
         local val cmd=$1
         shift
@@ -232,6 +239,10 @@ main() {
             adjtime) do_adjtime       $CONF_FILE $WORK_DIR             ;;
           exclude=*) do_exclude       "$val" "$@" ; exit 0             ;;
             exclude) do_exclude       ""     "$@" ; exit 0             ;;
+               repo) do_repo          $CONF_FILE $WORK_DIR "$DEF_REPO" ;;
+             repo=*) do_repo          $CONF_FILE $WORK_DIR "$val"      ;;
+           timezone) do_timezone      $CONF_FILE $WORK_DIR "$DEF_TZ"   ;;
+         timezone=*) do_timezone      $CONF_FILE $WORK_DIR "$val"      ;;
 
  populate-live-files) do_populate_live "$@"                            ;;
 
@@ -403,6 +414,40 @@ do_empty() {
     bind_empty_dirs "$WORK_DIR/empty" "$BIND_ROOT" "$REAL_ROOT" "$dirs"
 }
 
+do_repo() {
+    local conf_file=$1  work_dir=$2  country=$3
+
+    read_conf_file $conf_file
+
+    real_dir="/etc/apt/sources.list.d"
+    repo_dir=$work_dir/repo
+    copy_dir=$repo_dir$real_dir
+    pretend mkdir -p $copy_dir
+    pretend cp $real_dir/*.list $copy_dir
+    pretend localize-repo --dir=$copy_dir $country
+    bind_mount_template "$repo_dir"  "$BIND_ROOT" "$REAL_ROOT"
+}
+
+do_timezone() {
+    local conf_file=$1  work_dir=$2  tz=$3
+
+    read_conf_file $conf_file
+
+    local zone_file=/usr/share/zoneinfo/$tz
+    if ! test -e "$zone_file"; then
+        error "Invalid timezone: $tz"
+        return
+    fi
+
+    local tz_dir=$work_dir/tz
+    local etc_dir=$tz_dir/etc
+    mkdir -p $etc_dir
+    cp $zone_file $etc_dir/localtime
+    echo "$tz" > $etc_dir/timezone
+    bind_mount_template "$tz_dir"  "$BIND_ROOT" "$REAL_ROOT"
+}
+
+
 do_status() {
     local conf_file=$1
 
@@ -488,17 +533,13 @@ do_all_files() {
 do_general() {
     local conf_file=$1  work_dir=$2
 
+    do_empty     $conf_file $work_dir "/etc/grub.d"
     do_all_files $conf_file $work_dir
+    do_passwd    $conf_file
+    do_repo      $conf_file $work_dir $DEF_REPO
+    do_timezone  $conf_file $work_dir $DEF_TZ
 
-    do_passwd $conf_file
-
-    #read_conf_file $conf_file
-
-    #bind_mount_template "$TEMPLATE_DIR"   "$BIND_ROOT" "$REAL_ROOT"
-    #bind_empty_dirs     "$WORK_DIR/empty" "$BIND_ROOT" "$REAL_ROOT"
-    #munge_files         "$TEMPLATE_DIR"   "$BIND_ROOT" "$WORK_DIR" "$USER_PW" "$ROOT_PW"
-
-    #write_conf_file $CONF_FILE
+    write_conf_file $conf_file
 }
 
 do_cleanup() {
