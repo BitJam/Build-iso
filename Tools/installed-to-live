@@ -69,6 +69,7 @@ LIVE_FILE_LIST="
 GENERAL_LIVE_FILE_LIST="
 /etc/lightdm/lightdm.conf
 /etc/slim.conf
+/etc/adjtime
 "
 
 usage() {
