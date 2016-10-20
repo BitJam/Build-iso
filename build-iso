@@ -1306,6 +1306,8 @@ do_stage_6() {
 Bootloader_Data
 
     $tools/bootloader-template -i --data=$bootloader_data $iso_dir
+    $tools/bootloader-template -i --data=$bootloader_data $isolinux_cpio/en.hlp
+    $tools/bootloader-template -i --data=$bootloader_data $syslinux_cpio/en.hlp
 
     # (6) Create/append-to text-only bootloader menu (.msg file)
     local isolinux_cfg=$isolinux_dir/isolinux.cfg
