@@ -93,7 +93,8 @@ duk_size() {
 }
 
 fatal() {
-    printf "$@" >&2
+    local fmt=$1 ; shift
+    printf "$fmt\n" "$@" >&2
     exit 3
 }
 
