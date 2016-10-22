@@ -38,6 +38,10 @@ Usage
 main() {
     [ $# -eq 1 ] || usage
 
+    case $1 in
+        -h|--help) usage ;;
+    esac
+
     local dir=${1%/}
 
     test -d $dir || fatal "$dir is not a directory"
