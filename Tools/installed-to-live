@@ -54,7 +54,6 @@ LIVE_FILE_LIST="
 /etc/init.d/keyboard-setup
 /etc/init.d/sendsigs
 /etc/init.d/umountfs
-/etc/initrd-release
 /etc/issue
 /etc/rc.local
 /etc/rc?.d/*virtualbox*

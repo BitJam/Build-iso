@@ -21,7 +21,10 @@ boot/grub/grub.cfg"
 OUTPUT_FILE="boot/grub/efi.img"
 GRUB_CFG="boot/grub/grub.cfg"
 
-MAX_MARGIN=500 # in Kilobytes
+   MAX_MARGIN=500 # in Kilobytes
+ MARGIN_START=30
+  MARGIN_STEP=10
+SAFETY_MARGIN=10  # Extra kilobytes to add after it works
 
 usage() {
     local ret=${1:-0}
@@ -38,6 +41,10 @@ Usage
 main() {
     [ $# -eq 1 ] || usage
 
+    case $1 in
+        -h|--help) usage ;;
+    esac
+
     local dir=${1%/}
 
     test -d $dir || fatal "$dir is not a directory"
@@ -50,15 +57,21 @@ main() {
     echo "Kilobytes needed: $needed"
 
     local margin  mp="$WORK_DIR/mp" img="$dir/$OUTPUT_FILE"
-    for margin in $(seq 10 10 $MAX_MARGIN); do
+    for margin in $(seq $MARGIN_START $MARGIN_STEP $MAX_MARGIN); do
         local size=$((needed + margin))
-        echo "Try size: $size  margin: $margin"
+        echo "  Try size: $size  margin: $margin"
         make_efi_img "$img" "$mp" "$INPUT_FILE_LIST" $size 2>/dev/null
         local ret=$?
         sudo umount "$mp"
+        [ $ret -eq 0 ] || continue
+
+        margin=$((margin + SAFETY_MARGIN))
+        size=$((needed + margin))
+        make_efi_img "$img" "$mp" "$INPUT_FILE_LIST" $size 2>/dev/null
+        echo "Final size: $size  margin: $margin"
+        sudo umount "$mp"
         rmdir "$mp"
         rmdir "$WORK_DIR"
-        [ $ret -eq 0 ] || continue
 
         echo -e "\n$ME created $img"
         return 0
@@ -93,7 +106,8 @@ duk_size() {
 }
 
 fatal() {
-    printf "$@" >&2
+    local fmt=$1 ; shift
+    printf "$fmt\n" "$@" >&2
     exit 3
 }
 
