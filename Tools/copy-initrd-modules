@@ -46,6 +46,7 @@ crc32c-generic
 crct10dif-pclmul
 crct10dif-common
 crct10dif-generic
+dm-mod
 ecb
 ehci-hcd
 ehci-pci
