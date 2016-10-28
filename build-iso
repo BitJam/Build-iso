@@ -2278,9 +2278,9 @@ write_initrd_release() {
     [ ${#dir} -eq 0 ] && fatal "Empty directory passed to write_initrd_version()"
 
     mkdir -p $dir/etc
-    if [ -n "$ASCII_CODE_NAME" ]; then
+    : ${ASCII_CODE_NAME:=$(echo $CODE_NAME | utf8_to_ascii)}
 
-        cat << Initrd_Version | $sudo tee $dir/etc/initrd-release
+    cat << Initrd_Version | $sudo tee $dir/etc/initrd-release
 NAME="$DISTRO_NAME"
 VERSION="$DISTRO_VERSION ($CODE_NAME)"
 ASCII_VERSION="$DISTRO_VERSION ($ASCII_CODE_NAME)"
@@ -2292,21 +2292,10 @@ ANSI_COLOR="0;34"
 HOME_URL="$HOME_URL"
 BUG_REPORT_URL="$BUG_REPORT_URL"
 Initrd_Version
+}
 
-    else
-
-        cat << Initrd_Version | $sudo tee $dir/etc/initrd-release
-NAME="$DISTRO_NAME"
-VERSION="$DISTRO_VERSION ($CODE_NAME)"
-ID="$(echo $DISTRO_NAME | tr 'A-Z' 'a-z')"
-VERSION_ID="$(echo $DISTRO_VERSION | sed -r 's/^([0-9._-]+).*/\1/')"
-PRETTY_NAME="$DISTRO_NAME $DISTRO_VERSION ($CODE_NAME)"
-ANSI_COLOR="0;34"
-HOME_URL="$HOME_URL"
-BUG_REPORT_URL="$BUG_REPORT_URL"
-Initrd_Version
-
-    fi
+utf8_to_ascii() {
+    iconv -f utf-8 -t ascii//translit
 }
 
 busybox_depmod() {
