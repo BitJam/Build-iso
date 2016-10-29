@@ -112,7 +112,7 @@ main() {
     . $DATA_FILE
     
     : ${DISTRO:=$DISTRO_NAME-${DISTRO_VERSION}}
-    : ${ASCII_CODE_NAME:=$CODE_NAME}
+    : ${ASCII_CODE_NAME:=$(echo "$CODE_NAME" | utf8_to_ascii)}
 
     if [ -z "$FULL_DISTRO_NAME" ]; then
         : ${FULL_DISTRO_NAME:=${DISTRO}_$ISO_ARCH}
@@ -185,6 +185,10 @@ expand_dirs() {
 $(echo -e "$files")
 Files
 
+}
+
+utf8_to_ascii() {
+    iconv -f utf-8 -t ascii//translit
 }
 
 #-------------------------------------------------------------------------------

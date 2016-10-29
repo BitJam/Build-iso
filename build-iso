@@ -959,7 +959,11 @@ do_stage_4() {
             error "Missing or unknown cursor icon theme $(pqw $CURSOR_ICON_THEME)"
         fi
         say "Disable bootchart-done"
+<<<<<<< HEAD
         update-rc.d bootchart-done remove
+=======
+        update-rc.d "bootchart-done" remove
+>>>>>>> upstream/master
         end_part_strict
     fi
 
@@ -2283,13 +2287,17 @@ Version-Info
 }
 
 write_initrd_release() {
-    local dir=$1  sudo=$2
+    local dir=$1  sudo=$2  name=initrd-release
     [ ${#dir} -eq 0 ] && fatal "Empty directory passed to write_initrd_version()"
 
-    mkdir -p $dir/etc
-    if [ -n "$ASCII_CODE_NAME" ]; then
+    local file1=$dir/etc/$name  file2=$dir/etc/live/version/$name
+    $sudo mkdir -p $(dirname $file1) $(dirname $file2)
 
-        cat << Initrd_Version | $sudo tee $dir/etc/initrd-release
+    : ${ASCII_CODE_NAME:=$(echo $CODE_NAME | utf8_to_ascii)}
+
+    if [ "$ASCII_CODE_NAME" != "$CODE_NAME" ]; then
+
+        cat << Initrd_Version | $sudo tee $file1
 NAME="$DISTRO_NAME"
 VERSION="$DISTRO_VERSION ($CODE_NAME)"
 ASCII_VERSION="$DISTRO_VERSION ($ASCII_CODE_NAME)"
@@ -2316,6 +2324,12 @@ BUG_REPORT_URL="$BUG_REPORT_URL"
 Initrd_Version
 
     fi
+
+    cp $file1 $file2
+}
+
+utf8_to_ascii() {
+    iconv -f utf-8 -t ascii//translit
 }
 
 busybox_depmod() {
