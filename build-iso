@@ -2321,7 +2321,7 @@ Initrd_Version
 
     fi
 
-    cp $file1 $file2
+    $sudo cp $file1 $file2
 }
 
 utf8_to_ascii() {
