@@ -433,7 +433,7 @@ do_stage_0() {
     pick_prog GZIP     $GZIP_PROGS
 
     require_programs chroot debootstrap isohybrid mksquashfs md5sum sudo tee \
-        pkill column expand strings
+        pkill column expand strings iconv
 
     mkdir -p $output_dir || my_exit
 
@@ -2325,7 +2325,7 @@ Initrd_Version
 
     fi
 
-    cp $file1 $file2
+    $sudo cp $file1 $file2
 }
 
 utf8_to_ascii() {
