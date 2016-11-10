@@ -1,0 +1,11 @@
+<JWM>
+  <Program label="Rox-Fluxbox">desktop-session-restart Rox-Fluxbox</Program>
+  <Program label="Space-Fluxbox">desktop-session-restart Space-Fluxbox</Program>
+  <Program label="Fluxbox">desktop-session-restart Fluxbox</Program>
+  <Program label="Rox-IceWM">desktop-session-restart Rox-IceWM</Program>
+  <Program label="Space-IceWM">desktop-session-restart Space-IceWM</Program>
+  <Program label="IceWM">desktop-session-restart IceWM</Program>
+  <Program label="Rox-Jwm">desktop-session-restart Rox-Jwm</Program>
+  <Program label="Space-Jwm">desktop-session-restart Space-Jwm</Program>
+  <Program label="Jwm">desktop-session-restart Jwm</Program>
+</JWM>

@@ -3,7 +3,7 @@ antix-libs
 #antix-snapshot-cli - replaced by iso-snapshot
 apt-antix
 #aufs-tools #not needed since we use overlayfs
-bootchart2
+bootchart-antix
 btrfs-tools
 busybox
 ceni
@@ -19,7 +19,6 @@ dbus
 debconf-utils
 deb-multimedia-keyring
 #devuan-keyring
-desktop-defaults-core-antix
 #desktop-file-utils
 dmsetup
 dosfstools

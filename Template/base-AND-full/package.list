@@ -1,4 +1,3 @@
-automount-antix
 abcde 
 acpi-support-base 
 acpid 
@@ -10,7 +9,6 @@ alsamixer-equalizer-antix
 alsa-base 
 alsa-tools 
 alsa-utils 
-#antix-cc-antix renamed to control-centre-antix
 antix-goodies 
 antix-installer 
 arandr 
@@ -18,7 +16,6 @@ asciidoc
 ash 
 atmel-firmware 
 b43-fwcutter
-bc
 binutils 
 bluez-firmware
 br2684ctl
@@ -32,9 +29,8 @@ cdw
 cifs-utils
 clearlooks-phenix-theme
 clipit
-conky-all
+conky-std
 connectshares-antix
-control-centre-antix
 cpp
 cpulimit
 dbus-x11
@@ -56,8 +52,6 @@ ds-mouse-antix
 dvd+rw-tools
 dzen2
 esound-common
-exfat-fuse
-exfat-utils 
 extlinux
 faenza-cupertino-mini-icons
 faq-docs-antix
@@ -65,30 +59,24 @@ fbsplash-antix
 fbxkb
 feh
 file-roller
-firefox-esr
-#firefox-esr-l10n-all
+#firmware-misc-nonfree use in testing
 firmware-adi #not in testing
-#firmware-amd-graphics #testing 
 firmware-atheros
 firmware-b43-installer
 firmware-bnx2
 firmware-bnx2x
 firmware-brcm80211
-#firmware-cavium #testing 
-#firmware-intel-sound #testing 
 firmware-intelwimax
 firmware-ipw2x00
 firmware-iwlwifi
 firmware-libertas
 firmware-linux-free
 firmware-linux-nonfree
-#firmware-misc-nonfree #testing 
 firmware-myricom
 firmware-netxen
 firmware-qlogic
 firmware-ralink #not in testing
-firmware-realtek 
-#firmware-ti-connectivity #testing 
+firmware-realtek
 firmware-zd1211
 flac
 flashplugin-nonfree # replaced by pepperflashplugin-nonfree and freshplayerplugin, but too big
@@ -99,7 +87,6 @@ fontconfig-config
 fonts-opensymbol
 freeglut3
 fxload
-galternatives
 geany
 geany-common 
 gettext
@@ -117,11 +104,8 @@ gpm
 group-management-antix
 growisofs
 grsync
-#grub-efi-ia32-bin
-#grub-efi-amd64-bin
 #grub-customizer #removed to save space
-#gstreamer0.10-plugins-base
-gstreamer1.0-plugins-base
+gstreamer0.10-plugins-base
 gtk2-engines
 gtk2-engines-murrine
 gtk2-engines-pixbuf
@@ -130,9 +114,8 @@ hdparm
 herbstluftwm 
 hicolor-icon-theme
 icedax
-#iceweasel - no longer exists - now firefox
+iceweasel
 ifplugd
-#imagemagick
 install-meta-antix # use packageinstaller?
 intltool-debian
 inxi-gui-antix
@@ -154,12 +137,11 @@ lm-sensors
 lsb-release 
 lsof
 lxappearance
-lxmenu-data
 lzma
 manpages
 mediterranean-themes
-#menu-fluxbox-antix # needs changing- obsolete?
-#menu-jwm-antix # needs changing- obsolete?
+menu-fluxbox-antix # needs changing- obsolete?
+menu-jwm-antix # needs changing- obsolete?
 menu-manager-antix 
 menu-xdg
 mesa-utils
@@ -167,13 +149,12 @@ midisport-firmware
 mime-support
 mobile-broadband-provider-info
 moc
-moc-ffmpeg-plugin
 module-assistant
 mountbox-antix
 mp3blaster
 mpv
 mupdf
-#mupdf-tools
+mupdf-tools
 murrine-themes
 myspell-en-us
 ndisgtk
@@ -191,9 +172,8 @@ pm-utils
 pmount
 po-debconf
 powermgmt-base
-#pulseaudio #needed for html5 firefox *sigh* *maybe not*
 python-xdg
-#qdbus
+qdbus
 #ranger
 rarian-compat
 resolvconf
@@ -203,7 +183,6 @@ rtorrent
 rxvt-unicode
 samba-common
 searchmonkey
-set-dpi-antix
 screenshot-antix
 scrot
 sgml-base
@@ -236,7 +215,7 @@ usbmuxd
 usbutils
 user-management-antix  
 vbetool
-#vifm
+vifm
 virtualbox-guest-dkms
 virtualbox-guest-utils
 virtualbox-guest-x11
@@ -264,7 +243,7 @@ xbase-clients
 xdg-utils
 xdotool
 xf86-video-sis-antix
-xfburn
+xfburn 
 xfonts-100dpi
 xfonts-base
 xfonts-encodings
@@ -290,5 +269,4 @@ xserver-xorg-video-all
 xutils
 xutils-dev
 yad 
-youtube-dl
 zip

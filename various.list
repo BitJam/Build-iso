@@ -6,6 +6,3 @@
 
 # liquorix kernels
 #deb http://liquorix.net/debian/ sid main
-
-# firefox
-#deb http://mozilla.debian.net/ jessie-backports firefox-release

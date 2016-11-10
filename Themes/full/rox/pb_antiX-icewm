@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<pinboard>
+  <backdrop style="Stretched">/usr/share/wallpaper/antiX-galaxy2.jpg</backdrop>
+  <icon x="34" y="34" label="Files">/usr/local/bin/antiX-FileManager.sh</icon>
+  <icon x="116" y="34" label="Browser">/usr/bin/iceweasel</icon>
+  <icon x="34" y="112" label="Video">/usr/bin/gnome-mplayer</icon>
+  <icon x="116" y="112" label="Music">/usr/bin/xmms</icon>  
+  <icon x="34" y="186" label="Terminal">/usr/bin/roxterm</icon>
+  <icon x="34" y="252" label="Write">/usr/bin/lowriter</icon> 
+  <icon x="34" y="336" label="Install">/usr/share/applications/antix/antixsources.desktop</icon>
+</pinboard>

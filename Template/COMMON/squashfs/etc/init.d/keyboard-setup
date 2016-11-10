@@ -56,13 +56,13 @@ fi
 if [ -z "$should_run" -o -n "$dont_run" ]; then
     #loadkeys us
     font=Uni2-VGA16
-    #font=default8x16
 
 	log_action_begin_msg "Setting console font to $font"
 
     for n in 1 2 3 4 5 6; do
         tty=/dev/tty$n
         test -e $tty || continue
+        # echo setfont -C $tty $font
         setfont -C $tty $font
     done
 

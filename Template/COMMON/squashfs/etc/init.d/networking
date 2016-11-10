@@ -9,7 +9,7 @@
 # Description:       Prepare /run/network directory, ifstate file and raise network interfaces, or take them down.
 ### END INIT INFO
 
-PATH="/sbin:/bin:/usr/bin"
+PATH="/sbin:/bin"
 RUN_DIR="/run/network"
 IFSTATE="$RUN_DIR/ifstate"
 STATEDIR="$RUN_DIR/state"
@@ -22,8 +22,6 @@ STATEDIR="$RUN_DIR/state"
 CONFIGURE_INTERFACES=yes
 EXCLUDE_INTERFACES=
 VERBOSE=no
-
-LOG_FILE=/var/log/live/${0##*/}.log
 
 [ -f /etc/default/networking ] && . /etc/default/networking
 
@@ -145,9 +143,7 @@ start)
 			udevadm settle || true
 		fi
 	fi
-	rm -f $LOG_FILE
-	mkdir -p $(dirname $LOG_FILE)
-	if ifup -a $exclusions $verbose >$LOG_FILE 2>&1 && ifup_hotplug $exclusions $verbose >>$LOG_FILE 2>&1
+	if ifup -a $exclusions $verbose && ifup_hotplug $exclusions $verbose
 	then
 	    log_action_end_msg $?
 	else
@@ -164,7 +160,7 @@ stop)
 
 	test -e /run/network/.ifstate.lock || exit 0
 	log_action_begin_msg "Deconfiguring network interfaces"
-	if ifdown -a --exclude=lo $verbose >>$LOG_FILE 2>&1; then
+	if ifdown -a --exclude=lo $verbose; then
 	    log_action_end_msg $?
 	else
 	    log_action_end_msg $?

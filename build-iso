@@ -959,11 +959,7 @@ do_stage_4() {
             error "Missing or unknown cursor icon theme $(pqw $CURSOR_ICON_THEME)"
         fi
         say "Disable bootchart-done"
-<<<<<<< HEAD
-        update-rc.d bootchart-done remove
-=======
         update-rc.d "bootchart-done" remove
->>>>>>> upstream/master
         end_part_strict
     fi
 
@@ -1450,7 +1446,7 @@ do_stage_7() {
     $SUDO mksquashfs $sqfs_dir $linuxfs_file -comp xz -b 262144 $arg
     local size=$(du_size $linuxfs_file)
     end_timer "create $(pqn $size) squashfs file"
-    md5sum_file $linuxfs_file 
+    md5sum_file $linuxfs_file
 
     leave_stage
 }
@@ -1460,7 +1456,7 @@ do_stage_7() {
 #------------------------------------------------------------------------------
 do_stage_8() {
     enter_stage 8 "Create iso file"
-    touch $iso_dir/antiX/esp-uuid
+
     report_size $iso_dir
 
     local iso_file=$full_distro_name.iso

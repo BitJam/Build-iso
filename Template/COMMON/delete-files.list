@@ -14,17 +14,12 @@ etc/machine-id
 etc/slim.conf.dpkg-*
 etc/*.dpkg-dist
 etc/*.dpkg-old
-etc/issue
-etc/issue.net
 etc/init.d/*.dpkg-dist
 etc/apt/sources.list.d/*.dpkg-dist
 etc/apt/sources.list.d/*.dpkg-old
 etc/skel/.xinitrc
 etc/skel/.xinitrc-custom 
-etc/skel/.streamtuner
 etc/xdg/menus/debian-menu.menu
-etc/desktop-session
-usr/share/desktop-defaults
 var/lib/dpkg/*-old 
 var/lib/dbus/machine-id
 var/lib/dhcp/*
@@ -86,13 +81,5 @@ usr/share/fluxbox/styles/Results
 usr/share/fluxbox/styles/Shade
 usr/share/fluxbox/styles/Twice
 usr/share/fluxbox/styles/debian-dark
-usr/share/wallpapers/*
 tmp/*
 boot/*.old-dkms
-#systemd crud
-#etc/systemd
-#lib/systemd
-#usr/lib/x86_64-linux-gnu/systemd
-#var/lib/systemd
-
-

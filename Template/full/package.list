@@ -2,18 +2,20 @@ acl
 acpi
 acpi-support
 #alpine #removed to save space
+antix-cc-full-antix
 apt-show-versions
 aspell
 aspell-en
 asunder
 avahi-utils 
+bc
 bittorrent
-#bleachbit
-bluetooth 
-bluez 
+bleachbit
+bluetooth
+bluez
 cclive
 cdparanoia
-cherrytree
+#cherrytree
 claws-mail
 claws-mail-i18n
 claws-mail-pdf-viewer
@@ -33,7 +35,6 @@ dkms
 dosbox
 e3
 ethtool
-evince-gtk
 fonts-dejavu
 #fonts-dejavu-extra
 #fonts-lyx
@@ -42,7 +43,6 @@ fonts-vlgothic # Japanese
 fonts-wqy-microhei # Chinese
 gcc 
 gcolor2
-#gdebi
 ghostscript
 gnome-mplayer
 gsettings-desktop-schemas
@@ -62,7 +62,6 @@ icewmcc-antix
 irqbalance
 iso-codes
 keyutils
-libavcodec-extra
 libgpod-common
 libreoffice-calc
 libreoffice-gtk
@@ -74,7 +73,7 @@ lp-solve
 lua-filesystem
 luckybackup
 luckybackup-data
-#menu-icewm-antix # needs changing- obsolete?
+menu-icewm-antix # needs changing- obsolete?
 mirage
 mpg123
 mpg321
@@ -89,7 +88,7 @@ myspell-nl
 myspell-pl
 myspell-pt-br
 network-config
-#njam
+njam
 notify-osd
 numlockx
 openssh-server 
@@ -118,11 +117,10 @@ pv
 #python-gnome2
 #python-notify
 #python-pyorbit
-#python-smbc
+python-smbc
 #python-vte
 #python-xapian
-#qpdfview - use lighter evince-gtk
-#qpdfview-translations
+qpdfview
 radeontool
 rfkill
 #samba-common-bin
@@ -133,7 +131,6 @@ simple-scan
 #smplayer-l10n
 spawn-fcgi
 ssl-cert
-streamripper
 streamtuner2
 synaptic
 system-config-printer
@@ -143,7 +140,7 @@ transmission-cli
 transmission-common
 #transmission-daemon
 transmission-gtk
-#unar
+unar
 unclutter
 unetbootin
 uno-libs3
@@ -159,6 +156,7 @@ wicd-gtk
 winff
 winff-doc
 wmctrl
+wordgrinder
 xclip
 xfce-keyboard-shortcuts
 xfconf

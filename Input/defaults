@@ -12,16 +12,14 @@ CODE_NAME="Berta Cáceres"
 ASCII_CODE_NAME="Berta Caceres"
 DEBIAN_RELEASE="jessie"
 DISTRO_NAME="antiX"
-DISTRO_VERSION="16"
+DISTRO_VERSION="16-a2"
 HOME_URL="http://antix.mepis.org/"
 
-#K_REVISION="2"
-K_REVISION="1"
+K_REVISION="2"
 K_TEMPLATE="%V%G-antix.%R-%A-smp"
 #K_VERSION="3.19.1"
-#K_VERSION="4.4.2"
+K_VERSION="4.4.2"
 #K_VERSION="4.2.1"
-K_VERSION="4.4.10"
 
 #K_REVISION="4"
 #K_TEMPLATE="%V%G.dmz.%R-liquorix-686"
@@ -34,11 +32,10 @@ K_VERSION="4.4.10"
 LIVE_USER="demo"
 LOCALE="en_US.UTF-8"
 MIRROR="us"
-NEW_HOSTNAME="antix1"
+NEW_HOSTNAME="antiX1"
 RELEASE_DATE=
 TIME_ZONE="America/New_York"
 X_TERM_EMULATOR="/usr/bin/roxterm"
-CURSOR_ICON_THEME="/usr/share/icons/DMZ-Black/cursor.theme"
 
 USE_UEFI=true
 

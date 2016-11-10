@@ -1,0 +1,9 @@
+prog "Rox-Fluxbox" - desktop-session-restart Rox-Fluxbox
+prog "Space-Fluxbox" - desktop-session-restart Space-Fluxbox
+prog "Fluxbox" - desktop-session-restart Fluxbox
+prog "Rox-IceWM" - desktop-session-restart Rox-IceWM
+prog "Space-IceWM" - desktop-session-restart Space-IceWM
+prog "IceWM" - desktop-session-restart IceWM
+prog "Rox-Jwm" - desktop-session-restart Rox-Jwm
+prog "Space-Jwm" - desktop-session-restart Space-Jwm
+prog "Jwm" - desktop-session-restart Jwm
