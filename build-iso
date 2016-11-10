@@ -1443,10 +1443,11 @@ do_stage_7() {
 
     start_timer
     #                                                    262144 = 0x40000
-    $SUDO mksquashfs $sqfs_dir $linuxfs_file -comp xz -b 262144 $arg
+    #$SUDO mksquashfs $sqfs_dir $linuxfs_file -comp xz -b 262144 $arg
+    $SUDO mksquashfs $sqfs_dir $linuxfs_file -comp xz -Xbcj x86 $arg
     local size=$(du_size $linuxfs_file)
     end_timer "create $(pqn $size) squashfs file"
-    md5sum_file $linuxfs_file
+    md5sum_file $linuxfs_file 
 
     leave_stage
 }
@@ -1501,7 +1502,7 @@ do_stage_8() {
 
     if [ "$SIGN_FILES" ]; then
         say "Sign $(basename $full_iso_file)"
-        gpg --output $full_iso_file.sig --detach-sign $full_iso_file
+        sudo gpg --output $full_iso_file.sig --detach-sign $full_iso_file
     fi
 
     md5sum_file $full_iso_file

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 ### BEGIN INIT INFO
 # Provides:          gpm
@@ -17,6 +17,8 @@ PIDFILE=/var/run/gpm.pid
 GPM=/usr/sbin/gpm
 CFG=/etc/gpm.conf
 
+DISABLED_CONF=/live/config/disabled
+
 test -x $GPM || exit 0
 
 . /lib/lsb/init-functions
@@ -27,9 +29,9 @@ then
   exit 1
 fi
 
-
 cmdln=
 niceness=0
+ssd_args="--quiet --oknodo --nicelevel $niceness --pidfile $PIDFILE --exec $GPM"
 
 if [ -f $CFG ]; then
   . $CFG
@@ -57,6 +59,10 @@ gpm_strace () {
 }
 
 gpm_start () {
+
+  me=${0##*/}
+  test -r $DISABLED_CONF && sed -r -i "s/^($me)$/# \1/" $DISABLED_CONF
+
   log_daemon_msg "Starting mouse interface server" "gpm"
   # HACK - kernel module init is asynchronous in kernel 2.6, EVEN FROM
   # REQUEST_MODULE().  That would include 'mousedev'.  The correct
@@ -66,25 +72,17 @@ gpm_start () {
     if :< ${device-/dev/mouse}; then break; fi
     sleep 1
   done
-  eval start-stop-daemon --start --quiet --nicelevel $niceness --exec $GPM \
-    -- $cmdln
+  start-stop-daemon --start $ssd_args -- $cmdln
   log_end_msg $?
   return $?
 }
 
 gpm_stop () {
-  # Bail early if there was a "lean" boot parameter and no gpm running
-  CMDLINE=${CMDLINE:-$(cat /proc/cmdline)}
-  for param in $CMDLINE; do
-    case "$param" in
-        lean|antiX=*[Ll]*|aX=*[Ll]*)               LEAN=true ;;
-        disable_srv=*[lL]*|disable_service=*[lL]*) LEAN=true ;;
-    esac
-  done
-    
-  [ "$LEAN" ] && ! ps -u root -o cmd | grep -q ^$GPM && exit 0
+
+  test -r $DISABLED_CONF && grep -q "^${0##*/}$" $DISABLED_CONF && return 0
+
   log_daemon_msg "Stopping mouse interface server" "gpm"
-  $GPM -k
+  start-stop-daemon --stop $ssd_args
   log_end_msg $?
   return $?
 }

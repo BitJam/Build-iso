@@ -60,8 +60,9 @@ case "$1" in
 		fi
 	fi
 
-    ME=${0##*/}
-	start-stop-daemon --start --quiet --oknodo --exec /usr/sbin/VBoxService > /var/log/$ME.log
+    LOG_FILE=/var/log/live/${0##*/}.log
+    mkdir -p $(dirname $LOG_FILE)
+	start-stop-daemon --start --quiet --oknodo --exec /usr/sbin/VBoxService > $LOG_FILE
 	if [ $? -ne 0 ]; then
 		log_end_msg 1
 		exit 1

@@ -1,0 +1,96 @@
+
+[submenu] (Accessories) </usr/share/icons/Faenza-Cupertino-mini/categories/32/applications-accessories.png>  
+[exec] (Archive Manager) {file-roller } </usr/share/icons/Faenza-Cupertino-mini/apps/32/file-roller.png>
+[exec] (Calculator) {xcalc} </usr/share/icons/Faenza-Cupertino-mini/apps/48/calc.png>
+[exec] (Calcurse) {desktop-defaults-run -t calcurse} </usr/share/icons/Faenza-Cupertino-mini/apps/48/evolution-calendar.png>
+[exec] (CherryTree) {cherrytree } </usr/share/icons/Faenza-Cupertino-mini/apps/48/cherrytree.png>
+[exec] (ClipIt) {clipit} </usr/share/icons/Faenza-Cupertino-mini/apps/48/clipit-trayicon.png>
+[exec] (Leafpad) {leafpad } </usr/share/icons/Faenza-Cupertino-mini/apps/32/leafpad.png>
+[exec] (Searchmonkey) {searchmonkey} </usr/share/pixmaps/searchmonkey/searchmonkey-32x32.png>
+[exec] (SpaceFM File Search) {spacefm --find-files } </usr/share/icons/Faenza-Cupertino-mini/apps/48/spacefm-find.png>
+[exec] (Xfburn) {xfburn} </usr/share/icons/Faenza-Cupertino-mini/devices/32/media-cdrom.png>
+[end]
+[submenu] (Education) </usr/share/icons/Faenza-Cupertino-mini/categories/32/applications-science.png>  
+[exec] (LibreOffice Math) {libreoffice --math } </usr/share/icons/Faenza-Cupertino-mini/apps/32/libreoffice-math.png>
+[end]
+[submenu] (Games) </usr/share/icons/Faenza-Cupertino-mini/categories/32/applications-games.png>  
+[exec] (DOSBox Emulator) {dosbox} </usr/share/icons/hicolor/32x32/apps/dosbox.png>
+[exec] (Gweled) {gweled} </usr/share/icons/Faenza-Cupertino-mini/apps/48/gweled.png>
+[exec] (xmahjongg) {/usr/games/xmahjongg} </usr/share/icons/Faenza-Cupertino-mini/apps/32/mahjongg.png>
+[end]
+[submenu] (Graphics) </usr/share/icons/Faenza-Cupertino-mini/categories/32/applications-graphics.png>  
+[exec] (Document Viewer) {evince } </usr/share/icons/Faenza-Cupertino-mini/apps/32/evince.png>
+[exec] (Gcolor2) {gcolor2} </usr/share/pixmaps/gcolor2/gcolor2.xpm>
+[exec] (Gtkam Digital Camera Browser) {gtkam} </usr/share/pixmaps/gtkam-camera.png>
+[exec] (LibreOffice Draw) {libreoffice --draw } </usr/share/icons/Faenza-Cupertino-mini/apps/32/libreoffice-draw.png>
+[exec] (Mirage) {mirage } </usr/share/pixmaps/mirage.png>
+[exec] (mtPaint graphic editor) {mtpaint} </usr/share/icons/Faenza-Cupertino-mini/apps/32/mtpaint.png>
+[exec] (Screenshot) {antixscreenshot.sh} </usr/share/icons/Faenza-Cupertino-mini/devices/32/camera.png>
+[exec] (Simple Scan) {simple-scan} </usr/share/icons/Faenza-Cupertino-mini/devices/32/scanner.png>
+[end]
+[submenu] (Internet) </usr/share/icons/Faenza-Cupertino-mini/categories/32/applications-internet.png>  
+[exec] (Claws Mail) {claws-mail } </usr/share/icons/Faenza-Cupertino-mini/apps/32/claws-mail.png>
+[exec] (Connectshares) {connectshares} </usr/share/pixmaps/connectshares.png>
+[exec] (Connectshares Configuration) {connectshares-config} </usr/share/pixmaps/connectshares-config.png>
+[exec] (Dillo) {dillo } </usr/share/pixmaps/dillo.png>
+[exec] (Disconnectshares) {disconnectshares} </usr/share/pixmaps/disconnectshares.png>
+[exec] (Droopy) {droopy.sh} </usr/share/pixmaps/droopy.png>
+[exec] (Firefox ESR) {firefox-esr } </usr/share/icons/hicolor/32x32/apps/firefox-esr.png>
+[exec] (gFTP) {gftp-gtk } </usr/share/pixmaps/gftp.png>
+[exec] (HexChat) {hexchat } </usr/share/icons/Faenza-Cupertino-mini/apps/48/hexchat.png>
+[exec] (Links 2) {xlinks2} </usr/share/pixmaps/links2.xpm>
+[exec] (Search Bar) {search-bar} </usr/local/share/icons/search-bar/eye-icon.png>
+[exec] (Transmission) {transmission-gtk } </usr/share/icons/Faenza-Cupertino-mini/apps/32/transmission.png>
+[exec] (Wicd Network Manager) {wicd-gtk --no-tray} </usr/share/icons/hicolor/32x32/apps/wicd-gtk.png>
+[end]
+[submenu] (Office) </usr/share/icons/Faenza-Cupertino-mini/categories/32/applications-office.png>  
+[exec] (Document Viewer) {evince } </usr/share/icons/Faenza-Cupertino-mini/apps/32/evince.png>
+[exec] (LibreOffice) {libreoffice } </usr/share/icons/Faenza-Cupertino-mini/apps/32/libreoffice-startcenter.png>
+[exec] (LibreOffice Calc) {libreoffice --calc } </usr/share/icons/Faenza-Cupertino-mini/apps/32/libreoffice-calc.png>
+[exec] (LibreOffice Draw) {libreoffice --draw } </usr/share/icons/Faenza-Cupertino-mini/apps/32/libreoffice-draw.png>
+[exec] (LibreOffice Impress) {libreoffice --impress } </usr/share/icons/Faenza-Cupertino-mini/apps/32/libreoffice-impress.png>
+[exec] (LibreOffice Math) {libreoffice --math } </usr/share/icons/Faenza-Cupertino-mini/apps/32/libreoffice-math.png>
+[exec] (LibreOffice Writer) {libreoffice --writer } </usr/share/icons/Faenza-Cupertino-mini/apps/32/libreoffice-writer.png>
+[end]
+[submenu] (Programming) </usr/share/icons/Faenza-Cupertino-mini/categories/32/applications-development.png>  
+[exec] (Geany) {geany } </usr/share/icons/Faenza-Cupertino-mini/apps/32/geany.png>
+[exec] (Vim.tiny) {desktop-defaults-run -t vim } </usr/share/icons/Faenza-Cupertino-mini/apps/32/vim.png>
+[end]
+[submenu] (Sound and Video) </usr/share/icons/Faenza-Cupertino-mini/categories/32/applications-multimedia.png>  
+[exec] (Asunder CD Ripper) {asunder} </usr/share/icons/asunder.png>
+[exec] (GNOME MPlayer) {gnome-mplayer } </usr/share/icons/Faenza-Cupertino-mini/apps/32/gnome-mplayer.png>
+[exec] (guvcview) {guvcview} </usr/share/pixmaps/guvcview/guvcview.png>
+[exec] (SMTube) {smtube} </usr/share/icons/hicolor/32x32/apps/smtube.png>
+[exec] (Streamlight) {streamlight-gui-launcher.sh} </usr/share/pixmaps/streamlight-gui-launcher.png>
+[exec] (streamtuner2) {streamtuner2} </usr/share/pixmaps/streamtuner2.png>
+[exec] (WinFF) {winff} </usr/share/icons/hicolor/32x32/apps/winff.png>
+[exec] (xmms) {xmms} </usr/share/icons/xmms.png>
+[end]
+[submenu] (System Tools) </usr/share/icons/Faenza-Cupertino-mini/categories/32/applications-system.png>  
+[exec] (GParted) {gksu gparted} </usr/share/icons/Faenza-Cupertino-mini/apps/32/gparted.png>
+[exec] (Htop) {desktop-defaults-run -t htop} </usr/share/icons/Faenza-Cupertino-mini/apps/32/htop.png>
+[exec] (IceWMcc) {/usr/local/bin/icewmcc/icewmcc.sh} </usr/share/icons/Faenza-Cupertino-mini/categories/32/preferences-desktop.png>
+[exec] (iso-snapshot) {gksu isosnapshot} </usr/share/pixmaps/iso-snapshot.png>
+[exec] (Live-usb kernel updater) {desktop-defaults-run -t sudo /usr/local/bin/live-kernel-updater --pause} </usr/share/icons/Faenza-Cupertino-mini/devices/32/drive-removable-media-usb.png>
+[exec] (Live-usb maker) {desktop-defaults-run -t sudo /usr/local/bin/live-usb-maker --pause simple} </usr/share/icons/Faenza-Cupertino-mini/devices/32/drive-removable-media-usb.png>
+[exec] (luckyBackup super user) {su-to-root -X -c /usr/bin/luckybackup} </usr/share/pixmaps/luckybackup.png>
+[exec] (metapackage-installer) {gksu install-meta} </usr/share/pixmaps/metapackage-installer.xpm>
+[exec] (Midnight Commander) {desktop-defaults-run -t mc} </usr/share/icons/hicolor/64x64/apps/MidnightCommander.png>
+[exec] (Root Terminal) {gksu /usr/bin/x-terminal-emulator} </usr/share/icons/Faenza-Cupertino-mini/apps/32/gksu-root-terminal.png>
+[exec] (ROX Filer) {rox-filer} </usr/share/icons/antiX/rox-filer.png>
+[exec] (ROXTerm) {roxterm} </usr/share/icons/Faenza-Cupertino-mini/apps/48/roxterm.png>
+[exec] (Rxvt Color Unicode Terminal) {urxvt} </usr/share/pixmaps/urxvt_48x48.xpm>
+[exec] (SpaceFM) {spacefm } </usr/share/icons/Faenza-Cupertino-mini/apps/48/spacefm.png>
+[exec] (Synaptic Package Manager) {gksu synaptic} </usr/share/icons/Faenza-Cupertino-mini/apps/32/synaptic.png>
+[exec] (UNetbootin) {/usr/bin/unetbootin} </usr/share/pixmaps/unetbootin.xpm>
+[end]
+[separator]
+[submenu] (Preferences) </usr/share/icons/Faenza-Cupertino-mini/categories/32/preferences-desktop.png>  
+[exec] (Add Menu Item) {add-desktop} </usr/share/icons/Faenza-Cupertino-mini/categories/32/gnome-control-center.png>
+[exec] (ADSL/PPPOE configuration) {desktop-defaults-run -t /usr/sbin/pppoeconf} </usr/share/pixmaps/pppoeconf.xpm>
+[exec] (Alternatives Configurator) {/usr/sbin/galternatives} </usr/share/pixmaps/galternatives.png>
+[exec] (Customize Look and Feel) {lxappearance} </usr/share/icons/Faenza-Cupertino-mini/apps/32/preferences-desktop-theme.png>
+[exec] (Menu Manager) {sudo menu_manager.sh} </usr/share/pixmaps/menu_manager.png>
+[exec] (Remove Menu Item) {remove-desktop} </usr/share/icons/Faenza-Cupertino-mini/devices/48/computer.png>
+[end]
+

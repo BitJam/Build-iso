@@ -2,7 +2,7 @@
 # Jessie is the new stable release and will only recieve security 
 # updates, while Testing will be 'rolling'.
 
-# Debian Stable. Default for antiX-15.
+# Debian Stable. Default for antiX-16.
 # Use for maximum stability INSTEAD of the 'rolling' TESTING release concept.
 deb http://ftp.gr.debian.org/debian/ jessie main contrib non-free 
 deb http://security.debian.org/ jessie/updates main contrib non-free

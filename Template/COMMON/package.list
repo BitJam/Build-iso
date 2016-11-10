@@ -3,11 +3,12 @@ antix-libs
 #antix-snapshot-cli - replaced by iso-snapshot
 apt-antix
 #aufs-tools #not needed since we use overlayfs
-bootchart-antix
+bootchart2
 btrfs-tools
 busybox
 ceni
 cli-installer-antix 
+cli-shell-utils
 console-common 
 console-data
 console-setup
@@ -19,6 +20,7 @@ dbus
 debconf-utils
 deb-multimedia-keyring
 #devuan-keyring
+desktop-defaults-core-antix
 #desktop-file-utils
 dmsetup
 dosfstools
@@ -51,7 +53,9 @@ less
 libmtp-runtime
 libnss-myhostname
 live-init-antix 
+live-kernel-updater
 live-usb-cli-antix
+live-usb-maker
 lockfile-progs
 #lsb-release - do not use in core
 #lvm2
@@ -112,3 +116,4 @@ xdelta3
 xdg-user-dirs 
 xfsprogs
 xkb-data
+xorriso

@@ -3,6 +3,6 @@ Encoding=UTF-8
 Type=Application
 Name=Calculator
 Icon=/usr/share/icons/Faenza-Cupertino-mini/apps/48/calc.png
-Categories=Education;
+Categories=Utility;
 Exec=xcalc
 Terminal=false
