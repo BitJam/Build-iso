@@ -1,0 +1,18 @@
+#!/bin/bash
+# Puts a volume icon on the taskbar
+volumeicon & 
+
+# Puts a flag on the taskbar to show which keyboard is being used.
+#fbxkb &
+
+# Uncomment for easy search from the taskbar
+#search-bar-icon &
+
+# Uncomment the following line to mount Samba and/or NFS shares
+#connectshares &
+
+# Uncomment to show wicd networking monitor
+# wicd-client -t &
+
+# Used on live system only
+(sleep 5 && toram-eject) &

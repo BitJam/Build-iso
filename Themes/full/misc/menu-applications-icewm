@@ -1,0 +1,96 @@
+
+menu "Accessories" /usr/share/icons/Faenza-Cupertino-mini/categories/32/applications-accessories.png { 
+prog "Archive Manager" /usr/share/icons/Faenza-Cupertino-mini/apps/32/file-roller.png file-roller 
+prog "Calculator" /usr/share/icons/Faenza-Cupertino-mini/apps/48/calc.png xcalc
+prog "Calcurse" /usr/share/icons/Faenza-Cupertino-mini/apps/48/evolution-calendar.png desktop-defaults-run -t calcurse
+prog "CherryTree" /usr/share/icons/Faenza-Cupertino-mini/apps/48/cherrytree.png cherrytree 
+prog "ClipIt" /usr/share/icons/Faenza-Cupertino-mini/apps/48/clipit-trayicon.png clipit
+prog "Leafpad" /usr/share/icons/Faenza-Cupertino-mini/apps/32/leafpad.png leafpad 
+prog "Searchmonkey" /usr/share/pixmaps/searchmonkey/searchmonkey-32x32.png searchmonkey
+prog "SpaceFM File Search" /usr/share/icons/Faenza-Cupertino-mini/apps/48/spacefm-find.png spacefm --find-files 
+prog "Xfburn" /usr/share/icons/Faenza-Cupertino-mini/devices/32/media-cdrom.png xfburn
+}
+menu "Education" /usr/share/icons/Faenza-Cupertino-mini/categories/32/applications-science.png { 
+prog "LibreOffice Math" /usr/share/icons/Faenza-Cupertino-mini/apps/32/libreoffice-math.png libreoffice --math 
+}
+menu "Games" /usr/share/icons/Faenza-Cupertino-mini/categories/32/applications-games.png { 
+prog "DOSBox Emulator" /usr/share/icons/hicolor/32x32/apps/dosbox.png dosbox
+prog "Gweled" /usr/share/icons/Faenza-Cupertino-mini/apps/48/gweled.png gweled
+prog "xmahjongg" /usr/share/icons/Faenza-Cupertino-mini/apps/32/mahjongg.png /usr/games/xmahjongg
+}
+menu "Graphics" /usr/share/icons/Faenza-Cupertino-mini/categories/32/applications-graphics.png { 
+prog "Document Viewer" /usr/share/icons/Faenza-Cupertino-mini/apps/32/evince.png evince 
+prog "Gcolor2" /usr/share/pixmaps/gcolor2/gcolor2.xpm gcolor2
+prog "Gtkam Digital Camera Browser" /usr/share/pixmaps/gtkam-camera.png gtkam
+prog "LibreOffice Draw" /usr/share/icons/Faenza-Cupertino-mini/apps/32/libreoffice-draw.png libreoffice --draw 
+prog "Mirage" /usr/share/pixmaps/mirage.png mirage 
+prog "mtPaint graphic editor" /usr/share/icons/Faenza-Cupertino-mini/apps/32/mtpaint.png mtpaint
+prog "Screenshot" /usr/share/icons/Faenza-Cupertino-mini/devices/32/camera.png antixscreenshot.sh
+prog "Simple Scan" /usr/share/icons/Faenza-Cupertino-mini/devices/32/scanner.png simple-scan
+}
+menu "Internet" /usr/share/icons/Faenza-Cupertino-mini/categories/32/applications-internet.png { 
+prog "Claws Mail" /usr/share/icons/Faenza-Cupertino-mini/apps/32/claws-mail.png claws-mail 
+prog "Connectshares" /usr/share/pixmaps/connectshares.png connectshares
+prog "Connectshares Configuration" /usr/share/pixmaps/connectshares-config.png connectshares-config
+prog "Dillo" /usr/share/pixmaps/dillo.png dillo 
+prog "Disconnectshares" /usr/share/pixmaps/disconnectshares.png disconnectshares
+prog "Droopy" /usr/share/pixmaps/droopy.png droopy.sh
+prog "Firefox ESR" /usr/share/icons/hicolor/32x32/apps/firefox-esr.png firefox-esr 
+prog "gFTP" /usr/share/pixmaps/gftp.png gftp-gtk 
+prog "HexChat" /usr/share/icons/Faenza-Cupertino-mini/apps/48/hexchat.png hexchat 
+prog "Links 2" /usr/share/pixmaps/links2.xpm xlinks2
+prog "Search Bar" /usr/local/share/icons/search-bar/eye-icon.png search-bar
+prog "Transmission" /usr/share/icons/Faenza-Cupertino-mini/apps/32/transmission.png transmission-gtk 
+prog "Wicd Network Manager" /usr/share/icons/hicolor/32x32/apps/wicd-gtk.png wicd-gtk --no-tray
+}
+menu "Office" /usr/share/icons/Faenza-Cupertino-mini/categories/32/applications-office.png { 
+prog "Document Viewer" /usr/share/icons/Faenza-Cupertino-mini/apps/32/evince.png evince 
+prog "LibreOffice" /usr/share/icons/Faenza-Cupertino-mini/apps/32/libreoffice-startcenter.png libreoffice 
+prog "LibreOffice Calc" /usr/share/icons/Faenza-Cupertino-mini/apps/32/libreoffice-calc.png libreoffice --calc 
+prog "LibreOffice Draw" /usr/share/icons/Faenza-Cupertino-mini/apps/32/libreoffice-draw.png libreoffice --draw 
+prog "LibreOffice Impress" /usr/share/icons/Faenza-Cupertino-mini/apps/32/libreoffice-impress.png libreoffice --impress 
+prog "LibreOffice Math" /usr/share/icons/Faenza-Cupertino-mini/apps/32/libreoffice-math.png libreoffice --math 
+prog "LibreOffice Writer" /usr/share/icons/Faenza-Cupertino-mini/apps/32/libreoffice-writer.png libreoffice --writer 
+}
+menu "Programming" /usr/share/icons/Faenza-Cupertino-mini/categories/32/applications-development.png { 
+prog "Geany" /usr/share/icons/Faenza-Cupertino-mini/apps/32/geany.png geany 
+prog "Vim.tiny" /usr/share/icons/Faenza-Cupertino-mini/apps/32/vim.png desktop-defaults-run -t vim 
+}
+menu "Sound and Video" /usr/share/icons/Faenza-Cupertino-mini/categories/32/applications-multimedia.png { 
+prog "Asunder CD Ripper" /usr/share/icons/asunder.png asunder
+prog "GNOME MPlayer" /usr/share/icons/Faenza-Cupertino-mini/apps/32/gnome-mplayer.png gnome-mplayer 
+prog "guvcview" /usr/share/pixmaps/guvcview/guvcview.png guvcview
+prog "SMTube" /usr/share/icons/hicolor/32x32/apps/smtube.png smtube
+prog "Streamlight" /usr/share/pixmaps/streamlight-gui-launcher.png streamlight-gui-launcher.sh
+prog "streamtuner2" /usr/share/pixmaps/streamtuner2.png streamtuner2
+prog "WinFF" /usr/share/icons/hicolor/32x32/apps/winff.png winff
+prog "xmms" /usr/share/icons/xmms.png xmms
+}
+menu "System Tools" /usr/share/icons/Faenza-Cupertino-mini/categories/32/applications-system.png { 
+prog "GParted" /usr/share/icons/Faenza-Cupertino-mini/apps/32/gparted.png gksu gparted
+prog "Htop" /usr/share/icons/Faenza-Cupertino-mini/apps/32/htop.png desktop-defaults-run -t htop
+prog "IceWMcc" /usr/share/icons/Faenza-Cupertino-mini/categories/32/preferences-desktop.png /usr/local/bin/icewmcc/icewmcc.sh
+prog "iso-snapshot" /usr/share/pixmaps/iso-snapshot.png gksu isosnapshot
+prog "Live-usb kernel updater" /usr/share/icons/Faenza-Cupertino-mini/devices/32/drive-removable-media-usb.png desktop-defaults-run -t sudo /usr/local/bin/live-kernel-updater --pause
+prog "Live-usb maker" /usr/share/icons/Faenza-Cupertino-mini/devices/32/drive-removable-media-usb.png desktop-defaults-run -t sudo /usr/local/bin/live-usb-maker --pause simple
+prog "luckyBackup super user" /usr/share/pixmaps/luckybackup.png su-to-root -X -c /usr/bin/luckybackup
+prog "metapackage-installer" /usr/share/pixmaps/metapackage-installer.xpm gksu install-meta
+prog "Midnight Commander" /usr/share/icons/hicolor/64x64/apps/MidnightCommander.png desktop-defaults-run -t mc
+prog "Root Terminal" /usr/share/icons/Faenza-Cupertino-mini/apps/32/gksu-root-terminal.png gksu /usr/bin/x-terminal-emulator
+prog "ROX Filer" /usr/share/icons/antiX/rox-filer.png rox-filer
+prog "ROXTerm" /usr/share/icons/Faenza-Cupertino-mini/apps/48/roxterm.png roxterm
+prog "Rxvt Color Unicode Terminal" /usr/share/pixmaps/urxvt_48x48.xpm urxvt
+prog "SpaceFM" /usr/share/icons/Faenza-Cupertino-mini/apps/48/spacefm.png spacefm 
+prog "Synaptic Package Manager" /usr/share/icons/Faenza-Cupertino-mini/apps/32/synaptic.png gksu synaptic
+prog "UNetbootin" /usr/share/pixmaps/unetbootin.xpm /usr/bin/unetbootin
+}
+separator
+menu "Preferences" /usr/share/icons/Faenza-Cupertino-mini/categories/32/preferences-desktop.png { 
+prog "Add Menu Item" /usr/share/icons/Faenza-Cupertino-mini/categories/32/gnome-control-center.png add-desktop
+prog "ADSL/PPPOE configuration" /usr/share/pixmaps/pppoeconf.xpm desktop-defaults-run -t /usr/sbin/pppoeconf
+prog "Alternatives Configurator" /usr/share/pixmaps/galternatives.png /usr/sbin/galternatives
+prog "Customize Look and Feel" /usr/share/icons/Faenza-Cupertino-mini/apps/32/preferences-desktop-theme.png lxappearance
+prog "Menu Manager" /usr/share/pixmaps/menu_manager.png sudo menu_manager.sh
+prog "Remove Menu Item" /usr/share/icons/Faenza-Cupertino-mini/devices/48/computer.png remove-desktop
+}
+

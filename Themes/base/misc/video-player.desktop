@@ -1,0 +1,20 @@
+[Desktop Entry]
+Encoding=UTF-8
+Type=Application
+Name=Video Player
+Name[el]=Αναπαραγωγέας Πολυμέσων
+Name[es]=Reproductor multimedia
+Name[fi]=Multimediasoitin
+Name[fr]=Lecteur multimédia
+Name[ja]=メディアプレイヤー
+Name[pl]=Odtwarzacz multimediów
+Name[pt]=Reprodutor multimédia
+Name[tr]=Çokluortam Oynatıcı
+Name[ru]=Мультимедийный проигрыватель
+Name[zh_CN]=媒体播放器
+Name[zh_TW]=媒體播放器
+Icon=video
+Categories=Settings;
+Exec=desktop-defaults-run -v
+Terminal=false
+NoDisplay=True

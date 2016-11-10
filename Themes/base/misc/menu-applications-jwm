@@ -1,0 +1,96 @@
+<JWM>
+<Menu label="Accessories" icon="/usr/share/icons/Faenza-Cupertino-mini/categories/32/applications-accessories.png" >
+<Program label="Archive Manager" icon="/usr/share/icons/Faenza-Cupertino-mini/apps/32/file-roller.png">file-roller </Program>
+<Program label="Calculator" icon="/usr/share/icons/Faenza-Cupertino-mini/apps/48/calc.png">xcalc</Program>
+<Program label="Calcurse" icon="/usr/share/icons/Faenza-Cupertino-mini/apps/48/evolution-calendar.png">desktop-defaults-run -t calcurse</Program>
+<Program label="CherryTree" icon="/usr/share/icons/Faenza-Cupertino-mini/apps/48/cherrytree.png">cherrytree </Program>
+<Program label="ClipIt" icon="/usr/share/icons/Faenza-Cupertino-mini/apps/48/clipit-trayicon.png">clipit</Program>
+<Program label="Leafpad" icon="/usr/share/icons/Faenza-Cupertino-mini/apps/32/leafpad.png">leafpad </Program>
+<Program label="Searchmonkey" icon="/usr/share/pixmaps/searchmonkey/searchmonkey-32x32.png">searchmonkey</Program>
+<Program label="SpaceFM File Search" icon="/usr/share/icons/Faenza-Cupertino-mini/apps/48/spacefm-find.png">spacefm --find-files </Program>
+<Program label="Xfburn" icon="/usr/share/icons/Faenza-Cupertino-mini/devices/32/media-cdrom.png">xfburn</Program>
+</Menu>
+<Menu label="Education" icon="/usr/share/icons/Faenza-Cupertino-mini/categories/32/applications-science.png" >
+<Program label="LibreOffice Math" icon="/usr/share/icons/Faenza-Cupertino-mini/apps/32/libreoffice-math.png">libreoffice --math </Program>
+</Menu>
+<Menu label="Games" icon="/usr/share/icons/Faenza-Cupertino-mini/categories/32/applications-games.png" >
+<Program label="DOSBox Emulator" icon="/usr/share/icons/hicolor/32x32/apps/dosbox.png">dosbox</Program>
+<Program label="Gweled" icon="/usr/share/icons/Faenza-Cupertino-mini/apps/48/gweled.png">gweled</Program>
+<Program label="xmahjongg" icon="/usr/share/icons/Faenza-Cupertino-mini/apps/32/mahjongg.png">/usr/games/xmahjongg</Program>
+</Menu>
+<Menu label="Graphics" icon="/usr/share/icons/Faenza-Cupertino-mini/categories/32/applications-graphics.png" >
+<Program label="Document Viewer" icon="/usr/share/icons/Faenza-Cupertino-mini/apps/32/evince.png">evince </Program>
+<Program label="Gcolor2" icon="/usr/share/pixmaps/gcolor2/gcolor2.xpm">gcolor2</Program>
+<Program label="Gtkam Digital Camera Browser" icon="/usr/share/pixmaps/gtkam-camera.png">gtkam</Program>
+<Program label="LibreOffice Draw" icon="/usr/share/icons/Faenza-Cupertino-mini/apps/32/libreoffice-draw.png">libreoffice --draw </Program>
+<Program label="Mirage" icon="/usr/share/pixmaps/mirage.png">mirage </Program>
+<Program label="mtPaint graphic editor" icon="/usr/share/icons/Faenza-Cupertino-mini/apps/32/mtpaint.png">mtpaint</Program>
+<Program label="Screenshot" icon="/usr/share/icons/Faenza-Cupertino-mini/devices/32/camera.png">antixscreenshot.sh</Program>
+<Program label="Simple Scan" icon="/usr/share/icons/Faenza-Cupertino-mini/devices/32/scanner.png">simple-scan</Program>
+</Menu>
+<Menu label="Internet" icon="/usr/share/icons/Faenza-Cupertino-mini/categories/32/applications-internet.png" >
+<Program label="Claws Mail" icon="/usr/share/icons/Faenza-Cupertino-mini/apps/32/claws-mail.png">claws-mail </Program>
+<Program label="Connectshares" icon="/usr/share/pixmaps/connectshares.png">connectshares</Program>
+<Program label="Connectshares Configuration" icon="/usr/share/pixmaps/connectshares-config.png">connectshares-config</Program>
+<Program label="Dillo" icon="/usr/share/pixmaps/dillo.png">dillo </Program>
+<Program label="Disconnectshares" icon="/usr/share/pixmaps/disconnectshares.png">disconnectshares</Program>
+<Program label="Droopy" icon="/usr/share/pixmaps/droopy.png">droopy.sh</Program>
+<Program label="Firefox ESR" icon="/usr/share/icons/hicolor/32x32/apps/firefox-esr.png">firefox-esr </Program>
+<Program label="gFTP" icon="/usr/share/pixmaps/gftp.png">gftp-gtk </Program>
+<Program label="HexChat" icon="/usr/share/icons/Faenza-Cupertino-mini/apps/48/hexchat.png">hexchat </Program>
+<Program label="Links 2" icon="/usr/share/pixmaps/links2.xpm">xlinks2</Program>
+<Program label="Search Bar" icon="/usr/local/share/icons/search-bar/eye-icon.png">search-bar</Program>
+<Program label="Transmission" icon="/usr/share/icons/Faenza-Cupertino-mini/apps/32/transmission.png">transmission-gtk </Program>
+<Program label="Wicd Network Manager" icon="/usr/share/icons/hicolor/32x32/apps/wicd-gtk.png">wicd-gtk --no-tray</Program>
+</Menu>
+<Menu label="Office" icon="/usr/share/icons/Faenza-Cupertino-mini/categories/32/applications-office.png" >
+<Program label="Document Viewer" icon="/usr/share/icons/Faenza-Cupertino-mini/apps/32/evince.png">evince </Program>
+<Program label="LibreOffice" icon="/usr/share/icons/Faenza-Cupertino-mini/apps/32/libreoffice-startcenter.png">libreoffice </Program>
+<Program label="LibreOffice Calc" icon="/usr/share/icons/Faenza-Cupertino-mini/apps/32/libreoffice-calc.png">libreoffice --calc </Program>
+<Program label="LibreOffice Draw" icon="/usr/share/icons/Faenza-Cupertino-mini/apps/32/libreoffice-draw.png">libreoffice --draw </Program>
+<Program label="LibreOffice Impress" icon="/usr/share/icons/Faenza-Cupertino-mini/apps/32/libreoffice-impress.png">libreoffice --impress </Program>
+<Program label="LibreOffice Math" icon="/usr/share/icons/Faenza-Cupertino-mini/apps/32/libreoffice-math.png">libreoffice --math </Program>
+<Program label="LibreOffice Writer" icon="/usr/share/icons/Faenza-Cupertino-mini/apps/32/libreoffice-writer.png">libreoffice --writer </Program>
+</Menu>
+<Menu label="Programming" icon="/usr/share/icons/Faenza-Cupertino-mini/categories/32/applications-development.png" >
+<Program label="Geany" icon="/usr/share/icons/Faenza-Cupertino-mini/apps/32/geany.png">geany </Program>
+<Program label="Vim.tiny" icon="/usr/share/icons/Faenza-Cupertino-mini/apps/32/vim.png">desktop-defaults-run -t vim </Program>
+</Menu>
+<Menu label="Sound and Video" icon="/usr/share/icons/Faenza-Cupertino-mini/categories/32/applications-multimedia.png" >
+<Program label="Asunder CD Ripper" icon="/usr/share/icons/asunder.png">asunder</Program>
+<Program label="GNOME MPlayer" icon="/usr/share/icons/Faenza-Cupertino-mini/apps/32/gnome-mplayer.png">gnome-mplayer </Program>
+<Program label="guvcview" icon="/usr/share/pixmaps/guvcview/guvcview.png">guvcview</Program>
+<Program label="SMTube" icon="/usr/share/icons/hicolor/32x32/apps/smtube.png">smtube</Program>
+<Program label="Streamlight" icon="/usr/share/pixmaps/streamlight-gui-launcher.png">streamlight-gui-launcher.sh</Program>
+<Program label="streamtuner2" icon="/usr/share/pixmaps/streamtuner2.png">streamtuner2</Program>
+<Program label="WinFF" icon="/usr/share/icons/hicolor/32x32/apps/winff.png">winff</Program>
+<Program label="xmms" icon="/usr/share/icons/xmms.png">xmms</Program>
+</Menu>
+<Menu label="System Tools" icon="/usr/share/icons/Faenza-Cupertino-mini/categories/32/applications-system.png" >
+<Program label="GParted" icon="/usr/share/icons/Faenza-Cupertino-mini/apps/32/gparted.png">gksu gparted</Program>
+<Program label="Htop" icon="/usr/share/icons/Faenza-Cupertino-mini/apps/32/htop.png">desktop-defaults-run -t htop</Program>
+<Program label="IceWMcc" icon="/usr/share/icons/Faenza-Cupertino-mini/categories/32/preferences-desktop.png">/usr/local/bin/icewmcc/icewmcc.sh</Program>
+<Program label="iso-snapshot" icon="/usr/share/pixmaps/iso-snapshot.png">gksu isosnapshot</Program>
+<Program label="Live-usb kernel updater" icon="/usr/share/icons/Faenza-Cupertino-mini/devices/32/drive-removable-media-usb.png">desktop-defaults-run -t sudo /usr/local/bin/live-kernel-updater --pause</Program>
+<Program label="Live-usb maker" icon="/usr/share/icons/Faenza-Cupertino-mini/devices/32/drive-removable-media-usb.png">desktop-defaults-run -t sudo /usr/local/bin/live-usb-maker --pause simple</Program>
+<Program label="luckyBackup super user" icon="/usr/share/pixmaps/luckybackup.png">su-to-root -X -c /usr/bin/luckybackup</Program>
+<Program label="metapackage-installer" icon="/usr/share/pixmaps/metapackage-installer.xpm">gksu install-meta</Program>
+<Program label="Midnight Commander" icon="/usr/share/icons/hicolor/64x64/apps/MidnightCommander.png">desktop-defaults-run -t mc</Program>
+<Program label="Root Terminal" icon="/usr/share/icons/Faenza-Cupertino-mini/apps/32/gksu-root-terminal.png">gksu /usr/bin/x-terminal-emulator</Program>
+<Program label="ROX Filer" icon="/usr/share/icons/antiX/rox-filer.png">rox-filer</Program>
+<Program label="ROXTerm" icon="/usr/share/icons/Faenza-Cupertino-mini/apps/48/roxterm.png">roxterm</Program>
+<Program label="Rxvt Color Unicode Terminal" icon="/usr/share/pixmaps/urxvt_48x48.xpm">urxvt</Program>
+<Program label="SpaceFM" icon="/usr/share/icons/Faenza-Cupertino-mini/apps/48/spacefm.png">spacefm </Program>
+<Program label="Synaptic Package Manager" icon="/usr/share/icons/Faenza-Cupertino-mini/apps/32/synaptic.png">gksu synaptic</Program>
+<Program label="UNetbootin" icon="/usr/share/pixmaps/unetbootin.xpm">/usr/bin/unetbootin</Program>
+</Menu>
+<Separator/>
+<Menu label="Preferences" icon="/usr/share/icons/Faenza-Cupertino-mini/categories/32/preferences-desktop.png" >
+<Program label="Add Menu Item" icon="/usr/share/icons/Faenza-Cupertino-mini/categories/32/gnome-control-center.png">add-desktop</Program>
+<Program label="ADSL/PPPOE configuration" icon="/usr/share/pixmaps/pppoeconf.xpm">desktop-defaults-run -t /usr/sbin/pppoeconf</Program>
+<Program label="Alternatives Configurator" icon="/usr/share/pixmaps/galternatives.png">/usr/sbin/galternatives</Program>
+<Program label="Customize Look and Feel" icon="/usr/share/icons/Faenza-Cupertino-mini/apps/32/preferences-desktop-theme.png">lxappearance</Program>
+<Program label="Menu Manager" icon="/usr/share/pixmaps/menu_manager.png">sudo menu_manager.sh</Program>
+<Program label="Remove Menu Item" icon="/usr/share/icons/Faenza-Cupertino-mini/devices/48/computer.png">remove-desktop</Program>
+</Menu>
+</JWM>
