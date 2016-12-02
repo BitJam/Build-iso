@@ -58,10 +58,17 @@ fotg210-hcd
 fusbh200-hcd
 fuse
 hid
+hid-apple
+hid-belkin
 hid-cherry
+hid-lenovo-tpkbd
+hid-logitech
 hid-logitech-dj
 hid-logitech-hidpp
 hid-generic
+hid-microsoft
+hid-monterey
+hid-samsung
 isofs
 jbd
 jbd2
