@@ -58,6 +58,7 @@ fotg210-hcd
 fusbh200-hcd
 fuse
 hid
+hid-cherry
 hid-logitech-dj
 hid-logitech-hidpp
 hid-generic
