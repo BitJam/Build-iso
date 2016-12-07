@@ -8,6 +8,16 @@
 #    umount
 #    copy to iso directory
 
+     MEM_TEST=true
+
+   MAX_MARGIN=500 # in Kilobytes
+ MARGIN_START=30
+  MARGIN_STEP=10
+SAFETY_MARGIN=10  # Extra kilobytes to add after it works
+
+OUTPUT_FILE="boot/grub/efi.img"
+GRUB_CFG="boot/grub/grub.cfg"
+
 ME=${0##*/}
 
 WORK_DIR="/tmp/$ME"
@@ -18,13 +28,9 @@ EFI/BOOT/fallback.efi
 EFI/BOOT/grubx64.efi
 boot/grub/grub.cfg"
 
-OUTPUT_FILE="boot/grub/efi.img"
-GRUB_CFG="boot/grub/grub.cfg"
-
-   MAX_MARGIN=500 # in Kilobytes
- MARGIN_START=30
-  MARGIN_STEP=10
-SAFETY_MARGIN=10  # Extra kilobytes to add after it works
+[ "$MEM_TEST" ] && INPUT_FILE_LIST="$INPUT_FILE_LIST
+EFI/BOOT/mt86.png
+boot/uefi-mt/mtest-64.efi"
 
 usage() {
     local ret=${1:-0}
@@ -97,8 +103,24 @@ make_efi_img() {
     done
 
     local full_grub="$mp/$GRUB_CFG"
-    sudo sed -i "1 iset root=(hd0)" "$full_grub"
+    munge_grub "$full_grub"
     return 0
+}
+
+munge_grub() {
+    local file=$1
+    # Boot from the weird iso9660 partition
+    sudo sed -i "1 iset root=(hd0)" "$file"
+    # Erase the memtest entries
+    sudo sed -i  "/in_64/,$ d" "$file"
+    [ "$MEM_TEST" ] || return
+    # Add a simple memtest entry that works with "dd"
+    cat<<Munge_Grub | sudo tee -a "$file" &>/dev/null
+menuentry " Memory Test" {
+set root=(hd0,msdos2)
+chainloader /boot/uefi-mt/mtest-64.efi
+}
+Munge_Grub
 }
 
 duk_size() {
