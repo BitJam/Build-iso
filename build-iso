@@ -1312,6 +1312,12 @@ Bootloader_Data
     # (6) Create/append-to text-only bootloader menu (.msg file)
     local isolinux_cfg=$isolinux_dir/isolinux.cfg
     local syslinux_cfg=$syslinux_dir/syslinux.cfg
+
+    if [ "$MEM_TEST_BUG" ]; then
+        say "Comment out memtest in $(basename $syslinux_cfg)"
+        sed -i "/memtest/,$ s/^/#--memtest /" $syslinux_cfg
+    fi
+
     $tools/make-isolinux-menu $isolinux_cfg >> $isolinux_dir/readme.msg
     $tools/make-isolinux-menu $syslinux_cfg >> $syslinux_dir/readme.msg
 
