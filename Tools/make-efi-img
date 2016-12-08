@@ -58,7 +58,11 @@ main() {
     local file full needed=0
     for file in $INPUT_FILE_LIST; do
         full=$dir/$file
-        needed=$((needed + $(duk_size $full)))
+        if test -e $full; then
+            needed=$((needed + $(duk_size $full)))
+        else
+            warn "Missing file %s" $full
+        fi
     done
     echo "Kilobytes needed: $needed"
 
@@ -79,11 +83,10 @@ main() {
         rmdir "$mp"
         rmdir "$WORK_DIR"
 
-        echo -e "\n$ME created $img"
+        echo -e "\n$ME created ${img#$dir/}"
         return 0
     done
-    echo "$ME Failed!"
-    return 2
+    fatal "$ME Failed!"
 }
 
 make_efi_img() {
@@ -125,6 +128,11 @@ Munge_Grub
 
 duk_size() {
     du -kc "$@" | tail -n1 | awk '{print $1}'
+}
+
+warn() {
+    local fmt=$1 ; shift
+    printf "$fmt\n" "$@" >&2
 }
 
 fatal() {
