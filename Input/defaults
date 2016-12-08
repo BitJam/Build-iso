@@ -34,6 +34,7 @@ X_TERM_EMULATOR="/usr/bin/roxterm"
 CURSOR_ICON_THEME="/usr/share/icons/DMZ-Black/cursor.theme"
 
 USE_UEFI=true
+MEM_TEST_BUG=true
 
 NO_SET_HOSTNAME=""
 SIGN_FILES="true"
