@@ -20,6 +20,7 @@ directory is included automatically.
 Options:
     --                 Read modules list on stdin
     -c --count         Display a count of the modules found
+    -C --crypt         Only copy extra modules used for encrypted live-usb
     -d --dir=DIR       Grab all modules found under DIR
     -f --from=FROM     copy from lib/modules under FROM/
     -h --help          Show this usage
@@ -115,6 +116,14 @@ xhci-hcd
 xhci-pci
 "
 
+CRYPT_LIST="
+dm-crypt
+dm-mod
+serpent
+sha256
+blowfish
+aes
+"
 # i915
 # nouveau
 # radeon
@@ -151,6 +160,7 @@ main() {
         case $arg in
                   -) USE_STDIN=true                  ;;
            -count|c) SHOW_COUNT=true                 ;;
+           -crypt|C) DO_CRYPT=true                   ;;
              -dir|d) DIRS="$DIRS,$val"               ;;
             -help|h) usage                           ;;
             -from|f) from_dir=${val%/}               ;;
@@ -184,6 +194,8 @@ main() {
 
     local list1 list2 repeats default_mode
     # grab list from files or stdin and strip comments
+
+    [ "$DO_CRYPT" ] && DEFAULT_LIST=$CRYPT_LIST
 
     if [ -z "$USE_STDIN" -a $# -eq 0 ]; then
         default_mode=true
