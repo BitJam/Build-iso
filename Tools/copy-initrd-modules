@@ -237,6 +237,8 @@ $(echo "$list2")
 List_2
 
     [ "$SHOW_COUNT" ] && printf "$ME: %s module(s)\n" "$cnt"
+
+    exit 0
 }
 
 echo_cmd() {
