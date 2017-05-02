@@ -22,11 +22,14 @@ ME=${0##*/}
 
 WORK_DIR="/tmp/$ME"
 
+LABEL="EFI-LIVE"
+
 INPUT_FILE_LIST="
 EFI/BOOT/bootx64.efi
 EFI/BOOT/fallback.efi
 EFI/BOOT/grubx64.efi
 boot/grub/grub.cfg"
+
 
 [ "$MEM_TEST" ] && INPUT_FILE_LIST="$INPUT_FILE_LIST
 EFI/BOOT/mt86.png
@@ -36,16 +39,19 @@ usage() {
     local ret=${1:-0}
 
     cat<<Usage
-Usage: $ME <directory>
+Usage: $ME <directory> [label]
 
 Create a efi.img fat32 filesystem-on-a-file containing:
 $(echo "$INPUT_FILE_LIST" | sed "s/^/    /")
+
+You can specify the partition label with a 2nd argument.
 Usage
     exit $ret
 }
 
 main() {
-    [ $# -eq 1 ] || usage
+    [ $# -eq 0 ] && usage
+    [ $# -gt 2 ] && usage
 
     case $1 in
         -h|--help) usage ;;
@@ -54,6 +60,8 @@ main() {
     local dir=${1%/}
 
     test -d $dir || fatal "$dir is not a directory"
+
+    [ $# -eq 2 ] && LABEL=$2
 
     local file full needed=0
     for file in $INPUT_FILE_LIST; do
@@ -93,7 +101,7 @@ make_efi_img() {
     local  img=$1  mp=$2  list=$3  size=$4
 
     dd if=/dev/zero of="$img" bs=1K count=$size
-    mkfs.fat -n "EFI IMAGE" "$img" >/dev/null
+    mkfs.vfat -n "${LABEL:0:11}" "$img" >/dev/null
 
     mkdir -p "$mp"
     sudo mount -o loop "$img" "$mp"
