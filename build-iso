@@ -1349,7 +1349,7 @@ Bootloader_Data
     fi
 
     say "Make efi.img"
-    $SUDO $tools/make-efi-img $iso_dir "$DISTRO_NAME-Live"
+    $SUDO $tools/make-efi-img $iso_dir "$DISTRO_NAME-esp"
 
     repack_gfx_cpio isolinux $isolinux_cpio
     repack_gfx_cpio syslinux $syslinux_cpio
