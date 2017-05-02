@@ -26,10 +26,9 @@ LABEL="EFI-LIVE"
 
 INPUT_FILE_LIST="
 EFI/BOOT/bootx64.efi
-EFI/BOOT/fallback.efi
 EFI/BOOT/grubx64.efi
-boot/grub/grub.cfg"
-
+boot/grub/grub.cfg
+EFI/BOOT/fallback.efi"
 
 [ "$MEM_TEST" ] && INPUT_FILE_LIST="$INPUT_FILE_LIST
 EFI/BOOT/mt86.png
