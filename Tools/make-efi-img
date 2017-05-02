@@ -107,6 +107,7 @@ make_efi_img() {
     local targ
     for file in $list; do
         full="$dir/$file"
+        test -r "$full" || continue
         targ="$mp/$file"
         sudo mkdir -p "$(dirname "$targ")" || return 1
         sudo cp "$full" "$targ"            || return 1
