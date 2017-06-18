@@ -127,6 +127,7 @@ main() {
     local build_dir="/Build"
     local partial_name="PARTIAL"
     local partial_file=$build_dir/$partial_name
+    local seed_fname=".seed"
 
     local short_stack="aAcCdDefFhiIjmnNpqrsuUvV0-8"
 
@@ -1419,6 +1420,10 @@ Bootloader_Data
     write_version_info                           > $misc_dir/version-info
 
     cp $work_dir/package-list.out                  $misc_dir/package-list.full
+
+    say "Initializing random number generator"
+    local seed_file=$iso_dir/antiX/$seed_fname
+    dd if=/dev/urandom of=$seed_file bs=1 count=512
 
     leave_stage
 }
