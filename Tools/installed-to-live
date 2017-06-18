@@ -52,6 +52,8 @@ LIVE_FILE_LIST="
 /etc/init.d/gpm
 /etc/init.d/hwclock.sh
 /etc/init.d/keyboard-setup
+/etc/init.d/keyboard-setup.sh
+/etc/init.d/console-setup.sh
 /etc/init.d/sendsigs
 /etc/init.d/umountfs
 /etc/issue
@@ -62,6 +64,7 @@ LIVE_FILE_LIST="
 /etc/skel/.jwm/menu
 /etc/skel/Desktop/Installer.desktop
 /etc/udev/rules.d/90-fstab-automount.rules
+/etc/udev/rules.d/92-console-font.rules
 /usr/share/applications/mx/minstall.desktop
 "
 
