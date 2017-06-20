@@ -127,7 +127,7 @@ main() {
     local build_dir="/Build"
     local partial_name="PARTIAL"
     local partial_file=$build_dir/$partial_name
-    local seed_fname=".seed"
+    local seed_fname="random-seed"
 
     local short_stack="aAcCdDefFhiIjmnNpqrsuUvV0-8"
 
