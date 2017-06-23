@@ -608,7 +608,7 @@ bind_mount_template() {
 
             # Don't add broken links
             if test -e $(readlink -f $orig); then
-                RM_FILES="$RM_FILES${RM_FILES:+,}$orig"
+                RM_FILES="$RM_FILES${RM_FILES:+,}$file"
             else
                 pretend rm -f $orig
             fi
@@ -655,7 +655,7 @@ touch_file() {
     test -f $file && return
     test -e $file && fatal "Expected a plain file at $orig"
 
-    RM_FILES="$RM_FILES${RM_FILES:+,}$orig"
+    RM_FILES="$RM_FILES${RM_FILES:+,}$file"
 
     pretend touch $file
 }
