@@ -1132,6 +1132,8 @@ do_stage_4() {
     say "Write version files"
     write_version_files
 
+    mkdir -p /usr/share/antiX
+
     dpkg-query -l | sed -n 's/^ii\s\+//p' > $output_dir/package-list.out
     dpkg-query -l | sed -n 's/^ii\s\+//p' > /usr/share/antiX/installed-packages.txt
 
