@@ -610,11 +610,7 @@ do_cleanup() {
 # clean them up after we are done and after the bind root was unmounted.
 #------------------------------------------------------------------------------
 bind_mount_template() {
-    local template_dir=$1  bind_root=$2  real_root=$3
-
-    # Remove trailing slash from real_root and template_dir
-    real_root=${real_root%/}
-    template_dir=${template_dir%/}
+    local template_dir=${1%/}  bind_root=${2%/}  real_root=${3%/}
 
     test -d $template_dir || return
     local file
@@ -659,10 +655,7 @@ Bind_Template
 # with files.
 #------------------------------------------------------------------------------
 bind_empty_dirs() {
-    local template_dir=$1  bind_root=$2  real_root=$3  dirs=$4
-
-    # Remove trailing slash from real_root
-    real_root=${real_root%/}
+    local template_dir=${1%/}  bind_root=${2%/}  real_root=${3%/}  dirs=$4
 
     local base
     echo "$dirs" | tr ',' '\n' | tac | while read base; do
