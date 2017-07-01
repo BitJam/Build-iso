@@ -630,12 +630,12 @@ bind_mount_template() {
             [ "$PRETEND" ] && continue
 
             # Don't add broken links
-            if test -e $(readlink -f $orig); then
+            if test -e $(readlink -f "$orig"); then
                 # .. and either delete it when we are done
                 RM_FILES="$RM_FILES${RM_FILES:+,}$orig"
             else
                 # ... or delete it now if it is broken
-                pretend rm -f $orig
+                pretend rm -f "$orig"
             fi
         else
             # Normal files -- bind mount template file, mkdir and touch if needed
@@ -662,10 +662,10 @@ bind_empty_dirs() {
         [ "$base" ] || continue
         local targ=$bind_root/$base
         # If directory doesn't exist then skip it
-        test -d $targ || continue
+        test -d "$targ" || continue
         make_dir "$targ" "$real_root/$base"
-        pretend mkdir -p $template_dir/$base
-        pretend mount --bind $template_dir/$base $targ
+        pretend mkdir -p "$template_dir/$base"
+        pretend mount --bind "$template_dir/$base" "$targ"
     done
 }
 
