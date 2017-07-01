@@ -539,6 +539,11 @@ do_all_files() {
     do_general_files "$@"
 }
 
+#------------------------------------------------------------------------------
+# This is a catch-all for doing the normal things we usually want to do.  As
+# more nooks and crannies are discovered they are usually added here and the
+# callers don't have to change anything.
+#------------------------------------------------------------------------------
 do_general() {
     local conf_file=$1  work_dir=$2
 
@@ -552,12 +557,20 @@ do_general() {
     write_conf_file $conf_file
 }
 
+#------------------------------------------------------------------------------
+# Try to put the system back into the same state it was in before we started.
+#------------------------------------------------------------------------------
 do_cleanup() {
     local conf_file=$1  work_dir=$2
     read_conf_file $conf_file $FORCE
 
     is_mounted $BIND_ROOT &>/dev/null && pretend umount --recursive $BIND_ROOT
 
+    # We MUST umount before we remove files and directories because otherwise
+    # we would be trying to remove mountpoints which the system does not like
+
+    # the recursive umount may be imperfect but we only need a few iterations
+    # to get it all umounted.
     local i
     for i in $(seq 1 10); do
         is_mounted $BIND_ROOT &>/dev/null || break
@@ -570,22 +583,32 @@ do_cleanup() {
 
     test -d $BIND_ROOT && pretend rmdir $BIND_ROOT
 
+    # Remove files that we touched on the root file system
     local file dir
     echo "$RM_FILES" | tr ',' '\n' | tac | while read file; do
 	[ "$file" ] || continue
         pretend rm -f "$file"
     done
 
+    # removed directories we created on the root file system
     echo "$RM_DIRS" | tr ',' '\n' | tac | while read dir; do
 	[ "$dir" ] || continue
         pretend rmdir --ignore-fail-on-non-empty --parents "$dir"
     done
 
+    # Finally, clean up our working directory
     pretend rm -f $conf_file
     [ "$work_dir" ] && pretend rm -rf $work_dir
     exit 0
 }
 
+#------------------------------------------------------------------------------
+# This is a central routine.  We bind mount every file that is in the template
+# directory to the equivalent location under the bind root.  We may have to
+# make directories and touch files to do this so in those cases we record the
+# location of the created file or directory on the real file system so we can
+# clean them up after we are done and after the bind root was unmounted.
+#------------------------------------------------------------------------------
 bind_mount_template() {
     local template_dir=$1  bind_root=$2  real_root=$3
 
@@ -600,20 +623,26 @@ bind_mount_template() {
         local targ=$bind_root$base
         local orig=$real_root$base
         if test -L "$file"; then
-            # Symlinks
+            # Symlinks -- can't bind mount them
+
+            # don't do anything if the orig already exists
             test -e "$orig" && continue
+
+            # Otherwise, copy our symlimk to the real file system ...
             pretend cp -a "$file" "$orig"
 
             [ "$PRETEND" ] && continue
 
             # Don't add broken links
             if test -e $(readlink -f $orig); then
+                # .. and either delete it when we are done
                 RM_FILES="$RM_FILES${RM_FILES:+,}$orig"
             else
+                # ... or delete it now if it is broken
                 pretend rm -f $orig
             fi
         else
-            # Normal files
+            # Normal files -- bind mount template file, mkdir and touch if needed
             touch_file "$targ" "$orig"
             is_mounted "$targ" && error "File $targ is already mounted"
             pretend mount --bind "$file" "$targ"
@@ -623,6 +652,12 @@ $(find $template_dir -type f -o -type l)
 Bind_Template
 }
 
+#------------------------------------------------------------------------------
+# "Clear out" existing directories by bind mounting an empty directory  over
+# them.  We have to create a different empty directory for each directory we
+# want to clear in case we want to populate some of the empty directories
+# with files.
+#------------------------------------------------------------------------------
 bind_empty_dirs() {
     local template_dir=$1  bind_root=$2  real_root=$3  dirs=$4
 
@@ -641,6 +676,12 @@ bind_empty_dirs() {
     done
 }
 
+#------------------------------------------------------------------------------
+# If a directory we need  doesn't exist then create it and mark the *original*
+# (under the real root) to be removed when we are done.  We need to remove the
+# original because the bind root will already be unmounted.  Only mark the
+# original for deletion if it doesn't already exist.
+#------------------------------------------------------------------------------
 make_dir() {
     local dir=$1  orig=$2
     test -d $dir && return
@@ -648,6 +689,11 @@ make_dir() {
     pretend mkdir -p $dir
 }
 
+#------------------------------------------------------------------------------
+# If a file doesn't exist then touch it so we can bind mount a template file
+# over it.  Mark the original (under the real root) for deletion if it doesn't
+# already exist.
+#------------------------------------------------------------------------------
 touch_file() {
     local file=$1  orig=$2
     local dir=$(dirname $file)
@@ -660,6 +706,9 @@ touch_file() {
     pretend touch $file
 }
 
+#------------------------------------------------------------------------------
+#
+#------------------------------------------------------------------------------
 munge_files() {
     local template_dir=$1  bind_root=$2  work_dir=$3  user_pw=${4:-demo}  root_pw=${5:-root}
     local bind_from=$work_dir/bind
