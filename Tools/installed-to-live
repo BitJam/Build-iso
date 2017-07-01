@@ -655,7 +655,7 @@ touch_file() {
     test -f $file && return
     test -e $file && fatal "Expected a plain file at $orig"
 
-    RM_FILES="$RM_FILES${RM_FILES:+,}$orig"
+    test -e "$orig" || RM_FILES="$RM_FILES${RM_FILES:+,}$orig"
 
     pretend touch $file
 }
