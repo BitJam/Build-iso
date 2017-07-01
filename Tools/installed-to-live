@@ -684,9 +684,9 @@ bind_empty_dirs() {
 #------------------------------------------------------------------------------
 make_dir() {
     local dir=$1  orig=$2
-    test -d $dir && return
-    RM_DIRS="$RM_DIRS${RM_DIRS:+,}$orig"
-    pretend mkdir -p $dir
+    test -d "$dir" && return
+    test -d "$orig" || RM_DIRS="$RM_DIRS${RM_DIRS:+,}$orig"
+    pretend mkdir -p "$dir"
 }
 
 #------------------------------------------------------------------------------
