@@ -1399,11 +1399,11 @@ Bootloader_Data
 
         rm -rf $initrd_dir/lib/modules/
 
-        #$tools/copy-initrd-modules --quiet --kernel $K_NAME --from $sqfs_dir --to $initrd_dir \
-        #    --count --dir kernel/drivers/ata $initrd_modules_file*
-
         # Note: please used built-in list so we are all in sync.  Thanks!
         $tools/copy-initrd-modules --quiet --kernel $K_NAME --from $sqfs_dir --to $initrd_dir --count
+
+        $tools/copy-initrd-programs --to $initrd_dir --clean
+        $tools/copy-initrd-programs --to $initrd_dir --from $sqfs_dir
     fi
 
     local initrd_gz=$iso_dir/antiX/initrd.gz
@@ -1464,7 +1464,7 @@ do_stage_7() {
     $SUDO mksquashfs $sqfs_dir $linuxfs_file -comp xz -Xbcj x86 $arg
     local size=$(du_size $linuxfs_file)
     end_timer "create $(pqn $size) squashfs file"
-    md5sum_file $linuxfs_file 
+    md5sum_file $linuxfs_file
 
     leave_stage
 }
