@@ -70,6 +70,7 @@ LIVE_FILE_LIST="
 
 GENERAL_LIVE_FILE_LIST="
 /etc/adjtime
+/etc/default/console-setup
 /etc/default/grub
 /etc/default/keyboard
 /etc/default/locale
