@@ -6,6 +6,7 @@ Output
 iso
 sqfs
 work
+initrd
 TODO
 Input/defaults-local
 Template/*/initrd/*
