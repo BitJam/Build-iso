@@ -93,13 +93,13 @@ main() {
     read_params "$@"
     shift $SHIFT
 
-    #[ -n "$TARGET" -a -n "$FORCE" ] && fatal "Can't use --force with --target"
+    [ -n "$NO_COLOR" ] || set_colors
 
     local prog_list abs_prog_list
     case $# in
         0)  prog_list=$DEFAULT_PROG_LIST                     ;;
         *)  prog_list="$*"
-            qsay "Using %s program(s) from command line" $#  ;;
+            qsay "Installing %s program(s) from command line" $#  ;;
     esac
 
     if [ $# -eq 0 -a -n "$ADD_ENCRYPT$DO_CLEAN" ]; then
@@ -116,7 +116,7 @@ main() {
     local bin_dir=$TO_DIR/$BIN_SUBDIR  lib_dir=$TO_DIR/$LIB_SUBDIR
 
     if [ "$DO_CLEAN" ]; then
-        qsay "Cleaning out program(s): %s" "$prog_list"
+        qsay "Cleaning out all libraries and these program(s): %s" "$prog_list"
         do_clean "$TO_DIR" "$lib_dir" "$bin_dir" "$prog_list"
         exit 0
     fi
@@ -154,7 +154,7 @@ main() {
     for abs_prog in $abs_prog_list; do
         local from_prog="$FROM_DIR$abs_prog"
 
-        qsay "add program: %s" "$(basename $abs_prog)"
+        qsay "  add program: %s" "$(basename $abs_prog)"
         pretend cp "$from_prog" "$bin_dir"
 
         local raw_libs
@@ -410,7 +410,6 @@ set_colors() {
          warn_co=$yellow
 }
 
-set_colors
 main "$@"
 
 
