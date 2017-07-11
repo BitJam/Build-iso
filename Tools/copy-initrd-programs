@@ -28,6 +28,7 @@ Options:
     -f --from=<dir>    get libs and programs from under <dir>
     -F --force         Skip missing programs
     -h --help          Show this usage
+    -n --no-color      Turn off text colors
     -p --pretend       Don't actually copy anything
     -q --quiet         Supress modprobe warnings
     -s --show          Show default values of environment variables
@@ -37,7 +38,7 @@ Options:
 A --to directory or a from --directory must be specified.
 Short options can be stacked.  Example:
 
-    $ME -fvp
+    $ME -cnp
 Usage
 
     exit ${1:-0}
@@ -56,6 +57,7 @@ eval_argument() {
              -force|F) FORCE=true              ;;
               -from=*) FROM_DIR=$val           ;;
               -help|h) usage                   ;;
+          -no-color|n) NO_COLOR=true           ;;
            -pretend|p) PRETEND=true            ;;
              -quiet|q) QUIET=true              ;;
               -show|s) do_show        ; exit 0 ;;
@@ -83,7 +85,7 @@ takes_param() {
 main() {
     [ $# -eq 0 ] && usage 0
 
-    local SHIFT SHORT_STACK="cCefFhpqtv"
+    local SHIFT SHORT_STACK="cCefFhnpqtv"
 
     local sudo
     [ "$UID" = 1 ] || sudo=sudo
