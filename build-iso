@@ -1248,6 +1248,16 @@ do_stage_5() {
     $SUDO rm -rf $sqfs_dir/usr/local/share/live-files
     $SUDO $tools/installed-to-live populate-live-files $sqfs_dir $sqfs_dir
 
+    local if_file=/etc/network/interfaces
+    if ! grep eth0 $if_file; then
+        say "Adding eth0 entry to $if_file"
+        cat <<Eth0_entry >> $if_file
+
+allow-hotplug eth0
+iface eth0 inet dhcp
+Eth0_entry
+    fi
+
     local vim_bin=$sqfs_dir/usr/bin/vim
     if [ -x $vim_bin.tiny -a ! -e $vim_bin ]; then
         say "Making /usr/bin/vim symlink to vim.tiny"
