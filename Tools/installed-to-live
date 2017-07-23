@@ -78,6 +78,8 @@ GENERAL_LIVE_FILE_LIST="
 /etc/kbd/config
 /etc/lightdm/lightdm.conf
 /etc/modprobe.d/*
+/etc/network/interfaces
+/etc/network/interfaces.d/*
 /etc/slim.conf
 "
 
@@ -111,6 +113,7 @@ Commands:
     bind=<dir1,dir2,..>  Bind mount each dir IF it is a mountpoint
 
     general             Same as "empty=/etc/modprobe.d/ empty=/etc/grub.d
+                        empty=/etc/network/interfaces.d/
                         all-files passwd repo timezone"
 
     adjtime             Reset the adjtime file but leave the utc / local selection
@@ -550,6 +553,7 @@ do_general() {
 
     do_empty     $conf_file $work_dir "/etc/modprobe.d"
     do_empty     $conf_file $work_dir "/etc/grub.d"
+    do_empty     $conf_file $work_dir "/etc/network/interfaces.d"
     do_all_files $conf_file $work_dir
     do_passwd    $conf_file
     do_repo      $conf_file $work_dir $DEF_REPO
