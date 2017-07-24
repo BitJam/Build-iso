@@ -1258,6 +1258,12 @@ iface eth0 inet dhcp
 Eth0_entry
     fi
 
+    local cached=/etc/console-setup/cached
+    if [ -n "$(ls $cached* 2>/dev/null)" ]; then
+        say "Removing console-setup cached files"
+        rm $cached*
+    fi
+
     local vim_bin=$sqfs_dir/usr/bin/vim
     if [ -x $vim_bin.tiny -a ! -e $vim_bin ]; then
         say "Making /usr/bin/vim symlink to vim.tiny"
