@@ -1264,6 +1264,14 @@ Eth0_entry
         rm $cached*
     fi
 
+    local exclude_files=/usr/local/share/excludes/*.list
+    local efile ofile
+    for efile in $exclude_files; do
+        ofile=${efile%.list}.orig
+        cp $efile $ofile
+        chmod a-wx $ofile
+    done
+
     local vim_bin=$sqfs_dir/usr/bin/vim
     if [ -x $vim_bin.tiny -a ! -e $vim_bin ]; then
         say "Making /usr/bin/vim symlink to vim.tiny"
