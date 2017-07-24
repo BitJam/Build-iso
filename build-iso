@@ -1248,28 +1248,29 @@ do_stage_5() {
     $SUDO rm -rf $sqfs_dir/usr/local/share/live-files
     $SUDO $tools/installed-to-live populate-live-files $sqfs_dir $sqfs_dir
 
-    local if_file=/etc/network/interfaces
-    if ! grep eth0 $if_file; then
-        say "Adding eth0 entry to $if_file"
-        cat <<Eth0_entry >> $if_file
+    local if_file=$sqfs_dir/etc/network/interfaces
+    if ! grep -q eth0 $if_file; then
+        say "Adding eth0 entry to $(pq ${if_file#$sqfs_dir})"
+        cat <<Eth0_entry | $SUDO tee -a $if_file >/dev/null
 
+# The primary network interface
 allow-hotplug eth0
 iface eth0 inet dhcp
 Eth0_entry
     fi
 
-    local cached=/etc/console-setup/cached
+    local cached=$sqfs_dir/etc/console-setup/cached
     if [ -n "$(ls $cached* 2>/dev/null)" ]; then
         say "Removing console-setup cached files"
-        rm $cached*
+        $SUDO rm $cached*
     fi
 
-    local exclude_files=/usr/local/share/excludes/*.list
+    local exclude_files=$sqfs_dir/usr/local/share/excludes/*.list
     local efile ofile
     for efile in $exclude_files; do
         ofile=${efile%.list}.orig
-        cp $efile $ofile
-        chmod a-wx $ofile
+        $SUDO cp $efile $ofile
+        $SUDO chmod a-wx $ofile
     done
 
     local vim_bin=$sqfs_dir/usr/bin/vim
