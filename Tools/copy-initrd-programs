@@ -195,37 +195,35 @@ main() {
 }
 
 #------------------------------------------------------------------------------
-# Copy a symlink and what it points to into dest_dir.  This code seems way too
+# Copy a symlink and what it points to into dest_dir.  This code seems too
 # complicated for what it does.
 #------------------------------------------------------------------------------
 copy_symlink() {
-    local from_dir=$1  symlink=$2  dest_dir=$3 
+    local from_dir=$1  symlink=$2  dest_dir=$3
 
     # This works for relative symlinks and absolute symlinks that are also
     # exist on the host
-    local real_file=$(readlink -f $from_dir$symlink)
+    local real_file=$($sudo $linux_arg chroot $from_dir readlink -f $symlink)
 
-    # If the above failed, then try to resolve an absolute symlink under the
-    # from_dir.  I'm not sure if this is always kosher.
-    if [ -z "$real_file" ]; then
-        : ${real_file:=$from_dir$(readlink $from_dir$symlink)}
-    fi
-    #echo "symlink:$symlink  real_file:$real_file"
+    # echo -e "    symlink: $symlink\n  real_file: $real_file"
 
     # If it was not really a symlink then just copy and return
     if [ -z "$real_file" -o "$real_file" = "$symlink" ]; then
         local dest_file=$dest_dir/$(basename $symlink)
-        test -e $dest_file || pretend cp "$symlink" $dest_file
+        test -e $dest_file || pretend cp "$from_dir$symlink" "$dest_file" \
+            || fatal "Failed to copy:\n  %s -->\n  %s" "$from_dir$symlink" "$dest_file"
         return
     fi
 
     # Otherwise, copy the file and then make a relative symlink to it
     local dest_file=$dest_dir/$(basename $real_file)
-    test -e $dest_file || pretend cp -a $real_file $dest_file
+    test -e $dest_file || pretend cp -a "$from_dir$real_file" "$dest_file" \
+        || fatal "Failed to copy:\n  %s -->\n  %s" "$from_dir$real_file" "$dest_file"
 
-    local sym_dest=$(basename $real_file)
+    local sym_targ=$(basename $real_file)
     local sym_sorc=$dest_dir/$(basename $symlink)
-    test -e "$sym_sorc" || pretend ln -s $sym_dest $sym_sorc
+    test -e "$sym_sorc" || pretend ln -s $sym_targ $sym_sorc \
+        || fatal "Failed to create symlink at:\n  %s" "$sym_sorc"
 }
 
 #------------------------------------------------------------------------------
