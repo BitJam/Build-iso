@@ -87,8 +87,8 @@ main() {
 
     local SHIFT SHORT_STACK="cCefFhnpqtv"
 
-    local sudo
-    [ "$UID" = 1 ] || sudo=sudo
+    local SUDO
+    [ "$UID" = 1 ] || SUDO=sudo
 
     read_params "$@"
     shift $SHIFT
@@ -159,8 +159,8 @@ main() {
 
         local raw_libs
         if [ -n "$FROM_DIR" ]; then
-            local linux_arg=$(get_linux_arg "$from_prog")
-            raw_libs=$($sudo $linux_arg chroot "$FROM_DIR" /usr/bin/ldd $abs_prog)
+            local LINUX_ARG=$(get_linux_arg "$from_prog")
+            raw_libs=$($SUDO $LINUX_ARG chroot "$FROM_DIR" /usr/bin/ldd $abs_prog)
         else
             raw_libs=$(ldd $abs_prog)
         fi
@@ -203,7 +203,7 @@ copy_symlink() {
 
     # This works for relative symlinks and absolute symlinks that are also
     # exist on the host
-    local real_file=$($sudo $linux_arg chroot $from_dir readlink -f $symlink)
+    local real_file=$($SUDO $LINUX_ARG chroot $from_dir readlink -f $symlink)
 
     # echo -e "    symlink: $symlink\n  real_file: $real_file"
 
