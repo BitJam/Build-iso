@@ -272,7 +272,7 @@ do_clean() {
 }
 
 #------------------------------------------------------------------------------
-# Show dolt values of our environment variables
+# Show default values of our environment variables
 #------------------------------------------------------------------------------
 do_show() {
     printf "%s environment variables\n" "$ME"
