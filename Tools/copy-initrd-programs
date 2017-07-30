@@ -110,7 +110,7 @@ main() {
     : ${TO_DIR:=.}
 
 
-    [ "$CREATE" ] && my_mkdir "$TO_DIR"
+    [ "$CREATE" ] && mkdir -p "$TO_DIR"
     test -e "$TO_DIR" || fatal "The --to directory %s does not exist.  Use --create to have it created" "$TO_DIR"
 
     local bin_dir=$TO_DIR/$BIN_SUBDIR  lib_dir=$TO_DIR/$LIB_SUBDIR
