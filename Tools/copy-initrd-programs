@@ -24,7 +24,7 @@ into the /bin and /lib directories of the initrd.
 Options:
     -C --clean         Remove existing libraries and programs
     -c --create        Create the --to directory if it doesn't exist
-    -e --encrypt       Add cryptsetup and demsetup to built-in list of programs 
+    -e --encrypt       Add cryptsetup to built-in list of programs
     -f --from=<dir>    get libs and programs from under <dir>
     -F --force         Skip missing programs
     -h --help          Show this usage
