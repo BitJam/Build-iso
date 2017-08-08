@@ -1273,10 +1273,31 @@ Eth0_entry
         $SUDO chmod a-wx $ofile
     done
 
+    local bc_fw_bin=$sqfs_dir/lib/firmware/brcm/brcmfmac4350-pcie.bin
+    local bc_fw_txt=${bc_fw_bin%.bin}.txt
+    local bc_fw_name=$(basename $bc_fw_bin)
+
+    if test -e $bc_fw_bin && ! test -e $bc_fw_txt; then
+        say "Linking to $(pq $bc_fw_name)"
+        $SUDO ln -s $bc_fw_name $bc_fw_txt
+    fi
+
     local vim_bin=$sqfs_dir/usr/bin/vim
     if [ -x $vim_bin.tiny -a ! -e $vim_bin ]; then
         say "Making /usr/bin/vim symlink to vim.tiny"
         $SUDO ln -s vim.tiny $vim_bin
+    fi
+
+    local cli_cc_prog=antiX-cli-cc
+    if test -x $sqfs_dir/usr/local/bin/$cli_cc_prog; then
+        local dir file
+        for dir in /root /etc/skel; do
+            file=$sqfs_dir$dir/.bash_history
+            #$SUDO test -e $file && continue
+
+            say "Putting command line control centre into Bash history in $(pq $dir)"
+            echo $cli_cc_prog | $SUDO tee $file >/dev/null
+        done
     fi
 
     leave_stage
