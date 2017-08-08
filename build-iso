@@ -1298,6 +1298,9 @@ Eth0_entry
             say "Putting command line control centre into Bash history in $(pq $dir)"
             echo $cli_cc_prog | $SUDO tee $file >/dev/null
         done
+    else
+        # Make sure root's history is either clobbered (above) or erased
+        $SUDO rm -f $sqfs_dir/root/.bash_history
     fi
 
     leave_stage
