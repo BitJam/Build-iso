@@ -1259,8 +1259,8 @@ iface eth0 inet dhcp
 Eth0_entry
     fi
 
-    local cached=$sqfs_dir/etc/console-setup/cached
-    if [ -n "$(ls $cached* 2>/dev/null)" ]; then
+    local cached=$sqfs_dir/etc/console-setup/cached_setup_keyboard.sh
+    if test -e $cached; then
         say "Removing console-setup cached files"
         $SUDO rm $cached*
     fi
