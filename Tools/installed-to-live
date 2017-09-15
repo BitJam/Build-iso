@@ -51,7 +51,6 @@ LIVE_FILE_LIST="
 /etc/init.d/debian/*
 /etc/init.d/gpm
 /etc/init.d/hwclock.sh
-/etc/init.d/keyboard-setup
 /etc/init.d/keyboard-setup.sh
 /etc/init.d/console-setup.sh
 /etc/init.d/sendsigs
@@ -70,17 +69,19 @@ LIVE_FILE_LIST="
 
 GENERAL_LIVE_FILE_LIST="
 /etc/adjtime
-/etc/default/console-setup
-/etc/default/grub
-/etc/default/keyboard
-/etc/default/locale
+/etc/default/*
+/etc/dhcp/dhclient.conf
+/etc/dnsmasq.conf
 /etc/hostname
+/etc/init.d/ifplugd
+/etc/init.d/networking
 /etc/kbd/config
 /etc/lightdm/lightdm.conf
 /etc/modprobe.d/*
 /etc/network/interfaces
 /etc/network/interfaces.d/*
 /etc/slim.conf
+/lib/udev/ifupdown-hotplug
 "
 
 usage() {
