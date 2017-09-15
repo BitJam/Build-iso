@@ -1242,6 +1242,9 @@ do_stage_5() {
     say "Delete $(pq /etc/mtab)"
     $SUDO rm -f $sqfs_dir/etc/mtab
 
+    say "Customize configuration"
+    copy_template_dir -o custom-config-files $sqfs_dir
+
     #collect_live_files $live_files_list /usr/local/share/live-files
     say "Save Live files for snapshot"
 
@@ -3509,11 +3512,13 @@ get_template_file() {
 # Copy Template/COMMON/from_dir/* to to_dir/ and then
 # copy Template/$FLAV/from_dir/* to to_dir/
 # Option -u means copy as normal user.
+#
+# Option -o means only copy if the original file already exists
 #------------------------------------------------------------------------------
 copy_template_dir() {
-    local sudo=$SUDO
-    [ $1 == "-u" ] && sudo="" && shift;
-
+    local sudo=$SUDO  only_overwrite
+    [ $1 == "-u" ] && sudo="" && shift ;
+    [ $1 == "-o" ] && only_overwrite=true && shift ;
     local from=$1 dest=$2
     [ -z "$from" -o -z "$dest" ] \
         && fatal "Missing or empty args for copy_template_dir($from, $dest)"
@@ -3525,9 +3530,26 @@ copy_template_dir() {
     for flav in COMMON $RESPIN_INHERIT $FLAV; do
         local dir=$template/$flav/$from
         [ -d $dir ] || continue
-        say "Copy from Template: $(pq $flav/$from)"
-        $sudo cp -R --preserve=link,mode $dir/* $dest/
+        if [ "$only_overwrite" ]; then
+            say "Only overwrite from Template: $(pq $flav/$from)"
+            only_overwrite $dir $dest
+        else
+            say "Copy from Template: $(pq $flav/$from)"
+            $sudo cp -R --preserve=link,mode $dir/* $dest/
+        fi
     done
+}
+
+only_overwrite() {
+    local from_dir=$1  dest_dir=$2  from  dest
+    while read from; do
+        dest=$dest_dir${from#$from_dir}
+        test -f $dest || continue
+        echo "  --> ${dest#$dest_dir}"
+        $sudo cp -d $from $dest
+    done<<Only_Overwrite
+$(find $from_dir -type f -o -type l)
+Only_Overwrite
 }
 
 update_add_remove_lists() {
