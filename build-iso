@@ -2767,7 +2767,7 @@ elapsed() {
 # create_cache  type subtype dir
 # restore_cache type subtype dir
 #
-# Each cache is identified by "type-subtupe".  The purpse of this split is to
+# Each cache is identified by "type-subtype".  The purpose of this split is to
 # allow the user to turn caching on and off by type although right now the
 # only type is "debootstrap".
 #
