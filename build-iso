@@ -1145,6 +1145,12 @@ do_stage_4() {
         end_part_strict
     fi
 
+    local partial_dir=/var/cache/apt/archives/partial
+    say "Fix $(pq $partial_dir) directory"
+    mkdir -p $partial_dir
+    chown _apt:root -R $partial_dir
+    chmod 700 $partial_dir
+
     local update_cmd=updatedb
     say "Run $update_cmd"
     sudo echo 3 > /proc/sys/vm/drop_caches
