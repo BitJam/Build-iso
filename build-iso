@@ -1391,6 +1391,10 @@ Bootloader_Data
     # (7) Enabled "Save" menu on syslinux side only
     sed -r -i "/key\.F.=save/ s/^\s*;+\s*//" $syslinux_cpio/gfxboot.cfg
 
+    # (7.1) add ask+save entry to syslinux console menu
+    local con_menu=$syslinux_cpio/console.men
+    grep "ask+save" $con_menu || echo "ask+save \`vga=ask+save" >> $con_menu
+
     # (8) Create/update text (UEFI) desktop menu based on menu in isolinux cpio archive
     local desktop_men=$isolinux_cpio/desktop.men
     if test -e $desktop_men; then
