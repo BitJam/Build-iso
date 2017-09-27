@@ -1493,7 +1493,7 @@ Bootloader_Data
 
     say "Initializing random number generator"
     local seed_file=$iso_dir/antiX/$seed_fname
-    dd if=/dev/urandom of=$seed_file bs=1 count=512
+    dd status=none if=/dev/urandom of=$seed_file bs=1 count=512
 
     leave_stage
 }
@@ -2331,7 +2331,7 @@ write_version_files() {
 
     echo "$fancy_name" > $prefix/etc/antix-version
 
-    local rstring=$(dd if=/dev/urandom bs=1 count=40 2>/dev/null | md5sum | cut -d" " -f1)
+    local rstring=$(dd status=none if=/dev/urandom bs=1 count=40 2>/dev/null | md5sum | cut -d" " -f1)
     local kernels=$K_NAME
     [ "$K_NAME2" ] && kernels="$kernels $K_NAME2"
     local title=$LINUXFS_TITLE
