@@ -1520,12 +1520,12 @@ do_stage_7() {
     local linuxfs_file=$iso_dir/antiX/linuxfs
     rm -f $linuxfs_file
 
-    local arg
-
     start_timer
     #                                                    262144 = 0x40000
     #$SUDO mksquashfs $sqfs_dir $linuxfs_file -comp xz -b 262144 $arg
-    $SUDO mksquashfs $sqfs_dir $linuxfs_file -comp xz -Xbcj x86 $arg
+    #$SUDO mksquashfs $sqfs_dir $linuxfs_file -comp xz -Xbcj x86
+    cmd $SUDO mksquashfs $sqfs_dir $linuxfs_file -comp xz -Xbcj x86
+
     local size=$(du_size $linuxfs_file)
     end_timer "create $(pqn $size) squashfs file"
     md5sum_file $linuxfs_file
@@ -2927,6 +2927,13 @@ fatal()  {
 }
 
 
+#------------------------------------------------------------------------------
+# echo a command to the sceeen and the log file then run it
+#------------------------------------------------------------------------------
+cmd() {
+    _say_ " > $*"
+    "$@"
+}
 #------------------------------------------------------------------------------
 # plural cnt string
 # Do simple substition on <string> to match the <cnt>.  May need more entries
