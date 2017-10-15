@@ -63,8 +63,14 @@ LIVE_FILE_LIST="
 /etc/skel/.jwm/menu
 /etc/skel/Desktop/Installer.desktop
 /etc/udev/rules.d/90-fstab-automount.rules
-/etc/udev/rules.d/92-console-font.rules
+/lib/udev/rules.d/92-console-font.rules
 /usr/share/applications/mx/minstall.desktop
+/usr/share/applications/antix/minstall.desktop
+/usr/share/applications/antix/antixsources.desktop
+/usr/share/applications/antix/persist-config.desktop
+/usr/share/applications/antix/persist_setup.desktop
+/usr/share/applications/antix/persist_save.desktop
+/usr/share/applications/antix/remaster.desktop
 "
 
 GENERAL_LIVE_FILE_LIST="
