@@ -9,6 +9,9 @@ ME=${0##*/}
 : ${DEFAULT_PROG_LIST:=ntfs-3g eject}
 : ${ENCRYPT_PROG_LIST:=cryptsetup}
 
+
+X86_64_DIR=/lib/x86_64-linux-gnu
+
 VAR_LIST="PATH_LIST BIN_SUBDIR LIB_SUBDIR DEFAULT_PROG_LIST ENCRYPT_PROG_LIST"
 
 #PRETEND=true
@@ -188,6 +191,14 @@ main() {
         #echo $ld_linux
 
         local ld_dir=$TO_DIR$(dirname "$ld_linux")
+        echo "ld_linux: $ld_linux"
+        if [ "${ld_dir##*/}" = lib64 ]; then
+            my_mkdir "$ld_dir"
+            pretend cp -a $FROM_DIR$ld_linux $ld_dir
+
+            ld_dir=${ld_dir%/lib64}$X86_64_DIR
+        fi
+        echo ld_dir: $ld_dir
         my_mkdir "$ld_dir"
         copy_symlink "$FROM_DIR" "$ld_linux" "$ld_dir"
 
@@ -260,12 +271,12 @@ do_clean() {
     done
 
     local lib
-    for lib in $to_dir/lib*/{lib,ld}*.so*; do
+    for lib in $to_dir/lib*/{lib,ld}*.so*  $to_dir/$X86_64_DIR/ld-*.so*; do
         [ -e "$lib" -o -L "$lib" ] && pretend rm -f "$lib"
     done
 
     local dir
-    for dir in $to_dir/lib*/ $bin_dir; do
+    for dir in $to_dir/lib*/ $bin_dir $to_dir$X86_64_DIR; do
         test -d "$dir" || continue
         [ -z "$(ls -A "$dir" 2>/dev/null)" ] && pretend rmdir "$dir"
     done
