@@ -464,13 +464,14 @@ do_timezone() {
     echo "$tz" > $etc_dir/timezone
 
     local real_localtime=$REAL_ROOT/etc/localtime
-    if test -f $real_localtime; then
+    if test -L $real_localtime; then
+        :
+
+    elif test -f $real_localtime; then
         cp $(readlink -f $zone_file) $etc_dir/localtime
 
-    elif test -l $real_localtime; then
-        :
     else
-        error "Could not file: $real_localtime"
+        error "Could not find file: $real_localtime"
     fi
 
     bind_mount_template "$tz_dir"  "$BIND_ROOT" "$REAL_ROOT"
@@ -659,6 +660,11 @@ bind_mount_template() {
                 pretend rm -f "$orig"
             fi
         else
+            # Can't bind mount to a symlink
+            if test -L "$orig"; then
+                error "Won't bind mount symlink: $orig"
+                continue
+            fi
             # Normal files -- bind mount template file, mkdir and touch if needed
             touch_file "$targ" "$orig"
             is_mounted "$targ" && error "File $targ is already mounted"
