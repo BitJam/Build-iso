@@ -1125,6 +1125,8 @@ do_stage_4() {
         skip_part 19 "Update SLiM defaults"
     fi
 
+    make_real /etc/localtime
+
     say "Customize Mozilla Browser"
     customize_firefox $LOCALE
 
@@ -3650,6 +3652,19 @@ md5sum_file() {
     (cd $dir && md5sum $file > $file.md5)
 }
 
+#------------------------------------------------------------------------------
+#
+#------------------------------------------------------------------------------
+make_real() {
+    local file=$1
+    test -L $file || return
+    local dest=$(readlink -f $file)
+    test -f "$dest" || return
+    say "Convert symlink $file to a real file"
+    local tmp=$(mktemp $file.XXXXXXXX)
+    cp $dest $tmp
+    mv $tmp $file
+}
 
 #==============================================================================
 # One off routines to update the template due to name changes, etc
