@@ -453,26 +453,26 @@ do_timezone() {
     read_conf_file $conf_file
 
     local zone_file=$REAL_ROOT/usr/share/zoneinfo/$tz
+
     if ! test -e "$zone_file"; then
         error "Invalid timezone: $tz"
         return
     fi
 
+    real_zone=$(readlink -f "$zone_file")
+    if ! test -f "$real_zone"; then
+        error "Invalid zoneinfo file: $real_zone"
+        return
+    fi
+
+    make_real $REAL_ROOT/etc/localtime
+
     local tz_dir=$work_dir/tz
     local etc_dir=$tz_dir/etc
     mkdir -p $etc_dir
+
     echo "$tz" > $etc_dir/timezone
-
-    local real_localtime=$REAL_ROOT/etc/localtime
-    if test -L $real_localtime; then
-        :
-
-    elif test -f $real_localtime; then
-        cp $(readlink -f $zone_file) $etc_dir/localtime
-
-    else
-        error "Could not find file: $real_localtime"
-    fi
+    cp $real_zone $etc_dir/localtime
 
     bind_mount_template "$tz_dir"  "$BIND_ROOT" "$REAL_ROOT"
 }
@@ -889,6 +889,16 @@ read_conf_file() {
     . $conf_file
 
     return 0
+}
+
+make_real() {
+    local file=$1
+    test -L $file || return
+    local dest=$(readlink -f $file)
+    test -f "$dest" || return
+    local tmp=$(mktemp $file.XXXXXXXX)
+    cp $dest $tmp
+    mv $tmp $file
 }
 
 random_hex_32() {
