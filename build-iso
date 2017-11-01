@@ -1125,8 +1125,6 @@ do_stage_4() {
         skip_part 19 "Update SLiM defaults"
     fi
 
-    make_real /etc/localtime
-
     say "Customize Mozilla Browser"
     customize_firefox $LOCALE
 
