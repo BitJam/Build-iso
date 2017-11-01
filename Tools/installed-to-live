@@ -447,12 +447,18 @@ do_repo() {
     bind_mount_template "$repo_dir"  "$BIND_ROOT" "$REAL_ROOT"
 }
 
+
+#------------------------------------------------------------------------------
+#
+#------------------------------------------------------------------------------
 do_timezone() {
     local conf_file=$1  work_dir=$2  tz=$3
 
     read_conf_file $conf_file
 
     local zone_file=$REAL_ROOT/usr/share/zoneinfo/$tz
+    local local_file=$REAL_ROOT/etc/localtime
+    local tz_file=$REAL_ROOT/etc/timezone
 
     if ! test -e "$zone_file"; then
         error "Invalid timezone: $tz"
@@ -465,14 +471,24 @@ do_timezone() {
         return
     fi
 
-    make_real $REAL_ROOT/etc/localtime
+    local orig_tz=$(cat $tz_file 2>/dev/null)
+
+    # If the timezone is already set to what we want then do nothing
+    if [ "$tz" = "$orig_tz" ]; then
+        return
+    fi
 
     local tz_dir=$work_dir/tz
     local etc_dir=$tz_dir/etc
     mkdir -p $etc_dir
 
+    # Always bindmount the timezone file (when needed)
     echo "$tz" > $etc_dir/timezone
-    cp $real_zone $etc_dir/localtime
+
+    # If localtime is a real file then do the bindmount trick
+    if ! test -L $local_file; then
+        cp $local_file $etc_dir/localtime
+    fi
 
     bind_mount_template "$tz_dir"  "$BIND_ROOT" "$REAL_ROOT"
 }
