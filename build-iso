@@ -3,7 +3,7 @@
 #==============================================================================
 # build-iso: Build antiX liveCD/USB isos from scratch using debootstrap.
 #
-# Copyright 2012 -- 2015
+# Copyright 2012 -- 2019
 #     BitJam and anticapitalista for antiX <antiX@operamail.com>
 #==============================================================================
 
