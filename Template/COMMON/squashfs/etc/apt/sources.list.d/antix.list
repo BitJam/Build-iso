@@ -1,3 +1,9 @@
-# Use with Debian Stable/Jessie repositories. Set as default for antiX-16.
-deb http://antix.daveserver.info/jessie jessie main nosystemd 
-#deb http://antix.daveserver.info/testing testing main nosystemd  
+# Use with Debian Stable/stretch repositories. Set as default for antiX-17. Note new repos
+deb http://repo.antixlinux.com/stretch stretch main nosystemd nonfree dev
+#deb http://it.mxrepo.com/antix/stretch/ stretch main nosystemd nonfree dev
+
+# Use with Debian Testing repositories. 
+#deb http://repo.antixlinux.com/testing testing main nosystemd nonfree 
+
+# Use with Debian Sid repositories. 
+#deb http://repo.antixlinux.com/sid sid main nosystemd nonfree 

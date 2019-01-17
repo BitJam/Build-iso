@@ -41,7 +41,8 @@ usr/share/applications/luckybackup-kde-su.desktop
 usr/share/applications/ndisgtk-kde.desktop
 usr/share/applications/synaptic-kde.desktop
 usr/share/applications/synaptic.desktop
-usr/share/applications/gufw.desktop 
+#usr/share/applications/xfburn.desktop
+#usr/share/applications/gufw.desktop 
 usr/share/applications/vim.desktop
 usr/share/icons/*/icon-theme.cache 
 usr/share/icons/BRIT-ICONS/icon-theme.cache
@@ -57,6 +58,8 @@ usr/share/icewm/themes/warp3
 usr/share/icewm/themes/warp4
 usr/share/icewm/themes/win95
 usr/share/icewm/themes/yellowmotif
+#usr/share/icewm/themes/default
+usr/share/icewm/icewm-set-gnomewm
 usr/share/fluxbox/styles/arch
 usr/share/fluxbox/styles/Bity_fluxbox
 usr/share/fluxbox/styles/bloe
@@ -90,9 +93,11 @@ usr/share/wallpapers/*
 tmp/*
 boot/*.old-dkms
 #systemd crud
-#etc/systemd
-#lib/systemd
-#usr/lib/x86_64-linux-gnu/systemd
-#var/lib/systemd
-
+etc/systemd
+lib/systemd
+usr/lib/systemd
+usr/lib/x86_64-linux-gnu/systemd
+usr/lib/i386-linux-gnu/systemd
+var/lib/systemd
+etc/init
 

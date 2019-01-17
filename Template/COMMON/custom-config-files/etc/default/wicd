@@ -1,0 +1,8 @@
+# Start the daemon by default, let the user disable it.
+# Use "no" (without quotes) to make /etc/init.d/wicd *NOT* start the WICD daemon.
+START_DAEMON=no
+
+# By default don't kill connections on daemon shutdown, see
+# https://bugs.debian.org/816076 and
+# https://bazaar.launchpad.net/~wicd-devel/wicd/experimental/revision/851
+DAEMON_ARGS="--keep-connection"

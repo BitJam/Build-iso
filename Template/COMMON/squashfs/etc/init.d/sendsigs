@@ -13,6 +13,8 @@ PATH=/sbin:/usr/sbin:/bin:/usr/bin
 
 . /lib/lsb/init-functions
 
+PROTECT_LIST="^(mount.|ntfs-3g|lowntfs-3g|wpa_supplicant|udevd|systemd-udevd)"
+
 # Make it possible to see who the misbehaving processes are
 report_unkillable() {
 	if [ -x /usr/bin/pstree ] ; then
@@ -38,12 +40,16 @@ do_stop () {
 
 	OMITPIDS=
 
+    local pid
+    for pid in $(pgrep "$PROTECT_LIST"); do
+        OMITPIDS="$OMITPIDS${OMITPIDS:+ }-o $pid"
+    done
+
 	for omitfile in /run/sendsigs.omit; do
-		if [ -e $omitfile ]; then
-			for pid in $(cat $omitfile); do
-				OMITPIDS="${OMITPIDS:+$OMITPIDS }-o $pid"
-			done
-		fi
+		[ -e $omitfile ] || continue
+		for pid in $(cat $omitfile); do
+			OMITPIDS="${OMITPIDS:+$OMITPIDS }-o $pid"
+		done
 	done
 
 	# Load sendsigs.omit.d/packagename files too, to make it
@@ -78,6 +84,7 @@ do_stop () {
 
 	# Kill all processes.
 	log_action_begin_msg "Asking all remaining processes to terminate"
+
 	killall5 -15 $OMITPIDS # SIGTERM
 	log_action_end_msg 0
 	alldead=""

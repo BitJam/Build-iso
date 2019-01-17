@@ -2,8 +2,7 @@
 #deb http://deb.opera.com/opera/ stable non-free
 
 # virtualbox
-#deb http://download.virtualbox.org/virtualbox/debian jessie contrib
+#deb http://download.virtualbox.org/virtualbox/debian stretch contrib
 
-# liquorix kernels
+# liquorix kernel
 #deb http://liquorix.net/debian/ sid main
-

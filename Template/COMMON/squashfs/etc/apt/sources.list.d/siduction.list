@@ -1,5 +1,0 @@
-#siduction 
-#deb http://packages.siduction.org/extra unstable main
-#deb-src http://packages.siduction.org/extra unstable main 
-#deb http://packages.siduction.org/fixes unstable main contrib non-free
-#deb-src http://packages.siduction.org/fixes unstable main contrib non-free
