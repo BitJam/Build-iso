@@ -433,7 +433,7 @@ do_stage_0() {
     pick_prog MAKE_ISO $MAKE_ISO_PROGS
     pick_prog GZIP     $GZIP_PROGS
 
-    require_programs chroot debootstrap isohybrid mksquashfs md5sum sudo tee \
+    require_programs chroot debootstrap isohybrid mksquashfs md5sum sudo tee zsync \
         pkill column expand strings iconv
 
     mkdir -p $output_dir || my_exit
@@ -959,6 +959,10 @@ do_stage_4() {
         else
             error "Missing or unknown cursor icon theme $(pqw $CURSOR_ICON_THEME)"
         fi
+
+	say "Reconfigure networking sym links"
+        update-rc.d networking remove
+        update-rc.d networking defaults
         say "Disable bootchart-done"
         update-rc.d "bootchart-done" remove
         end_part_strict
@@ -1086,7 +1090,7 @@ do_stage_4() {
     if do_part 18 "Run second apt-get -f install"; then
 
         if [ "$DEBIAN_RELEASE" != "wheezy" ]; then
-            apt-get $APT_GET_OPTS purge gcc-4.8-base systemd libsystemd0 uuid-runtime
+            apt-get $APT_GET_OPTS purge systemd libsystemd0
         fi
 
         apt-get -f install
@@ -1207,6 +1211,12 @@ do_stage_5() {
     if do_part 21 "!Check kernel's GCC version"; then
         check_kernel_gcc vmlinuz-$K_NAME
         end_part_strict
+    fi
+
+    if [ "$FLAV" = "base" ]; then
+        say "Change flubox and icewm menu-applications files"
+        sudo mv -f $sqfs_dir/usr/share/desktop-menu/.fluxbox/menu-applications-fb $sqfs_dir/usr/share/desktop-menu/.fluxbox/menu-applications
+        sudo mv -f $sqfs_dir/usr/share/desktop-menu/.icewm/menu-applications-ice $sqfs_dir/usr/share/desktop-menu/.icewm/menu-applications
     fi
 
     local f wm
@@ -1515,16 +1525,18 @@ do_stage_7() {
     say "Run updatedb one last time"
     $SUDO chroot $sqfs_dir /usr/bin/updatedb
 
-    say "Build the xz compressed linuxfs file. This takes time and uses a lot of CPU power."
+    say "Update font cache"
+    $SUDO chroot $sqfs_dir fc-cache -r -s -v
+
+    say "Build the $COMPRESSION_TYPE compressed linuxfs file. This takes time and uses a lot of CPU power."
 
     local linuxfs_file=$iso_dir/antiX/linuxfs
     rm -f $linuxfs_file
 
     start_timer
     #                                                    262144 = 0x40000
-    #$SUDO mksquashfs $sqfs_dir $linuxfs_file -comp xz -b 262144 $arg
-    #$SUDO mksquashfs $sqfs_dir $linuxfs_file -comp xz -Xbcj x86
-    cmd $SUDO mksquashfs $sqfs_dir $linuxfs_file -comp xz -Xbcj x86
+    #$SUDO mksquashfs $sqfs_dir $linuxfs_file -comp xz -b 262144
+    $SUDO mksquashfs $sqfs_dir $linuxfs_file $COMPRESSION_TYPE_CODE
 
     local size=$(du_size $linuxfs_file)
     end_timer "create $(pqn $size) squashfs file"
@@ -1587,6 +1599,9 @@ do_stage_8() {
     fi
 
     md5sum_file $full_iso_file
+    sha256sum_file $full_iso_file
+    zsyncmake_file $full_iso_file
+
 
     if [ "$ISO_SYMLINK" -a -L "$ISO_SYMLINK" ];then
         say
@@ -3648,6 +3663,16 @@ update_add_list() {
 md5sum_file() {
     local dir=$(dirname $1) file=$(basename $1)
     (cd $dir && md5sum $file > $file.md5)
+}
+
+sha256sum_file() {
+    local dir=$(dirname $1) file=$(basename $1)
+    (cd $dir && sha256sum $file > $file.sha256)
+}
+
+zsyncmake_file() {
+    local dir=$(dirname $1) file=$(basename $1)
+    (cd $dir && zsyncmake -e $file)
 }
 
 #------------------------------------------------------------------------------
