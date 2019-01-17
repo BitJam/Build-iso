@@ -11,12 +11,12 @@
 # they seldom need to be changed.
 #----------------------------------------------------------------------
 
-    APT_GET_OPTS="-q -y --force-yes -o DPkg::Options::=--force-confold"
+    APT_GET_OPTS="-q -y -o DPkg::Options::=--force-confold"
            CACHE="debootstrap,chroot"
     CACHE_EXPIRE="7"
 
 # Fixed amount plus X times number of packages. Both in units of 100K.
-      TMPFS_SIZE="2500 + 70"
+      TMPFS_SIZE="3000 + 80"
 
   MAKE_ISO_PROGS="xorriso mkisofs genisoimage"
       GZIP_PROGS="pigz gzip"
