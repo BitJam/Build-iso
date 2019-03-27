@@ -1429,8 +1429,8 @@ Bootloader_Data
         sed -i "s/16x16.fnt/16x16aa.fnt/"  $isolinux_cpio/gfxboot.cfg $syslinux_cpio/gfxboot.cfg
     fi
 
-    say "Make efi.img"
-    $SUDO $tools/make-efi-img $iso_dir "$DISTRO_NAME-uefi"
+    # say "Make efi.img"
+    # $SUDO $tools/make-efi-img $iso_dir "$DISTRO_NAME-uefi"
 
     repack_gfx_cpio isolinux $isolinux_cpio
     repack_gfx_cpio syslinux $syslinux_cpio
