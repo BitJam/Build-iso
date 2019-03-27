@@ -1437,6 +1437,12 @@ Bootloader_Data
 
     echo "$fancy_name" > $iso_dir/version
 
+    local sneaky=".disk"
+    say "Add sneaky $sneaky/ directory"
+    mkdir -p $iso_dir/$sneaky
+    cp $iso_dir/version $iso_dir/$sneaky/info
+
+
     if [ -z "$iso_only" ]; then
         # Copy the kernel from the squashfs
         say "Copy kernel $(pq $K_NAME) to $(pq vmlinuz) in iso directory"
