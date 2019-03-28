@@ -1577,7 +1577,7 @@ do_stage_8() {
     say "Using $(pq $(basename $MAKE_ISO)) to make iso file"
     if [ -z "${MAKE_ISO%%*xorriso}" ]; then
         $SUDO chown -R root:root $iso_dir
-        make_uefi_iso "$MAKE_ISO -as mkisofs" "-e" $file_dir
+        make_xorriso_iso $MAKE_ISO $file_dir
         $SUDO chown -R $UID $iso_dir
 
     elif has_option $MAKE_ISO -e; then
@@ -2304,6 +2304,26 @@ make_uefi_iso() {
     $cmd 2>&1 || error "iso file creation failed"
     isohybrid --uefi $file
 }
+
+make_xorriso_iso() {
+    local prog=$1 file=$2  dir=$3
+    local label="$DISTRO_NAME-Live"
+    local opts_1="-hfsplus on -as mkisofs -quiet -l"
+
+    local opts_2="-R -J -iso-level 3 -pad -partition_cyl_align on"
+    opts_2="$opts_2 -c boot/isolinux/isolinux.cat"
+    opts_2="$opts_2 -b boot/isolinux/isolinux.bin"
+    opts_2="$opts_2 -no-emul-boot -boot-load-size 4 -boot-info-table"
+    opts_2="$opts_2 -eltorito-alt-boot -e boot/grub/efi.img -no-emul-boot"
+    opts_2="$opts_2 -isohybrid-apm-hfsplus -isohybrid-gpt-basdat"
+
+    cmd="$prog $(echo $opts_1) -V $label $(echo $opts_2) -o $file $dir"
+    echo $cmd
+
+    $cmd 2>&1 || error "iso file creation failed"
+    isohybrid --uefi $file
+}
+
 
 unpack_gfx_cpio() {
     local type=$1  dir=${2:-$work_dir/$1-cpio}  file=${3:-$iso_dir/boot/$1/gfx-cpio}
