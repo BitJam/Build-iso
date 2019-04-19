@@ -363,7 +363,7 @@ do_start() {
         [ -z "$FORCE" ] && fatal "bind-root: $BIND_ROOT is already a mount point"
 
     else
-        mount --bind $REAL_ROOT $BIND_ROOT
+        mount --bind --make-slave $REAL_ROOT $BIND_ROOT
     fi
 
     write_conf_file $conf_file
