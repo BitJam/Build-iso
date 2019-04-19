@@ -19,6 +19,6 @@
       TMPFS_SIZE="3000 + 80"
 
   MAKE_ISO_PROGS="xorriso mkisofs genisoimage"
-      GZIP_PROGS="pigz gzip"
+      GZIP_PROGS="gzip"
   DUMMY_SERVICES="initctl invoke-rc.d restart start stop start-stop-daemon service"
        PS_FORMAT="pid,user,etimes,args"
