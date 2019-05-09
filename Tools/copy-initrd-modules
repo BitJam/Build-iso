@@ -54,6 +54,7 @@ ehci-pci
 ext2
 ext3
 ext4
+f2fs
 fat
 fotg210-hcd
 fusbh200-hcd
