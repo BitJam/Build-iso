@@ -64,6 +64,7 @@ hid-apple
 hid-belkin
 hid-cherry
 hid-generic
+hid-hyperv
 hid-lenovo-tpkbd
 hid-logitech
 hid-logitech-dj
@@ -71,6 +72,9 @@ hid-logitech-hidpp
 hid-microsoft
 hid-monterey
 hid-samsung
+hv_netvsc
+hyperv-keyboard
+hyperv_fb
 isofs
 jbd
 jbd2
@@ -87,6 +91,7 @@ nvme
 ohci-hcd
 ohci-pci
 overlay
+pci-hyperv
 pcie-aspm
 printk
 pstore
