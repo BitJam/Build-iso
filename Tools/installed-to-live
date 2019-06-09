@@ -47,13 +47,15 @@ LIVE_FILE_LIST="
 /etc/fstab
 /etc/grub.d/*
 /etc/init.d/checkfs.sh
+/etc/init.d/console-setup.sh
 /etc/init.d/cron
 /etc/init.d/debian/*
 /etc/init.d/gpm
 /etc/init.d/hwclock.sh
 /etc/init.d/keyboard-setup.sh
-/etc/init.d/console-setup.sh
 /etc/init.d/sendsigs
+/etc/init.d/slim
+/etc/init.d/udev
 /etc/init.d/umountfs
 /etc/issue
 /etc/rc.local
