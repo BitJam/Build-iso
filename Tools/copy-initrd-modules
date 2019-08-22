@@ -113,6 +113,8 @@ usb-storage
 usbcore
 usbhid
 usbmon
+virtio-blk
+virtio-pci
 vfat
 vmd
 whc-rc
