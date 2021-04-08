@@ -115,15 +115,15 @@ Options:
   -b --bootload-dir=<dir>    Directory under which we find bootloaders,
                                ignoring <iso-dir>
   -c --color                 Set color scheme to: off|low|low2|bw|dark|high
-  -d --data=<file>           File containing file-in-the-blank data
+  -d --data=<file>           File containing fill-in-the-blank data
   -D --distro=<distro>       Either antiX or MX
   -h --help                  Show this usage then exit
-  -i --iso-dir=<dir>         Kernels and initrd under <iso-dir>antiX/
+  -i --iso-dir=<dir>         Kernels and initrd under <iso-dir>/antiX/
                              Bootloaders under <iso-dir>/boot/
   -k --kernel-dir=<dir>      Explicitly set directory to find kernels in
-                               ignoring iso-dir>
+                               ignoring <iso-dir>
   -l --live                  Assume we are updating a running live system
-  =L --live-usb=<dir>        Modify a live-usb mounted at <dir>
+  -L --live-usb=<dir>        Modify a live-usb mounted at <dir>
   -m --MX                    Set distro to MX
   -n --no=<list>             Skip steps:
                              initrd rm-modules isolinux syslinux grub cleanup delete
