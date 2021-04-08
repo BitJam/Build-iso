@@ -729,7 +729,7 @@ read_data() {
     test -e "$file" || fatal "Could not find %s %s" "$type" "$(pqw $DATA_FILE)"
     test -r "$file" || fatal "Can not read %s %s"   "$type" "$(pqw $DATA_FILE)"
     bash -n "$file" || fatal "Bash errors in %s %s" "$type" "$(pqw $DATA_FILE)"
-    eval $(sed -r -n 's/^\s*([A-Z0-9_]+=[^$`]+)$/\1/p' "$file")
+    eval $(sed -r -n 's/^\s*([A-Z0-9_]+=[^$`;]+)$/\1/p' "$file")
 }
 
 #------------------------------------------------------------------------------
