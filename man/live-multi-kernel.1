@@ -152,19 +152,19 @@
 .SH "OPTIONS"
 .IX Header "OPTIONS"
 .Vb 10
-\& \-a \-\-antiX                 Set distro to antiX
+\&  \-a \-\-antiX                 Set distro to antiX
 \&  \-b \-\-bootload\-dir=<dir>    Directory under which we find bootloaders,
 \&                               ignoring <iso\-dir>
 \&  \-c \-\-color                 Set color scheme to: off|low|low2|bw|dark|high
-\&  \-d \-\-data=<file>           File containing file\-in\-the\-blank data
+\&  \-d \-\-data=<file>           File containing fill\-in\-the\-blank data
 \&  \-D \-\-distro=<distro>       Either antiX or MX
 \&  \-h \-\-help                  Show this usage then exit
-\&  \-i \-\-iso\-dir=<dir>         Kernels and initrd under <iso\-dir>antiX/
+\&  \-i \-\-iso\-dir=<dir>         Kernels and initrd under <iso\-dir>/antiX/
 \&                             Bootloaders under <iso\-dir>/boot/
 \&  \-k \-\-kernel\-dir=<dir>      Explicitly set directory to find kernels in
-\&                               ignoring iso\-dir>
+\&                               ignoring <iso\-dir>
 \&  \-l \-\-live                  Assume we are updating a running live system
-\&  =L \-\-live\-usb=<dir>        Modify a live\-usb mounted at <dir>
+\&  \-L \-\-live\-usb=<dir>        Modify a live\-usb mounted at <dir>
 \&  \-m \-\-MX                    Set distro to MX
 \&  \-n \-\-no=<list>             Skip steps:
 \&                             initrd rm\-modules isolinux syslinux grub cleanup delete
@@ -184,7 +184,7 @@ more than two kernels but that would require more user input and
 there seems to be little call for it now.
 .PP
 In the build-iso environment you just need to install a 2nd kernel
-package then copy the kernel to \f(CW\*(C`iso/antiX/vmlinuz{,[0\-9]}\*(C'\fR.
+package then copy the kernel to \f(CW\*(C`iso/antiX/vmlinuz{,[0\-9]}\*(C'\fR
 .PP
 Then run Tools/live\-multi\-kernel.  We will update the initrd and
 modify the bootloaders to handle the two kernels.
@@ -196,16 +196,16 @@ Currently the allowed filenames for live kernels are:
 .Ve
 .PP
 You can use any two of these names.  The order the kernels will
-appear is based on the alphabetical order of the kernel names so
+appear is based on the alphabetical order of the kernel names, so
 \&\f(CW\*(C`vmlinux\*(C'\fR comes first followed by \f(CW\*(C`vmlinuz0\*(C'\fR and so on.
 .PP
 We determine the order of the kernel versions with \f(CW\*(C`sort \-V\*(C'\fR.  The
 newest kernel is labeled as \fIModern\fR and the older kernel is
-labeled as \fILegacy\fR.  If you use to kernels that have the same
-\&\f(CW\*(C`uname \-r\*(C'\fR then the lables may be assigned randomly.
+labeled as \fILegacy\fR.  If you use two kernels that have the same
+\&\f(CW\*(C`uname \-r\*(C'\fR then the labels may be assigned randomly.
 .PP
-This allows you to choose whether you want the \fIModern\fR kernel or
-the \fILegacy\fR kernel to come first in the menus simply by the
+This enables you to choose whether you want the \fIModern\fR kernel or
+the \fILegacy\fR kernel to come first in the menus, determined by the
 vmlinuz filenames you use.
 .SH "DETAILS"
 .IX Header "DETAILS"
@@ -216,17 +216,17 @@ By default we update the \fIisolinux\fR, \fIsyslinux\fR, and \fIgrub\fR bootloaa
 blanks based on the current system and the live kernels.
 .SS "Isolinux and Syslinux"
 .IX Subsection "Isolinux and Syslinux"
-The \fIisolinux\fR and \fIsyslinux\fR bootloaders are changed in the same way se
+The \fIisolinux\fR and \fIsyslinux\fR bootloaders are changed in the same way so
 we will only outline \fIisolinux\fR here.
 .PP
-We ues the existing gfx-cpio file as a template.  But we also have a
-\&\f(CW\*(C`back800.jpg\*(C'\fR file in our template director that we use for the background
+We use the existing gfx-cpio file as a template, but we also have a
+\&\f(CW\*(C`back800.jpg\*(C'\fR file in our template directory that we use for the background
 image.  If you want to change the background image then you also need to
 change the image in the template.  There are also template files for the
-top level menu (\f(CW\*(C`isolnux.cfg\*(C'\fR) and for each kenel menu (\f(CW\*(C`kernel0.cfg\*(C'\fR and
+top level menu (\f(CW\*(C`isolinux.cfg\*(C'\fR) and for each kernel menu (\f(CW\*(C`kernel0.cfg\*(C'\fR and
 \&\f(CW\*(C`kernel1.cfg\*(C'\fR).
 .PP
-We end up with 3 config files and 3 cpio files in the c<isolinux> directory:
+We end up with 3 config files and 3 cpio files in the <isolinux> directory:
 .PP
 .Vb 3
 \&        Top Menu:  isolinux.cfg      top\-cpio   
@@ -244,8 +244,8 @@ The \s-1LMK\s0 program uses four sources of informtion
 .IP "The existing bootloaders" 4
 .IX Item "The existing bootloaders"
 We try to use as much of the existing bootloaders as possible.
-For example, we edit the grxboot.cfg instead of providing a
-new onew with the changes we need.
+For example, we edit the gfxboot.cfg instead of providing a
+new one with the changes we need.
 .IP "The bootloader-data file from build-iso" 4
 .IX Item "The bootloader-data file from build-iso"
 This file contains the data needed to customize our live bootloaders
@@ -255,7 +255,7 @@ for the dual kernel bootloaders.
 .IX Item "The two kernels we will boot"
 Currently the user is required to have both kernel packages
 installed and to put both kernels in the live boot directory
-(typically the \f(CW\*(C`/antiX/\*(C'\fR subdirectory with any of the following
+(typically the \f(CW\*(C`/antiX/\*(C'\fR subdirectory) with any of the following
 11 names:
 .Sp
 .Vb 1
@@ -268,15 +268,15 @@ themselves.  The kernel with the lower version number is labeled as
 \&\*(L"Modern\*(R".  We use the \f(CW\*(C`sort \-\-version\-sort\*(C'\fR command to determine
 the version number order.
 .Sp
-The kernel with the vmlinuz{.[0\-9]} filename that is first
+The kernel with the vmlinuz{.[0\-9]} filename which is first
 alphabetically will be the first to show up in the bootloader menus
-regardless of whether it's the \fILegacy\fR or \fIModern\fR kernel.
+regardless of whether it is the \fILegacy\fR or \fIModern\fR kernel.
 .IP "The file system for the live system" 4
 .IX Item "The file system for the live system"
 We need this so we can put the modules from both kernels into a
 single initrd.gz file.
 .PP
-\&\s-1IN\s0 addition, we have our own template directory that contains
+\&\s-1In\s0 addition, we have our own template directory that contains
 templates for the various .cfg files we need and also contains
 a 800x600 background image for the Syslinux family of bootloaders
 (using gfxboot).
@@ -287,9 +287,9 @@ convenience and the settings they provide (mainly where to
 find files) can be manually over-ridden.
 .IP "Build-iso Mode" 4
 .IX Item "Build-iso Mode"
-This is the default.  Its for use while running the build-iso
-program.  After iso/ and sqfs/ have been populated.  Install
-a 2nd kernel package and copy the kernel to iso/antiX using one
+This is the default.  It is for use while running the build-iso
+program, after iso/ and sqfs/ have been populated.  Install
+a 2nd kernel package and copy the kernel to iso/antiX/ using one
 of the vmlinuz names given above.  Then run Tools/live\-multi\-kernel.
 .Sp
 We will use:
@@ -303,9 +303,9 @@ We will use:
 .IP "Live mode (\-\-live option)" 4
 .IX Item "Live mode (--live option)"
 This is for updating to dual kernel on a running live system.
-Again install a kernel package and this time copy the kernel
-to the /live/boot\-dev/antiX/ directory.  You \fIneed\fR to remaster
-after you installed the kernel.
+Again, install a kernel package and this time copy the kernel
+to the /live/boot\-dev/antiX/ directory.  You \fIneed\fR to perform a
+remaster operation after you have installed the kernel.
 .Sp
 We will use:
 .Sp
@@ -354,35 +354,35 @@ automatically.
 .IX Header "Template Directory"
 We also need access to our own template directory.  This should be
 mostly independent of a particular version or release.  Each distro
-has it's one template directory even though most contents are
-similar or identical.   By default we first look for the template
+has its own template directory even though most contents are
+similar or identical.   By default, we first look for the template
 directory at:
 .PP
 .Vb 1
 \&    /usr/share/live\-multi\-kernel/template/$DISTRO/
 .Ve
 .PP
-If that is not found then we look locally at:
+If that is not found, we then look locally at:
 .PP
 .Vb 1
 \&    ./LMK\-Template/$DISTRO/
 .Ve
 .PP
 You can also specify the template location manually with the option
-\&\f(CW\*(C`\-\-template=<dir\*(C'\fR).
+\&\f(CW\*(C`\-\-template=<dir>\*(C'\fR
 .PP
-A template directory typically contains the follow files:
+A template directory typically contains the following files:
 .PP
 These are for setting the position of the title and subtitle on the
 Syslinux gfxboot background imagine and for setting the position of
 the main menu.
 .IP "config" 4
 .IX Item "config"
-This file is optional.  It allows you to adjust almost any setting.
-A example  set of settings would is:
+This file is optional.  It enables you to adjust almost any setting.
+A example  set of settings:
 .Sp
 .Vb 6
-\&    # Subtitle and menu can be relate to previous using leading +/\-.
+\&    # Subtitle and menu can be related to previous using leading +/\-
 \&    TITLE_POS="250,125"
 \&    SUB_TITLE_POS="+0,+30"
 \&    MENU_POS="+0,+30"
@@ -391,7 +391,7 @@ A example  set of settings would is:
 .Ve
 .Sp
 Note that coordinates that begin with \*(L"+\*(R" or \*(L"\-\*(R" are relative to
-the previous coordinates so in the example above the \s-1SUB_TITLE_POS\s0
+the previous coordinates. So, in the example above, the \s-1SUB_TITLE_POS\s0
 will end up being \f(CW\*(C`250,155\*(C'\fR.
 .IP "back800.jpg" 4
 .IX Item "back800.jpg"
@@ -403,7 +403,7 @@ gets added by the \s-1LMK\s0 programs.
 This is the top menu template for the Syslinux bootloaders.
 .IP "kernel0.cfg" 4
 .IX Item "kernel0.cfg"
-The template for the first kernel menu.  Again the first kernel will
+The template for the first kernel menu.  Again, the first kernel will
 be the one with the vmlinuz{.[0\-9]} name that comes first
 alphabetically.
 .IP "kernel1.cfg" 4
@@ -412,10 +412,11 @@ The template for the second kernel menu.
 .IP "grub.cfg" 4
 .IX Item "grub.cfg"
 The template for a dual kernel grub.cfg that is designed to
-fit in and use the antiX/MX live grub configuration designed
+fit within and use the antiX/MX live grub configuration designed
 by fehlix.
 .SH "OPERATION"
 .IX Header "OPERATION"
+  ...
 .SH "LICENSE"
 .IX Header "LICENSE"
 GPLv3
