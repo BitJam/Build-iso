@@ -90,9 +90,6 @@ export TEXTDOMAIN="$ME"
         unpack-initrd
         vmlinuz-version"
 
-
-echo "$PATH" | grep -q "\.Tools\b" || PATH="./Tools:$PATH"
-
 usage() {
     local ret=${1:-0}
 
@@ -221,10 +218,14 @@ main() {
     esac
 
     shout "Starting %s at %s" "$(pqb $ME)" "$(pqb $(date))"
-    set_window_title "$ME $VERSION"
     start_log "$THE_LOG_FILE" "$orig_args"
 
     need_prog $REQUIRED_PROGS
+
+    # Add the Tools/ directory to the path.  This is only needed in build-iso mode
+    case $mode in
+        build-iso) echo "$PATH" | grep -q "\./Tools\b" || PATH="./Tools:$PATH" ;;
+    esac
 
     # Sanity check for skip steps (the --no option)
     local step
