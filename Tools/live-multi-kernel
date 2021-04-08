@@ -276,9 +276,14 @@ main() {
     # Mount the linuxfs file (if needed)  after  we make the WORK_DIR.
     if [[ "$MODE" = "live-usb" && -z "$SQFS_DIR" ]]; then
         SQFS_DIR="$WORK_DIR/sqfs"
-        SUDO=sudo
-        [ $UID -eq 0 ] && SUDO=
-        my_mount_sudo "$KERNEL_DIR/linuxfs" "$SQFS_DIR" -t squashfs -o loop,ro
+        mkdir -p "$SQFS_DIR"
+
+        # Only mount the linuxfs file if we are going to use what's in it
+        if [[ -z "$DATA_FILE" ]] || do_step_q initrd; then
+            SUDO=sudo
+            [ $UID -eq 0 ] && SUDO=
+            my_mount_sudo "$KERNEL_DIR/linuxfs" "$SQFS_DIR" -t squashfs -o loop,ro
+        fi
 
     elif [[ "$MODE" = "live" ]]; then
         : ${SQFS_DIR:=/live/linux}
