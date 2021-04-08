@@ -556,7 +556,7 @@ do_syslinux() {
     cmd unpack-gfx-cpio -d "$cpio_dir" -f $targ_dir/gfx1-cpio -r || fatal "Error repacking %s" "$(pqw gfx-cpio)"
 
     # Now make the menu .cfg files
-    # msg "%s %s" "$(bq "  >>")" "$type config files"
+    vmsg "%s %s" "$(bq "  >>")" "$type config files"
 
     # Define some variables that will be used in the config files
     ISO_OR_SYS=$type
@@ -714,9 +714,15 @@ cmd_cp() {
     cmd cp "$@" || fatal "Copy command failed: %s" "$(pqw $*)"
 }
 
+#------------------------------------------------------------------------------
+# Only print message if we are in verbose or very verbose mode
+#------------------------------------------------------------------------------
+vmsg() {
+    [[ $VERBOSITY -ge 1 ]] && msg "$@"
+}
 
 #------------------------------------------------------------------------------
-# A slight safer way to read in variable assignments from a file.
+# A slightly safer way to read in variable assignments from a file.
 #------------------------------------------------------------------------------
 read_data() {
     local file=$1  type=$2
