@@ -27,7 +27,7 @@ export TEXTDOMAIN="$ME"
             MODE="build-iso"
      DEF_ISO_DIR="iso"
     DEF_SQFS_DIR="sqfs"
-  DATA_FILE_NAME="bootload-data"
+  DATA_FILE_NAME="bootloader-data"
    DEF_DATA_FILE="Output/$DATA_FILE_NAME"
 
    STD_DATA_FILE="/usr/share/antiX/$DATA_FILE_NAME"
