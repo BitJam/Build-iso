@@ -133,7 +133,7 @@
 .\" ========================================================================
 .\"
 .IX Title "LIVE-MULTI-KERNEL 1"
-.TH LIVE-MULTI-KERNEL 1 "2021-04-07" "Version 01.00.00" "antiX Documentation"
+.TH LIVE-MULTI-KERNEL 1 "2021-04-08" "Version 01.00.00" "antiX Documentation"
 .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
 .\" way too many mistakes in technical documents.
 .if n .ad l
@@ -295,10 +295,10 @@ of the vmlinuz names given above.  Then run Tools/live\-multi\-kernel.
 We will use:
 .Sp
 .Vb 4
-\&   Output/bootloader\-data  for version specific settings
-\&   sqfs/                   for kernel modules
-\&   iso/boot/               for bootloaders
-\&   iso/antiX/              for kernels and initrd.gz
+\&   Output/bootloader\-data   version specific settings
+\&   sqfs/(lib/modules)       kernel modules
+\&   iso/boot/                bootloaders
+\&   iso/antiX/               kernels and initrd.gz
 .Ve
 .IP "Live mode (\-\-live option)" 4
 .IX Item "Live mode (--live option)"
@@ -310,10 +310,10 @@ after you installed the kernel.
 We will use:
 .Sp
 .Vb 4
-\&    /usr/share/antiX/bootloader\-data  for version specific settings
-\&    /live/linux/                      for kernel modules
-\&    /live/boot\-dev/boot/              for bootloaders
-\&    /live/boot\-dev/antiX/             for kernels and initrd.gz
+\&    /usr/share/antiX/bootloader\-data  version specific settings
+\&    /live/linux/(lib/modules)         kernel modules
+\&    /live/boot\-dev/boot/              bootloaders
+\&    /live/boot\-dev/antiX/             kernels and initrd.gz
 .Ve
 .IP "Live-usb Mode (\-\-live\-usb=<directory>)" 4
 .IX Item "Live-usb Mode (--live-usb=<directory>)"
@@ -329,10 +329,10 @@ squashfs file <dir>/antiX/linuxfs in our work directory at
 .Sp
 .Vb 5
 \&    $WORK_DIR/sqfs/usr/share/antiX/bootloader\-data
-\&                            for version spefific settings
-\&    $WORK_DIR/sqfs/         to find kernel modules
-\&    <dir>/boot/             for bootloaders
-\&    <dir>/antiX/            for kernels and initrd.gz file
+\&                                  version spefific settings
+\&    $WORK_DIR/sqfs/(lib/modules)  find kernel modules
+\&    <dir>/boot/                   bootloaders
+\&    <dir>/antiX/                  kernels and initrd.gz file
 .Ve
 .PP
 Of course these locations can be specified manually with
@@ -346,12 +346,16 @@ the options:
 \&                              separate from the bootloaders
 \&  \-\-sqfs_dir=<dir>          Where to find kernel modules
 .Ve
+.PP
+Note: for finding modules we always specify the \*(L"root\*(R" directory and
+never include the \*(L"lib/modules\*(R" because that gets added
+automatically.
 .SH "Template Directory"
 .IX Header "Template Directory"
 We also need access to our own template directory.  This should be
 mostly independent of a particular version or release.  Each distro
 has it's one template directory even though most contents are
-similar or identical.   Be default we first look for the template
+similar or identical.   By default we first look for the template
 directory at:
 .PP
 .Vb 1
