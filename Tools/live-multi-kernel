@@ -23,47 +23,63 @@ export TEXTDOMAIN="$ME"
 
     # We already use "DISTRO" in substitutions so we use CONF_DISTRO for selecting the
     # $TEMPLATE_DIR/CONF_DISTRO/ directory
-     CONF_DISTRO="antiX"
-            MODE="build-iso"
-     DEF_ISO_DIR="iso"
+    CONF_DISTRO="antiX"
+
+    # The other modes are "live" and "live-usb"
+    MODE="build-iso"
+
+    # These defaults are for build-iso mode
+    DEF_ISO_DIR="iso"
     DEF_SQFS_DIR="sqfs"
-  DATA_FILE_NAME="bootloader-data"
-   DEF_DATA_FILE="Output/$DATA_FILE_NAME"
 
-   STD_DATA_FILE="/usr/share/antiX/$DATA_FILE_NAME"
+    DATA_FILE_NAME="bootloader-data"
+    DEF_DATA_FILE="Output/$DATA_FILE_NAME"
 
-   DEF_TEMPLATE_DIR_1="./LMK-Template/"
-   DEF_TEMPLATE_DIR_2="/usr/local/source/$ME/template"
+    # Location for this file outside of the build-iso environment
+    STD_DATA_FILE="/usr/share/antiX/$DATA_FILE_NAME"
 
-   BOOTLOAD_SUB_DIR="boot"
-   KERNEL_SUB_DIR="antiX"
-   KERNEL_REGEX="^vmlinuz[0-9]?$"
-   KERNEL_LAB_LOW="Legacy"
-   KERNEL_LAB_HIGH="Modern"
+    # FIXME: first look under /etc/ and under ~/.config/
+    DEF_TEMPLATE_DIR_1="./LMK-Template/"
+    DEF_TEMPLATE_DIR_2="/usr/local/source/$ME/template"
 
-   INITRD_NAME="initrd.gz"
+    BOOTLOAD_SUB_DIR="boot"
+    KERNEL_SUB_DIR="antiX"
+    KERNEL_REGEX="^vmlinuz[0-9]?$"
+    KERNEL_LAB_LOW="Legacy"
+    KERNEL_LAB_HIGH="Modern"
 
-   ENCRYPT="--encrypt"
+    INITRD_NAME="initrd.gz"
+
+    # Controls if we add modules for encryption into the initrd
+    ENCRYPT="--encrypt"
 
     # Subtitle and menu can be relate to previous using leading +/-.
-        TITLE_POS="250,125"
-    SUB_TITLE_POS="+0,+30"
-         MENU_POS="+0,+30"
-    TITLE_FONT_SIZE=20
-SUB_TITLE_FONT_SIZE=18
+              TITLE_POS="250,125"
+          SUB_TITLE_POS="+0,+30"
+               MENU_POS="+0,+30"
+        TITLE_FONT_SIZE=20
+    SUB_TITLE_FONT_SIZE=18
 
-SUB_TITLE_FMT="released %s  (legacy boot)"
+    SUB_TITLE_FORMAT="released %s  (legacy boot)"
+    DATE_FORMAT="%-e %B %Y"
 
-         BG_IMAGE="back800.jpg"
-         COLOR="#FFFFFF"
+    BG_IMAGE="back800.jpg"
+    COLOR="#FFFFFF"
 
-         NEW_NO_BOOT_OPTIONS="Use_Legacy_Kernel,Use_Modern_Kernel,Back_to_Top"
+    # These prevent gfxboot from showing the box for typing in options
+    # It also prevents the Fn key menu options from being appended
+    NEW_NO_BOOT_OPTIONS="Use_Legacy_Kernel,Use_Modern_Kernel,Back_to_Top"
 
-   THE_LOG_FILE="./$ME.log"
+    THE_LOG_FILE="./$ME.log"
 
+    # These need to be globals to work inside the clean_up() routine when it
+    # traps EXIT.
     WORK_DIR=
     SKIP=
     QUIET=
+
+    # Passed to unpack-initrd.  We want it quiet by default and then
+    # silent when we are quiet
     SILENT="--quiet"
 
     REQUIRED_PROGS="
@@ -96,8 +112,6 @@ You can update a mounted live-usb with the --live-usb=<dir> option where
 
 You can also specify individual directories.  This will, of course,
 over-ride defaults and defaults set by --live and --live-usb options.
-
-FIXME: data file (or files) and template directory.
 
 Options:
   -a --antiX                 Set distro to antiX
@@ -223,6 +237,7 @@ main() {
     done
 
     # Find the template dir and load its config file if it has one
+    # Of course we want to do this as soon as possible
     if [[ -z "$TEMPLATE_DIR" ]]; then
         TEMPLATE_DIR=$DEF_TEMPLATE_DIR_2
         test -d "$DEF_TEMPLATE_DIR_1" && TEMPLATE_DIR=$DEF_TEMPLATE_DIR_1
@@ -238,7 +253,7 @@ main() {
         read_data "$distro_config" "distro config file"
     fi
 
-    # Always let command line parmaters over-ride us whenever it makes sense
+    # Always let command line parameters over-ride whenever it makes sense
     # Figure out the ISO_DIR and then the KERNEL_DIR and BOOTLOAD_DIR
     if [[ "$MODE" = "live" ]]; then
         : ${ISO_DIR:=/live/boot-dev}
@@ -261,7 +276,7 @@ main() {
 
     # Do this as soon as possible which is right after we've possibly read the last config file
     # and after we've determined the ISO_DIR and hence the KERNEL_DIR
-    # We do this ASAP so we can exit if the correct humber of kernels is not founnd
+    # We do this ASAP so we can exit if the correct number of kernels is not found
     do_step find kernels
     msg $"Looking for kernels in %s" "$(pq $KERNEL_DIR/)"
     find_kernels "$KERNEL_DIR"
@@ -300,7 +315,7 @@ main() {
     # Read in substitution parameters from the data file.
     read_data "$DATA_FILE" "bootloader data file"
 
-    # Now fill in values we created as needed
+    # Now fill in values we create as needed
     : ${DISTRO:=$DISTRO_NAME-${DISTRO_VERSION}}
     : ${ASCII_CODE_NAME:=$CODE_NAME}
 
@@ -309,18 +324,18 @@ main() {
         [[ -n "$FLAV" ]] && FULL_DISTRO_NAME=$FULL_DISTRO_NAME-$FLAV
     fi
 
-    : ${RELEASE_DATE:=$(date +"%-e %B %Y")}
+    : ${RELEASE_DATE:=$(date +"$DATE_FORMAT")}
 
      # Used for template files since core systems have different .cfg file templates
     [[ "$FLAV" = "core" ]] && CORE_PREFIX="core-"
 
-    A_TITLE_POS=$TITLE_POS
-    A_SUB_TITLE_POS=$(add_pos "$A_TITLE_POS" "$SUB_TITLE_POS")
-    A_MENU_POS=$(add_pos "$A_SUB_TITLE_POS" "$MENU_POS")
+    local ABS_TITLE_POS=$TITLE_POS
+    local ABS_SUB_TITLE_POS=$(add_pos "$ABS_TITLE_POS" "$SUB_TITLE_POS")
+    local ABS_MENU_POS=$(add_pos "$ABS_SUB_TITLE_POS" "$MENU_POS")
 
-    # echo "    TITLE: $A_TITLE_POS"
-    # echo "SUB_TITLE: $A_SUB_TITLE_POS"
-    # echo "     MENU: $A_MENU_POS"
+    # echo "    TITLE: $ABS_TITLE_POS"
+    # echo "SUB_TITLE: $ABS_SUB_TITLE_POS"
+    # echo "     MENU: $ABS_MENU_POS"
 
     if do_step isolinux bootloader; then
         do_syslinux isolinux "$BOOTLOAD_DIR" "$distro_template"
@@ -504,8 +519,8 @@ do_syslinux() {
     # Munge the menu position to jive with bg image title and sub-title
     # all the cpio files we create want this same positioning so we
     # do this once in the copy of the original directory.
-    munge_gfx_boot "$orig_gfx_boot" mainmenu.pos "$A_MENU_POS"
-    munge_gfx_boot "$orig_gfx_boot" bootopt.pos  "${A_MENU_POS%%,*},"
+    munge_gfx_boot "$orig_gfx_boot" mainmenu.pos "$ABS_MENU_POS"
+    munge_gfx_boot "$orig_gfx_boot" bootopt.pos  "${ABS_MENU_POS%%,*},"
 
     # Add new nobootoptions if we haven't done so already
     if ! grep -q "^nobootions=.*Use_Legacy" "$orig_gfx_boot"; then
@@ -513,13 +528,13 @@ do_syslinux() {
     fi
 
     # First make the cpio archive files
-    #msg "%s %s" "$(bq "  >>")" "$type cpio archives"
+    vmsg "%s %s" "$(bq "  >>")" "$type cpio archives"
 
     local bg_image="$template_dir/$BG_IMAGE"
     test -r "$bg_image" || fatal "Could not read template bg image %s" "$(pqw $bg_image)"
 
     local title="$FULL_DISTRO_NAME ($CODE_NAME)"
-    local sub_title=$(printf "$SUB_TITLE_FMT" "$RELEASE_DATE")
+    local sub_title=$(printf "$SUB_TITLE_FORMAT" "$RELEASE_DATE")
     draw_img_text "$bg_image" "$cpio_dir/$BG_IMAGE" "$title" "$sub_title"
 
     local gfx_boot_cfg="$cpio_dir/gfxboot.cfg"
@@ -607,9 +622,9 @@ My_Data_File
 draw_img_text() {
     local src=$1 dest=$2 title=$3 sub_title=$4
     cmd convert -pointsize $TITLE_FONT_SIZE -draw \
-        "text $A_TITLE_POS '$title'" \
+        "text $ABS_TITLE_POS '$title'" \
         -pointsize $SUB_TITLE_FONT_SIZE -draw \
-        "text $A_SUB_TITLE_POS '$sub_title'" \
+        "text $ABS_SUB_TITLE_POS '$sub_title'" \
         -fill $COLOR "$src" "$dest"
 }
 
