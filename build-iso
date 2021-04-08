@@ -1382,8 +1382,8 @@ do_stage_6() {
      RELEASE_DATE="$RELEASE_DATE"
 Bootloader_Data
 
-    mkdir -p $sqfs_dir/usr/share/antiX/
-    cp $bootloader_data $sqfs_dir/usr/share/antiX/
+    $SUDO mkdir -p $sqfs_dir/usr/share/antiX/
+    $SUDO cp $bootloader_data $sqfs_dir/usr/share/antiX/
 
     $tools/bootloader-template -i --data=$bootloader_data $iso_dir
     $tools/bootloader-template -i --data=$bootloader_data $isolinux_cpio/en.hlp
