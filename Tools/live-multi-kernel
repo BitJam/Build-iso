@@ -234,10 +234,8 @@ main() {
 
     local distro_config="$distro_template/config"
     if test -e "$distro_config"; then
-        test -r "$distro_config" || fatal "Cannot read distro config file %s" "$(pqw $distro_config)"
         msg "Sourcing config at %s" "$(pq "$distro_config")"
-        bash -n "$distro_config" || fatal "Bash errors in distro config file %s" "$(pqw $distro_config)"
-        source "$distro_config"
+        read_data "$distro_config" "distro config file"
     fi
 
     # Always let command line parmaters over-ride us whenever it makes sense
@@ -273,11 +271,9 @@ main() {
     WORK_DIR=$(mktemp -d /tmp/$ME-XXXXXX)
 
     # Figure out the SQFS_DIR for kernel modules and bootloader-data file.
-    # Mount the linuxfs file (if needed)  after  we make the WORK_DIR.
+    # Mount the linuxfs file (if needed) after we make the WORK_DIR.
     if [[ "$MODE" = "live-usb" && -z "$SQFS_DIR" ]]; then
         SQFS_DIR="$WORK_DIR/sqfs"
-        mkdir -p "$SQFS_DIR"
-
         # Only mount the linuxfs file if we are going to use what's in it
         if [[ -z "$DATA_FILE" ]] || do_step_q initrd; then
             SUDO=sudo
@@ -292,17 +288,17 @@ main() {
     : ${SQFS_DIR:=$DEF_SQFS_DIR}
 
     # Look for bootloader-data file After we mounted the linuxfs file
+    # so we know the SQFS_DIR (under WORK_DIR)
+    # In live mode we use /live/linux for the modules but use the
+    # data-file in the aufs so the user can easily modify it.
     case $MODE in
             build-iso) : ${DATA_FILE:=$DEF_DATA_FILE} ;;
-        live-usb|live) : ${DATA_FILE=$SQFS_DIR$STD_DATA_FILE} ;;
+                 live) : ${DATA_FILE:=$STD_DATA_FILE} ;;
+             live-usb) : ${DATA_FILE:=$SQFS_DIR$STD_DATA_FILE} ;;
     esac
 
-    test -e "$DATA_FILE" || fatal "Could not find data file %s" "$(pqw $DATA_FILE)"
-    test -r "$DATA_FILE" || fatal "Can not read data file %s"   "$(pqw $DATA_FILE)"
-    bash -n "$DATA_FILE" || fatal "Bash errors in data file %s" "$(pqw $DATA_FILE)"
-
     # Read in substitution parameters from the data file.
-    source $DATA_FILE
+    read_data "$DATA_FILE" "bootloader data file"
 
     # Now fill in values we created as needed
     : ${DISTRO:=$DISTRO_NAME-${DISTRO_VERSION}}
@@ -700,6 +696,18 @@ my_mount_sudo() {
 #------------------------------------------------------------------------------
 cmd_cp() {
     cmd cp "$@" || fatal "Copy command failed: %s" "$(pqw $*)"
+}
+
+
+#------------------------------------------------------------------------------
+# A slight safer way to read in variable assignments from a file.
+#------------------------------------------------------------------------------
+read_data() {
+    local file=$1  type=$2
+    test -e "$file" || fatal "Could not find %s %s" "$type" "$(pqw $DATA_FILE)"
+    test -r "$file" || fatal "Can not read %s %s"   "$type" "$(pqw $DATA_FILE)"
+    bash -n "$file" || fatal "Bash errors in %s %s" "$type" "$(pqw $DATA_FILE)"
+    eval $(sed -r -n 's/^\s*([A-Z0-9_]+=[^$`]+)$/\1/p' "$file")
 }
 
 #------------------------------------------------------------------------------
