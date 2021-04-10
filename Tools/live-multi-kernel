@@ -215,6 +215,7 @@ main() {
     local KERNEL_DIR  BOOTLOAD_DIR  ISO_DIR  SQFS_DIR
     local SHIFT  VERBOSITY=0  CORE_PREFIX  STRICT TEMPLATE_DIR
 
+    # Read and process command line parameters
     local orig_args="$*"
     read_params "$@"
     set_colors $COLOR_SCHEME
@@ -245,8 +246,7 @@ main() {
         esac
     done
 
-    # Find the template dir and load its config file if it has one
-    # Of course we want to do this as soon as possible
+    # Find the template directory and load its config file if it has one ASAP
 
     # Do sanity checks on a user provided template directory
     if [[ -n $TEMPLATE_DIR ]]; then
@@ -290,7 +290,9 @@ main() {
     msg $"Looking for kernels in %s" "$(pq $KERNEL_DIR/)"
     find_kernels "$KERNEL_DIR"
 
+    #--------------------------------------------------------------------
     # Create our work directory
+    #--------------------------------------------------------------------
     trap clean_up EXIT
     WORK_DIR=$(mktemp -d /tmp/$ME-XXXXXX)
 
@@ -324,7 +326,9 @@ main() {
     # Read in substitution parameters from the data file.
     read_data "$DATA_FILE" "bootloader data file"
 
+    #--------------------------------------------------------------------
     # Now fill in values we create as needed
+    #--------------------------------------------------------------------
     : ${DISTRO:=$DISTRO_NAME-${DISTRO_VERSION}}
     : ${ASCII_CODE_NAME:=$CODE_NAME}
 
@@ -334,17 +338,22 @@ main() {
     fi
 
     : ${RELEASE_DATE:=$(date +"$DATE_FORMAT")}
+    #--------------------------------------------------------------------
 
      # Used for template files since core systems have different .cfg file templates
     [[ $FLAV = "core" ]] && CORE_PREFIX="core-"
 
+    # Convert relative positions to absolute
     local ABS_TITLE_POS=$TITLE_POS
-    local ABS_SUB_TITLE_POS=$(add_pos "$ABS_TITLE_POS" "$SUB_TITLE_POS")
-    local ABS_MENU_POS=$(add_pos "$ABS_SUB_TITLE_POS" "$MENU_POS")
+    local ABS_SUB_TITLE_POS=$(rel_to_abs_pos "$ABS_TITLE_POS" "$SUB_TITLE_POS")
+    local ABS_MENU_POS=$(rel_to_abs_pos "$ABS_SUB_TITLE_POS" "$MENU_POS")
 
-    do_step isolinux bootloader && do_syslinux isolinux "$BOOTLOAD_DIR"
-    do_step syslinux bootloader && do_syslinux syslinux "$BOOTLOAD_DIR"
-    do_step grub bootloader     && do_grub "$BOOTLOAD_DIR"
+    #--------------------------------------------------------------------
+    # Now do the actual work after ducks are lined up
+    #--------------------------------------------------------------------
+    do_step isolinux bootloader && do_syslinux  "$BOOTLOAD_DIR"  isolinux
+    do_step syslinux bootloader && do_syslinux  "$BOOTLOAD_DIR"  syslinux
+    do_step grub bootloader     && do_grub      "$BOOTLOAD_DIR"
 
     if do_step initrd add modules; then
         local initrd="$KERNEL_DIR/$INITRD_NAME"
@@ -354,6 +363,7 @@ main() {
 
 #==============================================================================
 #===== Here come the subroutines ==============================================
+#==============================================================================
 
 #------------------------------------------------------------------------------
 # Find kernels.  Makes sure everything is kosher and then set the variables:
@@ -396,11 +406,11 @@ find_kernels() {
     # We call vmlinuz-version again.  Oh well.
     local k_low=$(cd "$dir" && vmlinuz-version -ntr "$files" | sort -V | cut -f2 | head -n1)
 
-    # Split the vmlinuz-kernel output into 2 lines, one for each kernel
+    # Split the vmlinuz-version output into 2 lines, one for each kernel
     local  first=$(echo "$vm_info" | head -n1)
     local second=$(echo "$vm_info" | tail -n1)
 
-    # Assign "Legacy" and "Modern" labels according the sort -V order
+    # Assign "Legacy" and "Modern" labels according to the sort -V order
     if [[ $(echo "$first" | cut -f1) = $k_low ]]; then
         KERNEL_LAB_0=$KERNEL_LAB_LOW
         KERNEL_LAB_1=$KERNEL_LAB_HIGH
@@ -411,7 +421,7 @@ find_kernels() {
 
     # Set a bunch of global variables
     set_kernel "First"  0  "$first"   "$KERNEL_LAB_0"
-    set_kernel "Second" 1 "$second"   "$KERNEL_LAB_1"
+    set_kernel "Second" 1  "$second"  "$KERNEL_LAB_1"
 }
 
 #------------------------------------------------------------------------------
@@ -419,6 +429,10 @@ find_kernels() {
 # and KERNEL_VERSION_[01] variables.  Note this index is totally independent
 # of the vmlinuz[0-9] names.  This index is the order the kernels show up in
 # the bootloader menus.
+#
+# The variables we create are used for substitution on the template files so
+# we would gain very little from using arrays ATM.. When we have more than 2
+# kernels then arrays will make a lot more sense.
 #------------------------------------------------------------------------------
 set_kernel() {
     local lab=$1  index=$2  data=$3  type=$4
@@ -435,7 +449,7 @@ set_kernel() {
 
 #------------------------------------------------------------------------------
 # Unpack initrd.  Remove all module directories.  Add module directories for
-# our kernels.  Repack initd.
+# our kernels.  Repack initrd
 #------------------------------------------------------------------------------
 update_initrd() {
     local root=${1%/}  file=$2  dir="$3/initrd"  ; shift 3
@@ -494,20 +508,22 @@ update_initrd() {
 # information from the bootloader-data file.
 #------------------------------------------------------------------------------
 do_syslinux() {
-    local type=$1  targ_dir=${2%/}/$1
+    local targ_dir=${1%/}/$2  type=$2
     local orig_cpio="$targ_dir/gfx-cpio"
     test -r "$orig_cpio" || fatal "Could not read original gfx-cpio %s" "$(pqw $orig_cpio)"
     local orig_cpio_dir="$WORK_DIR/orig-$type-cpio"
 
+    # Unpack the original gfx-cpio from the isolinux or syslinux directory
     cmd unpack-gfx-cpio -f "$orig_cpio" -d "$orig_cpio_dir" || fatal "Error unpacking %s" "$(pqw $orig_cpio)"
 
-    # Remove all background images
+    # Remove all background images.  This is mostly to save space since
+    # we now will be making 6 cpio files instead of just 2.
     cmd rm -f "$orig_cpio_dir"/back*.jpg
 
     local cpio_dir=$WORK_DIR/$type-cpio
     local orig_gfx_boot=$WORK_DIR/gfxboot.cfg
 
-    # Make a copy of the original cpio directory
+    # Make a copy of the unpacked cpio directory
     cmd_cp -a "$orig_cpio_dir" "$cpio_dir"
 
     # Make a copy of the original gfxboot.cfg file
@@ -524,7 +540,9 @@ do_syslinux() {
         cmd sed -i -r "s/^(nobootoptions=.*)/\1,$NEW_NO_BOOT_OPTIONS/" "$orig_gfx_boot"
     fi
 
+    #--------------------------------------------------------------------
     # First make the cpio archive files
+    #--------------------------------------------------------------------
     vmsg "%s %s" "$(bq "  >>")" "$type cpio archives"
 
     local bg_image
@@ -537,21 +555,26 @@ do_syslinux() {
     local gfx_boot_cfg="$cpio_dir/gfxboot.cfg"
     cmd_cp "$orig_gfx_boot" "$gfx_boot_cfg"
 
+    #----- top-cpio -----
     cmd sed -i -r "s/^(key\.F[3-9])/;-LMK \1/" "$gfx_boot_cfg"
     cmd sed -i -r "/^key.F2=lang/i key.F1=help" "$gfx_boot_cfg"
 
     cmd unpack-gfx-cpio -d "$cpio_dir" -f $targ_dir/top-cpio -r || fatal "Error packing %s" "$(pqw top-cpio)"
 
-    # reest the gfxboot.cfg file and make a new bg image
+    #----- gfx-cpio -----
+    # reset the gfxboot.cfg file and make a new bg image
     cmd_cp "$orig_gfx_boot" "$gfx_boot_cfg"
     draw_img_text "$bg_image" "$cpio_dir/$BG_IMAGE" "$title" "$KERNEL_LAB_0 $KERNEL_VERS_0 kernel"
     cmd unpack-gfx-cpio -d "$cpio_dir" -f $targ_dir/gfx-cpio -r || fatal "Error repacking %s" "$(pqw gfx-cpio)"
 
+    #----- gfx1-cpio -----
     # make a new bg image (the kernel menus use the same gfxboot.cfg file)
     draw_img_text "$bg_image" "$cpio_dir/$BG_IMAGE" "$title" "$KERNEL_LAB_1 $KERNEL_VERS_1 kernel"
     cmd unpack-gfx-cpio -d "$cpio_dir" -f $targ_dir/gfx1-cpio -r || fatal "Error repacking %s" "$(pqw gfx-cpio)"
 
+    #--------------------------------------------------------------------
     # Now make the menu .cfg files
+    #--------------------------------------------------------------------
     vmsg "%s %s" "$(bq "  >>")" "$type config files"
 
     # Define some variables that will be used in the config files
@@ -649,7 +672,7 @@ munge_gfx_boot() {
 #------------------------------------------------------------------------------
 # Resolve relative positions.
 #------------------------------------------------------------------------------
-add_pos() {
+rel_to_abs_pos() {
     local prev_x=${1%%,*}  prev_y=${1##*,}
     local this_x=${2%%,*}  this_y=${2##*,}
 
@@ -665,7 +688,7 @@ add_pos() {
 }
 
 #------------------------------------------------------------------------------
-# Report which steps are done (or skipped) and skips steps based on the
+# Report which steps are done (or skipped).  Skip steps based on the
 # $SKIP variable set by the --no option.
 #------------------------------------------------------------------------------
 do_step() {
