@@ -183,6 +183,7 @@ eval_argument() {
         -template-dir=*) TEMPLATE_DIR=$val                   ;;
              -version|v) show_version                        ;;
              -verbose|V) : $((VERBOSITY += 1))               ;;
+            -last-log|Z) last_log_session "$THE_LOG_FILE"    ;;
           *)  fatal "Unknown parameter %s" "-$arg"           ;;
      esac
 }
@@ -210,9 +211,9 @@ takes_param() {
 # The main event
 #------------------------------------------------------------------------------
 main() {
-    local SHORT_STACK="abCdDhiklLmnqstvV"
+    local SHORT_STACK="abCdDhiklLmnqstvVZ"
     local KERNEL_DIR  BOOTLOAD_DIR  ISO_DIR  SQFS_DIR
-    local SHIFT  VERBOSITY=0  CORE_PREFIX  STRICT
+    local SHIFT  VERBOSITY=0  CORE_PREFIX  STRICT TEMPLATE_DIR
 
     local orig_args="$*"
     read_params "$@"
@@ -783,6 +784,15 @@ template_copy() {
 maybe_fatal() {
     [[ -n "$STRICT" ]] && fatal "$@"
     Msg "$@"
+    exit 0
+}
+
+#------------------------------------------------------------------------------
+# Print out the last session from the log file then exit.
+#------------------------------------------------------------------------------
+last_log_session() {
+    local file=$1
+    tac "$file" | sed "/^=\{60\}=*$/q" | tac
     exit 0
 }
 
