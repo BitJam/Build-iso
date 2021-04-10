@@ -22,7 +22,7 @@ export TEXTDOMAIN="$ME"
  SHELL_LIB="cli-shell-utils.bash"
 
     # We already use "DISTRO" in substitutions so we use CONF_DISTRO for selecting the
-    # $TEMPLATE_DIR/CONF_DISTRO/ directory
+    # sub-directory of the template directory.
     CONF_DISTRO="antiX"
 
     # The other modes are "live" and "live-usb"
@@ -334,21 +334,9 @@ main() {
     local ABS_SUB_TITLE_POS=$(add_pos "$ABS_TITLE_POS" "$SUB_TITLE_POS")
     local ABS_MENU_POS=$(add_pos "$ABS_SUB_TITLE_POS" "$MENU_POS")
 
-    # echo "    TITLE: $ABS_TITLE_POS"
-    # echo "SUB_TITLE: $ABS_SUB_TITLE_POS"
-    # echo "     MENU: $ABS_MENU_POS"
-
-    if do_step isolinux bootloader; then
-        do_syslinux isolinux "$BOOTLOAD_DIR" "$distro_template"
-    fi
-
-    if do_step syslinux bootloader; then
-        do_syslinux syslinux "$BOOTLOAD_DIR" "$distro_template"
-    fi
-
-    if do_step grub bootloader; then
-        do_grub "$BOOTLOAD_DIR" "$distro_template"
-    fi
+    do_step isolinux bootloader && do_syslinux isolinux "$BOOTLOAD_DIR"
+    do_step syslinux bootloader && do_syslinux syslinux "$BOOTLOAD_DIR"
+    do_step grub bootloader     && do_grub "$BOOTLOAD_DIR"
 
     if do_step initrd add modules; then
         local initrd="$KERNEL_DIR/$INITRD_NAME"
@@ -498,7 +486,7 @@ update_initrd() {
 # information from the bootloader-data file.
 #------------------------------------------------------------------------------
 do_syslinux() {
-    local type=$1  targ_dir=${2%/}/$1  template_dir=$3
+    local type=$1  targ_dir=${2%/}/$1
     local orig_cpio="$targ_dir/gfx-cpio"
     test -r "$orig_cpio" || fatal "Could not read original gfx-cpio %s" "$(pqw $orig_cpio)"
     local orig_cpio_dir="$WORK_DIR/orig-$type-cpio"
@@ -718,12 +706,19 @@ cmd_cp() {
 # Only print message if we are in verbose or very verbose mode
 #------------------------------------------------------------------------------
 vmsg() {
-    [[ $VERBOSITY -ge 1 ]] && msg "$@"
+    if [[ $VERBOSITY -ge 1 ]]; then
+        msg "$@"
+    else
+        local fmt="$1\n" ;  shift;
+        printf "$fmt" "$@" | strip_color >> $LOG_FILE
+    fi
 }
 
 #------------------------------------------------------------------------------
-# A slightly safer way to read in variable assignments from a file.
+# Read in variable assignments from a file, like sourcing the file but safer
+# and with built-in error checks so we only have to write them once
 #------------------------------------------------------------------------------
+
 read_data() {
     local file=$1  type=$2
     test -e "$file" || fatal "Could not find %s %s" "$type" "$(pqw $DATA_FILE)"
