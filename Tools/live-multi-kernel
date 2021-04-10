@@ -38,9 +38,10 @@ export TEXTDOMAIN="$ME"
     # Location for this file outside of the build-iso environment
     STD_DATA_FILE="/usr/share/antiX/$DATA_FILE_NAME"
 
-    # FIXME: first look under /etc/ and under ~/.config/
-    DEF_TEMPLATE_DIR_1="./LMK-Template/"
-    DEF_TEMPLATE_DIR_2="/usr/local/source/$ME/template"
+    # We will look for $CONF_DISTRO/$TEMPLATE_NAME/$file_name in each directory
+    # on the TEMPLATE_PATH
+    TEMPLATE_NAME="LMK-Template"
+    TEMPLATE_PATH=($HOME/.config /etc . /usr/local/source/$ME)
 
     BOOTLOAD_SUB_DIR="boot"
     KERNEL_SUB_DIR="antiX"
@@ -111,32 +112,38 @@ You can also specify individual directories.  This will, of course,
 over-ride defaults and defaults set by --live and --live-usb options.
 
 Options:
-  -a --antiX                 Set distro to antiX
-  -b --bootload-dir=<dir>    Directory under which we find bootloaders,
+  -a  --antiX                 Set distro to antiX
+  -b  --bootload-dir=<dir>    Directory under which we find bootloaders,
                                ignoring <iso-dir>
-  -c --color                 Set color scheme to: off|low|low2|bw|dark|high
-  -d --data=<file>           File containing fill-in-the-blank data
-  -D --distro=<distro>       Either antiX or MX
-  -h --help                  Show this usage then exit
-  -i --iso-dir=<dir>         Kernels and initrd under <iso-dir>/antiX/
-                             Bootloaders under <iso-dir>/boot/
-  -k --kernel-dir=<dir>      Explicitly set directory to find kernels in
+  -c  --color                 Set color scheme to: off|low|low2|bw|dark|high
+  -d  --data=<file>           File containing fill-in-the-blank data
+  -D  --distro=<distro>       Either antiX or MX
+  -h  --help                  Show this usage then exit
+  -i  --iso-dir=<dir>         Kernels and initrd under <iso-dir>/antiX/
+                              Bootloaders under <iso-dir>/boot/
+  -k  --kernel-dir=<dir>      Explicitly set directory to find kernels in
                                ignoring <iso-dir>
-  -l --live                  Assume we are updating a running live system
-  -L --live-usb=<dir>        Modify a live-usb mounted at <dir>
-  -m --MX                    Set distro to MX
-  -n --no=<list>             Skip steps:
-                             initrd rm-modules isolinux syslinux grub cleanup delete
-  -q --quiet                 Print much less
-  -s --sqfs-dir-<dir>        Directory under which we get kernel modules
-  -S --strict                Throw an error if 2 kernels aren't found.  Otherwise
-                             we just report this to stdut and exit normally.
-  -t --template-dir=<dir>    Directory containing template files
-  -v --version               Show version info then exit
-  -V --verbose               Print more
-  -VV                        Be very verbose, print most commands
+  -l  --live                  Assume we are updating a running live system
+  -L  --live-usb=<dir>        Modify a live-usb mounted at <dir>
+  -m  --MX                    Set distro to MX
+  -n  --no=<list>             Skip steps:
+                               initrd rm-modules isolinux syslinux grub cleanup delete
+  -q  --quiet                 Print much less
+  -s  --sqfs-dir-<dir>        Directory under which we get kernel modules
+  -S  --strict                Throw an error if 2 kernels aren't found.  Otherwise
+                               we just report this to stdut and exit normally.
+  -t  --template-dir=<dir>    Directory containing template files
+  -v  --version               Show version info then exit
+  -V  --verbose               Print more
+  -VV                         Be very verbose, print most commands
+  -Z   --last-log             Print last session from long file then exit
 
-Defaults:
+For each template file we need we look in a $TEMPLATE_NAME/\$DISTRO/ sub directory
+under the following directories, in this order:
+
+$(echo ${TEMPLATE_PATH[@]} | sed "s|/home/[^/]*/|~/|" | sed "s/ /\n/g" | sed  -e "s/^/    /" -e "s|$|/|")
+
+Defaults (build-iso mode):
       iso-dir: $DEF_ISO_DIR
      sqfs-dir: $DEF_SQFS_DIR
     data-file: $DEF_DATA_FILE
@@ -239,16 +246,16 @@ main() {
 
     # Find the template dir and load its config file if it has one
     # Of course we want to do this as soon as possible
-    if [[ -z "$TEMPLATE_DIR" ]]; then
-        TEMPLATE_DIR=$DEF_TEMPLATE_DIR_2
-        test -d "$DEF_TEMPLATE_DIR_1" && TEMPLATE_DIR=$DEF_TEMPLATE_DIR_1
+
+    # Do sanity checks on a user provided template directory
+    if [[ -n "$TEMPLATE_DIR" ]]; then
+        test -d "$TEMPLATE_DIR" || fatal "Could not find template directory %s" "$TEMPLATE_DIR"
+
+        local distro_template="${TEMPLATE_DIR%/}/$CONF_DISTRO"
+        test -d "$distro_template" || fatal "Could not find distro template directory %s" "$distro_template"
     fi
-    test -d "$TEMPLATE_DIR" || fatal "Could not find template directory %s" "$TEMPLATE_DIR"
 
-    local distro_template="${TEMPLATE_DIR%/}/$CONF_DISTRO"
-    test -d "$distro_template" || fatal "Could not find distro template directory %s" "$distro_template"
-
-    local distro_config="$distro_template/config"
+    local distro_config=$(get_template_file "config")
     if test -e "$distro_config"; then
         msg "Sourcing config at %s" "$(pq "$distro_config")"
         read_data "$distro_config" "distro config file"
@@ -519,8 +526,8 @@ do_syslinux() {
     # First make the cpio archive files
     vmsg "%s %s" "$(bq "  >>")" "$type cpio archives"
 
-    local bg_image="$template_dir/$BG_IMAGE"
-    test -r "$bg_image" || fatal "Could not read template bg image %s" "$(pqw $bg_image)"
+    local bg_image
+    need_template_file bg_image "$BG_IMAGE"
 
     local title="$FULL_DISTRO_NAME ($CODE_NAME)"
     local sub_title=$(printf "$SUB_TITLE_FORMAT" "$RELEASE_DATE")
@@ -560,9 +567,10 @@ do_syslinux() {
     write_my_data_file $my_data_file
 
     # Copy in the template files
-    cmd_cp "$template_dir"/isolinux.cfg "$targ_dir/$type.cfg"
-    cmd_cp "$template_dir"/${CORE_PREFIX}kernel0.cfg "$targ_dir/kernel0.cfg"
-    cmd_cp "$template_dir"/${CORE_PREFIX}kernel1.cfg "$targ_dir/kernel1.cfg"
+
+    template_copy  "isolinux.cfg"               "$targ_dir/$type.cfg"
+    template_copy  "${CORE_PREFIX}kernel0.cfg"  "$targ_dir/kernel0.cfg"
+    template_copy  "${CORE_PREFIX}kernel1.cfg"  "$targ_dir/kernel1.cfg"
 
     # Do string substition on all 3 template files using bootloader-data and my data-file created above
     cmd bootloader-template -s -i --data="$DATA_FILE" --data=$my_data_file "$targ_dir"/kernel[01].cfg "$targ_dir"/$type.cfg
@@ -572,11 +580,11 @@ do_syslinux() {
 # Copy in grub.cfg and theme.txt templates then do variable substitution
 #------------------------------------------------------------------------------
 do_grub() {
-    local targ_dir=$1/grub  template_dir=$2
+    local targ_dir=$1/grub
     local my_data_file=$WORK_DIR/data-file
     test -e "$my_data_file" || write_my_data_file $my_data_file
-    cmd_cp "$template_dir"/${CORE_PREFIX}grub.cfg "$targ_dir/grub.cfg"
-    cmd_cp "$template_dir"/theme.txt "$targ_dir/theme/"
+    template_copy ${CORE_PREFIX}grub.cfg "$targ_dir/grub.cfg"
+    template_copy theme.txt               "$targ_dir/theme/"
 
     cmd bootloader-template -s -i --data="$DATA_FILE" --data=$my_data_file "$targ_dir"/grub.cfg "$targ_dir"/theme/theme.txt
 }
@@ -725,6 +733,47 @@ read_data() {
     test -r "$file" || fatal "Can not read %s %s"   "$type" "$(pqw $DATA_FILE)"
     bash -n "$file" || fatal "Bash errors in %s %s" "$type" "$(pqw $DATA_FILE)"
     eval $(sed -r -n 's/^\s*([A-Z0-9_]+=[^$`;]+)$/\1/p' "$file")
+}
+
+#------------------------------------------------------------------------------
+# Get the full path to a template file based the given base name.  We search
+# through the TEMPLATE_PATH for the file and stop at the first match.
+#------------------------------------------------------------------------------
+get_template_file() {
+    local fname=$1
+    local p  file
+    for p in "$TEMPLATE_DIR" "${TEMPLATE_PATH[@]}"; do
+        [[ -z "$p" ]] && continue
+        file="$p/$TEMPLATE_NAME/$CONF_DISTRO/$fname"
+        test -e "$file" && break
+    done
+    test -e "$file"  || return 1
+    echo "$file"
+    return 0
+}
+
+#------------------------------------------------------------------------------
+# Get the name of a template file via get_template_file().  Error out if we
+# can't find the file.  Also report where we found the file when in verbose
+# mode.
+#------------------------------------------------------------------------------
+need_template_file() {
+    local var=$1  fname=$2
+    local found=$(get_template_file "$fname")
+    [[ -z "$found" ]] && fatal "Could not find template file %s"  "$(pqw $fname)"
+    test -r "$found"  || fatal "Could not read template file %s"  "$(pqw $found)"
+    vmsg "Using template file %s" "$(pq $found)"
+    eval $var=\$found
+}
+
+#------------------------------------------------------------------------------
+# Copy a file out of the template directory to a destination.  Error out if
+# file is not found in the template
+#------------------------------------------------------------------------------
+template_copy() {
+   local fname=$1  dest=$2  full_name
+   need_template_file full_name "$fname"
+   cmd_cp "$full_name" "$dest"
 }
 
 #------------------------------------------------------------------------------
