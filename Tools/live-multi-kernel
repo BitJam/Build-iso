@@ -467,7 +467,7 @@ update_initrd() {
     if do_step_q rm-modules first; then
         local k
         for k in $(ls "$mdir") ; do
-            msg "Removing modules for kernel %s" "$(pq $k)"
+            msg "%s" "$(bq "Removing modules for kernel" $k)"
             cmd rm -r $mdir/$k || warn "Could not remove directory %s" "$mdir/$k"
         done
     fi
