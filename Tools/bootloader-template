@@ -89,13 +89,14 @@ takes_param() {
 
 main() {
     local SHIFT SHORT_STACK="adfhmprsV"
-    [ $# -eq 0 ] && usage
+    [[ $# -eq 0 ]] && usage
 
-    while [ $# -gt 0 ]; do
+    while [[ $# -gt 0 ]]; do
         read_params "$@"
         shift $SHIFT
 
-        while [ $# -gt 0 -a ${#1} -gt 0 -a -n "${1##-*}" ]; do
+        while [[ $# -gt 0 && ! $1 =~ ^- ]]; do
+            echo "file $1"
             IN_FILES+=($1)
             shift
         done
@@ -146,10 +147,10 @@ main() {
 
         test -e "$file" || loop_warn "Could not find file: $file" || continue
         test -r "$file" || loop_warn "Can not read file: $file"   || continue
-        [ -z "$IN_PLACE" ] \
+        [[ -z $IN_PLACE ]] \
             || test -w "$file" || loop_warn "Can not write to file: $file" || continue
 
-        if [ "$PRETEND" ]; then
+        if [[ -n $PRETEND ]]; then
             echo "FILE $file:"
             eval "sed -n $SED_P \"$file\"" | egrep -v "%[A-Z_]+%"
             echo
@@ -225,7 +226,7 @@ read_params() {
     local arg val
 
     # Loop through the cmdline args
-    while [ $# -gt 0 -a ${#1} -gt 0 -a -z "${1##-*}" ]; do
+    while [[ $# -gt 0 && $1 =~ ^- ]]; do
         arg=${1#-}
         shift
         SHIFT=$((SHIFT + 1))
@@ -243,9 +244,9 @@ read_params() {
 
         # Deal with all options that take a parameter
         if takes_param "$arg"; then
-            [ $# -lt 1 ] && fatal "Expected a parameter after: -$arg"
+            [[ $# -lt 1 ]] && fatal "Expected a parameter after: -$arg"
             val=$1
-            [ -n "$val" -a -z "${val##-*}" ] \
+            [[ $val =~ ^- ]] \
                 && fatal "Suspicious argument after -$arg: $val"
             SHIFT=$((SHIFT + 1))
             shift
@@ -261,7 +262,7 @@ read_params() {
 }
 
 loop_warn() {
-    [ "$STRICT" ] && fatal "$@"
+    [[ -n $STRICT ]] && fatal "$@"
     echo "$ME warning: $*" >&2
     return 1
 }
