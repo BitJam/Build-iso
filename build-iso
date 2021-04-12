@@ -1496,6 +1496,8 @@ Bootloader_Data
 
     md5sum_file $initrd_gz
 
+    [ -z "$iso_only" ] && copy_second_kernel $sqfs_dir/boot $iso_dir/antiX
+
     say "Write auxiliary information"
 
     [ "$iso_only" ] && touch $work_dir/package-list.out
@@ -2364,6 +2366,41 @@ $(cat $menu_file)
 $*
 ; <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 Fn_Menu
+}
+
+#------------------------------------------------------------------------------
+# Copy a 2nd kernel into iso/antiX/ and run live-multi-kernel
+#------------------------------------------------------------------------------
+copy_second_kernel() {
+    local from_dir=$1  to_dir=$2
+    local vmlinuz=$to_dir/vmlinuz
+    local vmlinuz_1=${vmlinuz}1
+    local version_prog=$tools/vmlinuz-version
+    local lmk=$tools/live-multi-kernel
+
+    ! test -d $from_dir       && error "boot directory $from_dir not found"   && return 1
+    ! test -d $to_dir         && error "iso boot directory $to_dir not found" && return 1
+    ! test -e "$vmlinuz"      && error "File $vmlinuz not found"              && return 1
+    ! test -x "$version_prog" && error "Could not find program $version_prog" && return 1
+    ! test -x "$lmk"          && error "Could not find program $lmk"          && return 1
+
+    local version_0=$($version_prog -nr $vmlinuz  | cut -d" " -f1)
+    local version_1=$($version_prog -nr $from_dir | cut -d" " -f1 | grep -v "^$version_0$")
+
+    case $(echo -n "$version_1" | grep . | wc -l) in
+        0) return ;;
+        1)        ;;
+        2) echo "$version_1"
+           error "more then 2 vmlinuz1 kernels found"
+           return ;;
+    esac
+
+    say "Found 2nd kernel $version_1"
+    local k1=$($version_prog -n $from_dir | grep " $version_1 " | cut -d" " -f1)
+    say "copy $k1 $vmlinuz_1"
+    cp $k1 $vmlinuz_1
+
+    $lmk
 }
 
 write_version_files() {
