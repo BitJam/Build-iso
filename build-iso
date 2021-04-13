@@ -2373,8 +2373,9 @@ Fn_Menu
 #------------------------------------------------------------------------------
 copy_second_kernel() {
     local from_dir=$1  to_dir=$2
-    local vmlinuz=$to_dir/vmlinuz
-    local vmlinuz_1=${vmlinuz}1
+    local k0_name=vmlinuz  k1_name=vmlinuz1
+    local vmlinuz=$to_dir/$k0_name
+    local vmlinuz_1=$to_dir/$k1_name
     local version_prog=$tools/vmlinuz-version
     local lmk=$tools/live-multi-kernel
 
@@ -2399,6 +2400,7 @@ copy_second_kernel() {
     local k1=$($version_prog -n $from_dir | grep " $version_1 " | cut -d" " -f1)
     say "copy $k1 $vmlinuz_1"
     cp $k1 $vmlinuz_1
+    (cd $to_dir && md5sum $k1_name > $k1_name.md5)
 
     $lmk
 }
