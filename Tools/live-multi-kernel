@@ -596,6 +596,15 @@ do_syslinux() {
     template_copy  "${CORE_PREFIX}kernel0.cfg"  "$targ_dir/kernel0.cfg"
     template_copy  "${CORE_PREFIX}kernel1.cfg"  "$targ_dir/kernel1.cfg"
 
+    # Remove vbox entry in syslinux cfg files (if needed)
+    local f
+    case $type in
+        syslinux)
+            for f in $targ_dir/*kernel*.cfg; do
+                sed -i "/^LABEL vbox/,/^$/d" $f
+            done ;;
+    esac
+
     # Do string substition on all 3 template files using bootloader-data and my data-file created above
     cmd bootloader-template -s -i --data="$DATA_FILE" --data=$my_data_file "$targ_dir"/kernel[01].cfg "$targ_dir"/$type.cfg
 }
