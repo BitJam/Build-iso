@@ -2345,7 +2345,7 @@ repack_gfx_cpio() {
 
 prep_dir() {
     local dir=$1
-    [[ $dir =~ [^a-zA-Z] ]] && fatal "Bad directory name: $dir"
+    [[ -z $dir || ! $dir =~ [a-zA-Z] ]] && fatal "Bad directory name: $dir"
     rm -rf $dir
     mkdir -p $dir
 }
