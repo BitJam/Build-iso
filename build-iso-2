@@ -2402,7 +2402,7 @@ copy_second_kernel() {
     cp $k1 $vmlinuz_1
     (cd $to_dir && md5sum $k1_name > $k1_name.md5)
 
-    $lmk
+    $lmk --distro="$DISTRO_NAME"
 }
 
 write_version_files() {
