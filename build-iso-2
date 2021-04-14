@@ -1159,7 +1159,7 @@ do_stage_4() {
     say "Run $update_cmd"
     sudo echo 3 > /proc/sys/vm/drop_caches
     sleep 2
-    mount -t tmpfs || size=100k tmpfs /var/cache/apt/archives
+    mount -t tmpfs -o size=100k tmpfs /var/cache/apt/archives
     $update_cmd --add-prunepaths /var/cache/apt/archives/ || error "The $(pqw $update_cmd) program failed"
     $update_cmd || error "The $(pqw $update_cmd) program failed"
     umount /var/cache/apt/archives
@@ -1259,7 +1259,7 @@ do_stage_5() {
     $SUDO rm -f $sqfs_dir/etc/mtab
 
     say "Customize configuration"
-    copy_template_dir || custom-config-files $sqfs_dir
+    copy_template_dir -o custom-config-files $sqfs_dir
 
     #collect_live_files $live_files_list /usr/local/share/live-files
     say "Save Live files for snapshot"
