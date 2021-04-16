@@ -3135,7 +3135,7 @@ say2()   { echo; say "$*"                                   ;}
 say()    { _say_ "$text_co$*$nc"                            ;}
 psay()   { say "$(plural "$@")"                             ;}
 yell()   { _say_ "$bold_co$*$nc"                            ;}
-vsay()   { [[-n $verbose_mode ]] && say "$*"                ;}
+vsay()   { [[ -n $verbose_mode ]] && say "$*"               ;}
 nqsay()  { [[ -z $quiet_mode ]] && say "$@"                 ;}
 
 pqh()    { echo "$text_co$*$high_co"  ;}
