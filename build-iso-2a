@@ -288,7 +288,6 @@ main() {
     fi
 
     load_defaults
-    load_defaults
 
     trap on_exit       EXIT
     trap "echo; exit"  INT
