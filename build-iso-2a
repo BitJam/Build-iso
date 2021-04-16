@@ -133,7 +133,6 @@ main() {
     local seed_fname="random-seed"
     local user_defaults user_default_file apt_yes
     local initrd_encrypt
-    is_antiX && initrd_encrypt="--encrypt"
 
     local short_stack="aAcCdDefFhiIjmnNpqrsuUvV0-8"
 
@@ -1616,6 +1615,8 @@ Bootloader_Data
 
     say "Write initrd-release file"
     write_initrd_release $initrd_dir
+
+    is_antiX && initrd_encrypt="--encrypt"
 
     if [[ -z $iso_only ]]; then
         say "Copy $(pq $K_NAME) modules into initrd"
