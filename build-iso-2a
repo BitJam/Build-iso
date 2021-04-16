@@ -22,8 +22,8 @@
 # this program.  If not, see <http://www.gnu.org/licenses/>.
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-VERSION="1.99.01"
-VERSION_DATE="Thu Apr 15 09:35:23 PM MDT 2021"
+VERSION="1.99.02"
+VERSION_DATE="Thu Apr 15 11:44:02 PM MDT 2021"
 
 ME=${0##*/}
 
