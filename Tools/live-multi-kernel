@@ -41,7 +41,7 @@ export TEXTDOMAIN="$ME"
     # We will look for $CONF_DISTRO/$TEMPLATE_NAME/$file_name in each directory
     # on the TEMPLATE_PATH
     TEMPLATE_NAME="LMK-Template"
-    TEMPLATE_PATH=($HOME/.config /etc . /usr/local/source/$ME)
+    TEMPLATE_PATH=($HOME/.config /etc . /usr/local/share/$ME /usr/share/$ME)
 
     BOOTLOAD_SUB_DIR="boot"
     KERNEL_SUB_DIR="antiX"
