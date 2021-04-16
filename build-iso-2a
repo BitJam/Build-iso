@@ -531,10 +531,12 @@ Remaster_Blurb
 
     is_distro_flav $ISO_RESPIN_OF || fatal "Invalid flavour to base respin on: $ISO_RESPIN_OF"
 
+    local distro_k_arch=686
+    is_antiX && distro_k_arch=486
     case $ARCH in
-         i386) K_ARCH=486   ; ISO_ARCH=386  ;;
-        amd64) K_ARCH=amd64 ; ISO_ARCH=x64  ;;
-            *) error "Invalid ARCH $(pqw $ARCH).  Expected $(pqw i386) or $(pqw amd64)".
+         i386) K_ARCH=$distro_k_arch   ; ISO_ARCH=386  ;;
+        amd64) K_ARCH=amd64            ; ISO_ARCH=x64  ;;
+             *) error "Invalid ARCH $(pqw $ARCH).  Expected $(pqw i386) or $(pqw amd64)". ;;
     esac
 
     K_NAME=$(echo $K_TEMPLATE | sed \
