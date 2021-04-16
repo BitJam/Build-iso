@@ -1002,9 +1002,8 @@ do_stage_4() {
                 test -d "$dir" || continue
                 update-alternatives --install /usr/share/icons/default/index.theme x-cursor-theme "$dir"/index.theme 20
             done
-        else
-            update-alternatives --set x-cursor-theme $CURSOR_ICON_THEME
         fi
+        update-alternatives --set x-cursor-theme $CURSOR_ICON_THEME
     else
         error "Missing or unknown cursor icon theme $(pqw $CURSOR_ICON_THEME)"
     fi
