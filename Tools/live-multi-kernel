@@ -344,7 +344,7 @@ main() {
     : ${RELEASE_DATE:=$(date +"$DATE_FORMAT")}
     #--------------------------------------------------------------------
 
-     # Used for template files since core systems have different .cfg file templates
+    # Used for template files since core systems have different .cfg file templates
     [[ $FLAV = "core" ]] && CORE_PREFIX="core-"
 
     # Convert relative positions to absolute
@@ -391,7 +391,7 @@ find_kernels() {
 
     # Find kernel files by name
     local files=$(ls "$dir" | grep -E "$KERNEL_REGEX")
-    case $(echo "$files" | wc -l) in
+    case $(echo "$files" | grep . | wc -l) in
         2) ;;
         1) maybe_fatal "Only one vmlinuz file found in %s" "$dir/" ;;
         *) maybe_fatal "More than 2 vmlinuz files found in %s: %s" "$dir/" "$files"
@@ -400,7 +400,7 @@ find_kernels() {
     # Now ensure they are kernels and get their version numbers
     local vm_info=$(cd "$dir" && vmlinuz-version -nt $files | LC_ALL=C sort)
 
-    case $(echo "$vm_info" | wc -l) in
+    case $(echo "$vm_info" | grep . | wc -l) in
         2) ;;
         1) maybe_fatal "Only one real kernel was found"      ;;
         *) maybe_fatal "More that 2 real kernels were found" ;;
