@@ -123,6 +123,7 @@ Options:
                               Bootloaders under <iso-dir>/boot/
   -k  --kernel-dir=<dir>      Explicitly set directory to find kernels in
                                ignoring <iso-dir>
+      --lang=<lang-code>      Set default language
   -l  --live                  Assume we are updating a running live system
   -L  --live-usb=<dir>        Modify a live-usb mounted at <dir>
   -m  --MX                    Set distro to MX
@@ -170,6 +171,8 @@ eval_argument() {
              -iso-dir|i) ISO_DIR=$val                        ;;
           -kernel-dir|k) KERNEL_DIR=$val                     ;;
           -kernel-dir=*) KERNEL_DIR=$val                     ;;
+                  -lang) SET_LANG=$val                       ;;
+                -lang=*) SET_LANG=$val                       ;;
                 -live|l) MODE=live                           ;;
             -live-usb|L) MODE=live-usb ; LIVE_USB=$val       ;;
                   -MX|m) CONF_DISTRO=MX                      ;;
@@ -214,6 +217,7 @@ main() {
     local SHORT_STACK="abCdDhiklLmnqstvVZ"
     local KERNEL_DIR  BOOTLOAD_DIR  ISO_DIR  SQFS_DIR
     local SHIFT  VERBOSITY=0  CORE_PREFIX  STRICT TEMPLATE_DIR
+    local SET_LANG
 
     # Read and process command line parameters
     local orig_args="$*"
@@ -525,6 +529,9 @@ do_syslinux() {
 
     # Make a copy of the unpacked cpio directory
     cmd_cp -a "$orig_cpio_dir" "$cpio_dir"
+
+    # Set the default language
+    [[ -n $SET_LANG ]] && echo "$SET_LANG" > "$cpio_dir/lang.def"
 
     # Make a copy of the original gfxboot.cfg file
     cmd_cp $orig_cpio_dir/gfxboot.cfg "$orig_gfx_boot"
