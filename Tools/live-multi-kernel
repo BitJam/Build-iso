@@ -175,6 +175,7 @@ eval_argument() {
                 -lang=*) SET_LANG=$val                       ;;
                 -live|l) MODE=live                           ;;
             -live-usb|L) MODE=live-usb ; LIVE_USB=$val       ;;
+            -live-usb=*) MODE=live-usb ; LIVE_USB=$val       ;;
                   -MX|m) CONF_DISTRO=MX                      ;;
                   -no|n) SKIP=${SKIP:+,}$val                 ;;
                   -no=*) SKIP=${SKIP:+,}$val                 ;;
