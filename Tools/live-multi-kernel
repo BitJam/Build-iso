@@ -233,10 +233,8 @@ main() {
     shout "Starting %s at %s" "$(pqb $ME)" "$(pqb $(date))"
     start_log "$THE_LOG_FILE" "$orig_args"
 
-    # Add the Tools/ directory to the path.  This is only needed in build-iso mode
-    case $MODE in
-        build-iso) echo "$PATH" | grep -q "\./Tools\b" || PATH="./Tools:$PATH" ;;
-    esac
+    # Add the ./Tools/ directory to the path.
+    echo "$PATH" | grep -q "\./Tools\b" || PATH="./Tools:$PATH"
 
     need_prog $REQUIRED_PROGS
 
