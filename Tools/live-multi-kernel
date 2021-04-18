@@ -781,13 +781,16 @@ read_data() {
 #------------------------------------------------------------------------------
 # Get the full path to a template file based the given base name.  We search
 # through the TEMPLATE_PATH for the file and stop at the first match.
+# If a 2nd param is given then we don't add /$CONF_DISTRO
 #------------------------------------------------------------------------------
 get_template_file() {
-    local fname=$1
+    local fname=$1 non_distro=$2
     local p  file
+    local distro_dir="/$CONF_DISTRO"
+    [[ -n $non_distro ]] && distro_dir=
     for p in "$TEMPLATE_DIR" "${TEMPLATE_PATH[@]}"; do
         [[ -z $p ]] && continue
-        file="$p/$TEMPLATE_NAME/$CONF_DISTRO/$fname"
+        file="$p/$TEMPLATE_NAME$distro_dir/$fname"
         test -e "$file" && break
     done
     test -e "$file"  || return 1
