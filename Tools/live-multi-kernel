@@ -486,6 +486,11 @@ update_initrd() {
             || warn "Could not copy modules for kernel %s" "$version"
     done
 
+    local initrd_template=$(get_template_file initrd non-distro)
+    if [[ -n $initrd_template ]]; then
+        msg "  Copying files from %s" "$(pq $initrd_template)"
+        cmd cp -r "$initrd_template"/* "$dir/"
+    fi
     cmd unpack-initrd -d "$dir" -f "$file" -r $SILENT || fatal "Could not repack initrd file %s" "$file"
 }
 
