@@ -142,7 +142,7 @@ main() {
 
     customize_conf_file "$conf_file" "$main_params"
 
-    set_conf_file_default "$top_conf_file" "$USE_LAB"
+    reset_conf_file "$top_conf_file" "$USE_LAB"
 }
 
 #------------------------------------------------------------------------------
@@ -365,52 +365,34 @@ normal_entry() {
 }
 
 #------------------------------------------------------------------------------
-# Remove a custom entry if it exists and then squeeze extra blank lines and
-# set the default back to "normal"
-# If a temp file is specified then we put our output in it.  And we DON'T
-# copy back to the original file.
+# Set the "default $DEFAULT" and remove a custom entry if it exists.
+# if cmd_temp is given then we work directly on that file.
 #------------------------------------------------------------------------------
 reset_conf_file() {
-    local file=$1  default=$2  cmd_temp=$2
-    vmsg 7 "  reset conf file: %s" "$(pq $(basename "$file"))"
+    local file=$1  default=$2  cmd_temp=$3
 
+    [[ -z $cmd_temp ]] && vmsg 7 "  reset conf file: %s" "$(pq $(basename "$file"))"
     [[ -f $file ]] || fatal "Could not find conf file %s to reset" "$(pe $file)"
+
     local temp=${cmd_temp:-$WORK_DIR/$(basename "$file")}
-    cp "$file" "$temp"
+    [[ -z $cmd_temp ]] && cp "$file" "$temp"
 
-    if [[  -z $default || $default = none ]]; then
-        sed -i "/^\s*default\>/d" "$temp"
+    # Remove all default lines
+    sed -i -r "/^\s*default\>/Id" "$temp"
 
-    elif [[ -n $default ]]; then
-        if ! grep -E -q "^\s*default\s+$default$" "$temp"; then
-            sed -i -r "s/^(\s*default)\>.*/\1 $default/i" "$temp"
-        else
-            sed -i -r "/^\s*MENU/i default $default\n" "$temp"
-        fi
+    # Add a new default line if asked to
+    if [[ -n $default && $default != none ]]; then
+        sed -i -r "/^\s*MENU\s+TITLE/i default $default\n" "$temp"
+        vmsg 7 "   set default to: %s" "$(pq $default)"
     fi
 
+    # Remove custom entry if it exists
     local marker="LABEL custom"
-    ! grep -q "^$maker" "$temp" && sed -i -r "/^\s*$marker/,/^\s*INITRD/d" "$temp"
-
-    [[ -z $cmd_tmp ]] && cat -s "$temp" > "$file"
-}
-
-#------------------------------------------------------------------------------
-# Set "default $default" in a syslinux.cfg file
-#------------------------------------------------------------------------------
-set_conf_file_default() {
-    local file=$1  default=$2
-
-    [[ -z $file ]] && fatal "No conf file given"
-    [[ -e $file ]] || fatal "Conf file %s not found" "$(pe $file)"
-
-    grep -q "^\s*default $default$" "$file" && return
-
-    if grep -q "^\s*default\>" "$file"; then
-        sed -i -r "s/^(\s*default)\>.*/\1 $default/i" "$file"
-    else
-        sed -i -r "/^\s*MENU/i default $default\n" "$file"
+    if grep -i -q "^\s*$marker" "$temp"; then
+        vmsg 7 "  removing custom entry"
+        sed -i -r "/^\s*$marker/I,/^\s*INITRD/Id" "$temp"
     fi
+    [[ -z $cmd_tmp ]] && cat -s "$temp" > "$file"
 }
 
 #------------------------------------------------------------------------------
