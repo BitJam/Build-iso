@@ -121,6 +121,7 @@ main() {
         reset_conf_file  "$top_conf_file"  none
 
         exit 0
+    fi
 
     unpack_cpio "$full_cpio"  "$WORK_DIR/$cpio_file.dir"
     # We need to know THE cpio when doing mulitple menus
