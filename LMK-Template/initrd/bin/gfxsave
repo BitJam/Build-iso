@@ -2,7 +2,7 @@
 
 #------------------------------------------------------------------------------
 # Saves boot parameters for a syslinux bootloader.
-# Uses gfxsave.conf to figure out which ones go into Fn key menus.
+# Uses gfxsave.cfg to figure out which ones go into Fn key menus.
 #------------------------------------------------------------------------------
 
 ME=${0##*/}
@@ -39,7 +39,7 @@ main() {
 
     # Width of some printfs with no color codes
     set_colors "$NO_COLOR" "$LO_COLOR"
-    bold "Update bootloader menu defaults %s" "$(pb $gfx_cmd)"
+    bold "Update bootloader menu defaults (%s) cmd=%s" "$(pb v-$VERSION)" "$(pb $gfx_cmd)"
 
     case $gfx_cmd in
          menus) DO_MENUS=true                        ;;
@@ -131,7 +131,6 @@ main() {
     write_gfx_menu_defaults prep "$menu_dir" ""
     local main_params=$(echo $(extra_cmdline_params))
     vmsg 5 "     popup params: %s" "$(gq $ALL_MENU_PARAMS)"
-    vmsg 5 " main menu params: %s" "$(gq $(extra_cmdline_params))"
     vmsg 5 " main menu params: %s" "$(gq "$main_params")"
 
     [[ -n $multi_kernel && -n $CMD_LANG ]] && update_lang $CMD_LANG $CPIO_LIST
@@ -326,7 +325,7 @@ write_gfx_menu_defaults() {
         [[ -n $out ]] || continue
         local menu_file=$dir/$fname.men
         if [[ -r $menu_file ]]; then
-            vmsg 6 " Found menu file: %s" "$(pq $(basename $menu_file))"
+            vmsg 8 " Found menu file: %s" "$(pq $(basename $menu_file))"
             if ! grep -q '`'"$entry$" $menu_file; then
                 local found=
                 while [ -n "$entry" -a -z "${entry##* *}" ]; do
@@ -349,7 +348,7 @@ write_gfx_menu_defaults() {
         [[ -n $save ]] && ALL_MENU_PARAMS="$ALL_MENU_PARAMS ${out# }"
         [[ -n $write ]] || continue
 
-        vmsg 8 "$(printf " %12s:$from_co %-14s $cheat_co%s\n" \
+        vmsg 7 "$(printf " %12s:$from_co %-14s $cheat_co%s\n" \
             "$title" "$fname$GFX_SUFFIX" "$entry")"
 
         echo "$entry" > $dir/$fname$GFX_SUFFIX
