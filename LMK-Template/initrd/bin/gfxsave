@@ -254,10 +254,11 @@ create_boot_param_hash() {
         # only let through parameter names made of word chars so we can turn
         # them into variables names.  This is a poor man's ash hash.
 
-        # skip parameter names with non-word characters
-        [[  $param =~ ^[a-zA-Z_]*= ]] || continue
-
         local nam=${param%%=*}  val=${param#*=}
+
+        # skip parameter names with non-word characters
+        [[ $nam =~ [^a-zA-Z0-9_] ]] && continue
+
         case $param in
             *=*) eval GFX_P_$nam=$val;;
               *) eval GFX_F_$param=true;;
