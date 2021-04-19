@@ -573,12 +573,6 @@ do_syslinux() {
     cmd unpack-gfx-cpio -d "$cpio_dir" -f $targ_dir/top-cpio -r || fatal "Error packing %s" "$(pqw top-cpio)"
 
     #----- gfx-cpio -----
-    # add reset-all to save menu
-    local save_men=$(get_template_file save.men)
-    if [[ -n $save_men ]]; then
-        cmd_cp "$save_men" "$cpio_dir"
-    fi
-
     # reset the gfxboot.cfg file and make a new bg image
     cmd_cp "$orig_gfx_boot" "$gfx_boot_cfg"
     draw_img_text "$bg_image" "$cpio_dir/$BG_IMAGE" "$title" "$KERNEL_LAB_0 $KERNEL_VERS_0 kernel"
