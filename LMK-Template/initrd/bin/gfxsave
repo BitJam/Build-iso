@@ -185,7 +185,7 @@ find_kernel() {
     fi
     local lc_k_lab=$(echo $KERNEL_LAB | tr 'A-Z' 'a-z')
     CUSTOM_LAB="custom_$lc_k_lab"
-    USE_LAB="use_$lc_k_lab"
+    USE_LAB="$lc_k_lab"
 }
 
 #------------------------------------------------------------------------------
