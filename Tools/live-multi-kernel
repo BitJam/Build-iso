@@ -487,7 +487,7 @@ update_initrd() {
             || warn "Could not copy modules for kernel %s" "$version"
     done
 
-    local initrd_template=$(get_template_file initrd non-distro)
+    local initrd_template=$(get_template_file initrd)
     if [[ -n $initrd_template ]]; then
         msg "  Copying files from %s" "$(pq $initrd_template)"
         cmd cp -r "$initrd_template"/* "$dir/"
@@ -573,6 +573,12 @@ do_syslinux() {
     cmd unpack-gfx-cpio -d "$cpio_dir" -f $targ_dir/top-cpio -r || fatal "Error packing %s" "$(pqw top-cpio)"
 
     #----- gfx-cpio -----
+    # add reset-all to save menu
+    local save_men=$(get_template_file save.men)
+    if [[ -n $save_men ]]; then
+        cmd_cp "$save_men" "$cpio_dir"
+    fi
+
     # reset the gfxboot.cfg file and make a new bg image
     cmd_cp "$orig_gfx_boot" "$gfx_boot_cfg"
     draw_img_text "$bg_image" "$cpio_dir/$BG_IMAGE" "$title" "$KERNEL_LAB_0 $KERNEL_VERS_0 kernel"
@@ -782,17 +788,20 @@ read_data() {
 #------------------------------------------------------------------------------
 # Get the full path to a template file based the given base name.  We search
 # through the TEMPLATE_PATH for the file and stop at the first match.
-# If a 2nd param is given then we don't add /$CONF_DISTRO
+# After we try the distro directory we look above it for non-distro specfic
+# files
 #------------------------------------------------------------------------------
 get_template_file() {
     local fname=$1 non_distro=$2
     local p  file
-    local distro_dir="/$CONF_DISTRO"
-    [[ -n $non_distro ]] && distro_dir=
     for p in "$TEMPLATE_DIR" "${TEMPLATE_PATH[@]}"; do
         [[ -z $p ]] && continue
-        file="$p/$TEMPLATE_NAME$distro_dir/$fname"
+        file="$p/$TEMPLATE_NAME/$CONF_DISTRO/$fname"
         test -e "$file" && break
+
+        file="$p/$TEMPLATE_NAME/$fname"
+        test -e "$file" && break
+
     done
     test -e "$file"  || return 1
     echo "$file"
