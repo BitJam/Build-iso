@@ -404,17 +404,21 @@ customize_conf_file() {
     local file=$1  ; shift
     local params=$*
 
+    vmsg 7 "   customize file: %s" "$(pq $(basename "$file"))"
     [[ -f $file ]] || fatal "Could not find conf file %s to reset" "$(pe $file)"
 
     local temp=$WORK_DIR/$(basename "$file")
-    reset_conf_file "$file" normal "$temp"
+    cp "$file" "$temp"
+
+    reset_conf_file "$file" custom "$temp"
+
     local normal_entry=$(normal_entry "$file")
     vmsg 9 "\nnormal entry:\n%s" "$(pq "$normal_entry")"
 
     local custom_entry=$(echo "$normal_entry" | sed -r \
-        -e "s/^(\s*LABEL\s+).*/\1custom/i" \
-        -e "s/^(\s*MENU LABEL\s+).*/Custom_Boot/i" \
-        -e "s|^(\s*APPEND\s+).*|\1$params|i")
+        -e "s/^(\s*LABEL\s+).*/\1custom/I" \
+        -e "s/^(\s*MENU LABEL\s+).*/\1Custom_Boot/I" \
+        -e "s|^(\s*APPEND\s+).*|\1$params|I")
 
     vmsg 8 "\ncustom entry:\n%s" "$(pq "$custom_entry")"
 
@@ -423,8 +427,9 @@ customize_conf_file() {
     local entry_string=$(echo "$custom_entry"  | sed "s/$/\\\\n/" | tr -d "\n")
     vmsg 10 "\nentry string:\n%s" "$(pq "$entry_string")"
 
-    sed -r -e "/^\s*LABEL normal/i $entry_string" \
-        -e "s/^(\s*DEFAULT\s+).*/\1custom/i" "$temp" > "$file"
+    sed -i -r "/^\s*LABEL normal/Ii $entry_string" "$temp"
+
+    cat -s "$temp" > "$file"
 }
 
 #------------------------------------------------------------------------------
