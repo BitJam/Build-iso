@@ -14,7 +14,6 @@ VERSION_DATE="Sun Apr 18 03:53:38 PM MDT 2021"
 
 KERNEL_REGEX="^vmlinuz(-?|[0-9]|-legacy|-modern)$"
 
-# These are not used (for now)
 KERNEL_LAB_LOW="Legacy"
 KERNEL_LAB_HIGH="Modern"
 CUSTOM_LAB="custom"
@@ -40,7 +39,7 @@ main() {
 
     # Width of some printfs with no color codes
     set_colors "$NO_COLOR" "$LO_COLOR"
-    bold "Update bootloader menu defaults"
+    bold "Update bootloader menu defaults %s" "$(pb $gfx_cmd)"
 
     case $gfx_cmd in
          menus) DO_MENUS=true                        ;;
@@ -51,7 +50,9 @@ main() {
             "$(pe $gfx_cmd)" "$(ec menus custom both reset)" ;;
     esac
 
-    vmsg 6 "Current bootcodes:\n %s" "$(pq $CMD_LINE)"
+    case $gfx_cmd in
+        menus|custom|both) vmsg 6 "Current bootcodes:\n %s" "$(pq $CMD_LINE)" ;;
+    esac
 
     # Do this once
     create_boot_param_hash
@@ -62,6 +63,10 @@ main() {
     # Defaults for single kernel
     local conf_file="$syslinux_dir/syslinux.cfg"
     local cpio_file="gfx-cpio"
+
+    # some have paths some don't.  Sorry.
+    local top_conf_file=$conf_file
+    local top_cpio_file=$syslinux_dir/top-cpio
 
     #--------------------------------------------------------------------------
     # See if this is a multi-kernel bootloader by looking for kernel*.cfg files
@@ -102,10 +107,20 @@ main() {
     rm -rf $WORK_DIR/*
 
     if [[ -n $DO_RESET ]]; then
-        reset_conf_file "$conf_file"
-        reset_cpio_file "$full_cpio"
+        local ker
+        for ker in $ker_configs; do
+            reset_conf_file "$ker" normal
+        done
+
+        local cpio  full
+        for cpio in $CPIO_LIST; do
+            full=$syslinux_dir/$cpio
+            reset_cpio_file "$full"
+        done
+
+        reset_conf_file  "$top_conf_file"  none
+
         exit 0
-    fi
 
     unpack_cpio "$full_cpio"  "$WORK_DIR/$cpio_file.dir"
     # We need to know THE cpio when doing mulitple menus
@@ -122,9 +137,12 @@ main() {
     [[ -n $multi_kernel && -n $CMD_LANG ]] && update_lang $CMD_LANG $CPIO_LIST
 
     update_gfxmenus "$menu_dir"
+
     repack_cpio "$full_cpio" "$menu_dir"
 
     customize_conf_file "$conf_file" "$main_params"
+
+    set_conf_file_default "$top_conf_file" "$USE_LAB"
 }
 
 #------------------------------------------------------------------------------
@@ -160,18 +178,14 @@ find_kernel() {
 
     VMLINUZ_NAME=$(echo "$using_kernel" | cut -f2)
 
-    return
-
-    #-----------------------------------
-    # this stuff is not used (for now)
-    #-----------------------------------
-
     if echo "$vm_info" | head -n1 | grep -q "^UNAME_R\>"; then
         KERNEL_LAB=$KERNEL_LAB_LOW
     else
         KERNEL_LAB=$KERNEL_LAB_HIGH
     fi
-    CUSTOM_LAB="custom_$(echo $KERNEL_LAB | tr 'A-Z' 'a-z')"
+    local lc_k_lab=$(echo $KERNEL_LAB | tr 'A-Z' 'a-z')
+    CUSTOM_LAB="custom_$lc_k_lab"
+    USE_LAB="use_$lc_k_lab"
 }
 
 #------------------------------------------------------------------------------
@@ -357,13 +371,46 @@ normal_entry() {
 # copy back to the original file.
 #------------------------------------------------------------------------------
 reset_conf_file() {
-    local file=$1  cmd_temp=$2
+    local file=$1  default=$2  cmd_temp=$2
+    vmsg 7 "  reset conf file: %s" "$(pq $(basename "$file"))"
+
     [[ -f $file ]] || fatal "Could not find conf file %s to reset" "$(pe $file)"
     local temp=${cmd_temp:-$WORK_DIR/$(basename "$file")}
+    cp "$file" "$temp"
+
+    if [[  -z $default || $default = none ]]; then
+        sed -i "/^\s*default\>/d" "$temp"
+
+    elif [[ -n $default ]]; then
+        if ! grep -E -q "^\s*default\s+$default$" "$temp"; then
+            sed -i -r "s/^(\s*default)\>.*/\1 $default/i" "$temp"
+        else
+            sed -i -r "/^\s*MENU/i default $default\n" "$temp"
+        fi
+    fi
+
     local marker="LABEL custom"
-    grep -q "^$maker" "$file" || return
-    sed -r -e "/^\s*$marker/,/^\s*INITRD/d" -e "s/^(default\s+).*/\1normal/" "$file" | cat -s > "$temp"
-    [[ -z $cmd_tmp ]] && cp "$temp" "$file"
+    ! grep -q "^$maker" "$temp" && sed -i -r "/^\s*$marker/,/^\s*INITRD/d" "$temp"
+
+    [[ -z $cmd_tmp ]] && cat -s "$temp" > "$file"
+}
+
+#------------------------------------------------------------------------------
+# Set "default $default" in a syslinux.cfg file
+#------------------------------------------------------------------------------
+set_conf_file_default() {
+    local file=$1  default=$2
+
+    [[ -z $file ]] && fatal "No conf file given"
+    [[ -e $file ]] || fatal "Conf file %s not found" "$(pe $file)"
+
+    grep -q "^\s*default $default$" "$file" && return
+
+    if grep -q "^\s*default\>" "$file"; then
+        sed -i -r "s/^(\s*default)\>.*/\1 $default/i" "$file"
+    else
+        sed -i -r "/^\s*MENU/i default $default\n" "$file"
+    fi
 }
 
 #------------------------------------------------------------------------------
@@ -377,7 +424,7 @@ customize_conf_file() {
     [[ -f $file ]] || fatal "Could not find conf file %s to reset" "$(pe $file)"
 
     local temp=$WORK_DIR/$(basename "$file")
-    reset_conf_file "$file" "$temp"
+    reset_conf_file "$file" normal "$temp"
     local normal_entry=$(normal_entry "$file")
     vmsg 9 "\nnormal entry:\n%s" "$(pq "$normal_entry")"
 
@@ -415,9 +462,9 @@ reset_cpio_file() {
 reset_cpio_dir() {
     local dir=$1
 
-    [[ -n "$dir" ]] || return
+    [[ -z "$dir" ]] && return
 
-    local fcnt=0
+    local file  fcnt=0
     for file in $(grep '^[A-Za-z]' $GFX_CONFIG_FILE | cut -d"|" -f2); do
         local full=$dir/$file$GFX_SUFFIX
         [[ -e $full ]] || continue
@@ -506,14 +553,15 @@ set_colors() {
     warn_co=$yellow
 }
 
-bold() { vmsg 3 "$hi_co$@"           ; }
-warn() { vmsg 3 "$warn_co$@"         ; }
-msg()    { vmsg 5 "$@"; }
+bold() { vbold 3 "$hi_co$@"    ; }
+warn() { vmsg  3 "$warn_co$@"  ; }
+msg()  { vmsg  5 "$@"          ; }
 
 vbold()  {
-    local level=$1  ; shift
+    local level=$1  fmt=$2 ; shift 2
     [[ $level -gt $VERBOSE ]] && return
-    bold "$@"
+    printf "$hi_co$fmt$nc_co\n" "$@"
+    return 0
 }
 
 fatal() {
