@@ -232,7 +232,7 @@ takes_param() {
 main() {
     local SHORT_STACK="abCdDhikKlLmnqstuvVZ"
     local KERNEL_DIR  BOOTLOAD_DIR  ISO_DIR  SQFS_DIR
-    local SHIFT  VERBOSITY=0  CORE_PREFIX  SINGLE_PREFIX
+    local SHIFT  VERBOSITY=0  SINGLE_PREFIX
     local STRICT  TEMPLATE_DIR  SET_LANG
 
     # Read and process command line parameters
@@ -367,7 +367,7 @@ main() {
     #--------------------------------------------------------------------
 
     # Used for template files since core systems have different .cfg file templates
-    [[ $FLAV = "core" ]] && CORE_PREFIX="core-"
+    [[ $FLAV = "core" ]] && OPTIONS=$CORE_OPTIONS
 
     # Convert relative positions to absolute
     local ABS_TITLE_POS=$TITLE_POS
@@ -708,9 +708,9 @@ do_syslinux() {
 
     # Copy in the template files
 
-    template_copy  "isolinux.cfg"               "$targ_dir/$type.cfg"
-    template_copy  "${CORE_PREFIX}kernel0.cfg"  "$targ_dir/kernel0.cfg"
-    template_copy  "${CORE_PREFIX}kernel1.cfg"  "$targ_dir/kernel1.cfg"
+    template_copy  "isolinux.cfg" "$targ_dir/$type.cfg"
+    template_copy  "kernel0.cfg"  "$targ_dir/kernel0.cfg"
+    template_copy  "kernel1.cfg"  "$targ_dir/kernel1.cfg"
 
     # Remove vbox entry in syslinux cfg files (if needed)
     [[ $type = syslinux ]] && sed -i "/^LABEL vbox/,/^$/d" $f $targ_dir/kernel*.cfg
@@ -727,7 +727,7 @@ do_grub() {
     local my_data_file=$WORK_DIR/data-file
     test -e "$my_data_file" || write_my_data_file $my_data_file
 
-    template_copy ${SINGLE_PREFIX}${CORE_PREFIX}grub.cfg "$targ_dir/grub.cfg"
+    template_copy ${SINGLE_PREFIX}grub.cfg "$targ_dir/grub.cfg"
     template_copy theme.txt  "$targ_dir/theme/"
 
     cmd bootloader-template -s -i --data="$DATA_FILE" --data=$my_data_file "$targ_dir"/{grub.cfg,/theme/theme.txt}
@@ -896,7 +896,7 @@ read_data() {
 # files
 #------------------------------------------------------------------------------
 get_template_file() {
-    local fname=$1 non_distro=$2
+    local fname=$1
     local p  file
     for p in "$TEMPLATE_DIR" "${TEMPLATE_PATH[@]}"; do
         [[ -z $p ]] && continue
@@ -928,10 +928,18 @@ need_template_file() {
 
 #------------------------------------------------------------------------------
 # Copy a file out of the template directory to a destination.  Error out if
-# file is not found in the template
+# file is not found in the template.  If the FLAV is core then we will first
+# look for a core-$fname template file and use it if it exists.
 #------------------------------------------------------------------------------
 template_copy() {
    local fname=$1  dest=$2  full_name
+   if [[ $FLAV = "core" ]]; then
+        local core_name=$(get_template_file core-$fname)
+        if [[ -n $core_name ]]; then
+            cmd_cp "$full_name" "$dest"
+            return 0
+        fi
+   fi
    need_template_file full_name "$fname"
    cmd_cp "$full_name" "$dest"
 }
