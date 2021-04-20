@@ -60,12 +60,17 @@ export TEXTDOMAIN="$ME"
                MENU_POS="+0,+30"
         TITLE_FONT_SIZE=20
     SUB_TITLE_FONT_SIZE=18
+            TITLE_COLOR="#FFFFFF"
 
     SUB_TITLE_FORMAT="released %s  (legacy boot)"
-    DATE_FORMAT="%-e %B %Y"
+         DATE_FORMAT="%-e %B %Y"
+
+    F1_HELP_STRING="press F1 for help"
+    HELP_FONT_SIZE=20
+      ABS_HELP_POS="322,490"
+       HELP_COLOR="#888888"
 
     BG_IMAGE="back800.jpg"
-    COLOR="#FFFFFF"
 
     # These prevent gfxboot from showing the box for typing in options
     # It also prevents the Fn key menu options from being appended
@@ -111,6 +116,9 @@ You can update a mounted live-usb with the --live-usb=<dir> option where
 You can also specify individual directories.  This will, of course,
 over-ride defaults and defaults set by --live and --live-usb options.
 
+In undo mode if there is only one kernel then we will use it.  Otherwise
+you must specify which kernel we use with the --keep=<version> option.
+
 Options:
   -a  --antiX                 Set distro to antiX
   -b  --bootload-dir=<dir>    Directory under which we find bootloaders,
@@ -123,6 +131,8 @@ Options:
                               Bootloaders under <iso-dir>/boot/
   -k  --kernel-dir=<dir>      Explicitly set directory to find kernels in
                                ignoring <iso-dir>
+  -K  --keep=<version>        When reverting to single kernel, keep this kernel
+                               default is current "uname -r"
       --lang=<lang-code>      Set default language
   -l  --live                  Assume we are updating a running live system
   -L  --live-usb=<dir>        Modify a live-usb mounted at <dir>
@@ -134,6 +144,7 @@ Options:
   -S  --strict                Throw an error if 2 kernels aren't found.  Otherwise
                                we just report this to stdut and exit normally.
   -t  --template-dir=<dir>    Directory containing template files
+  -u  --undo                  Revert tp single kernel bootloaders
   -v  --version               Show version info then exit
   -V  --verbose               Print more
   -VV                         Be very verbose, print most commands
@@ -169,6 +180,8 @@ eval_argument() {
               -distro=*) CONF_DISTRO=$val                    ;;
                 -help|h) usage                               ;;
              -iso-dir|i) ISO_DIR=$val                        ;;
+                -keep|K) KEEP_VERSION=$val                   ;;
+                -keep=*) KEEP_VERSION=$val                   ;;
           -kernel-dir|k) KERNEL_DIR=$val                     ;;
           -kernel-dir=*) KERNEL_DIR=$val                     ;;
                   -lang) SET_LANG=$val                       ;;
@@ -185,6 +198,7 @@ eval_argument() {
               -strict|S) STRICT=true                         ;;
         -template-dir|t) TEMPLATE_DIR=$val                   ;;
         -template-dir=*) TEMPLATE_DIR=$val                   ;;
+                -undo|u) UNDO_MODE=true                      ;;
              -version|v) show_version                        ;;
              -verbose|V) : $((VERBOSITY += 1))               ;;
             -last-log|Z) last_log_session "$THE_LOG_FILE"    ;;
@@ -201,6 +215,7 @@ takes_param() {
                 -data|d) return 0 ;;
               -distro|D) return 0 ;;
              -iso-dir|i) return 0 ;;
+                -keep|K) return 0 ;;
           -kernel-dir|k) return 0 ;;
             -live-usb|L) return 0 ;;
                   -no|n) return 0 ;;
@@ -215,10 +230,10 @@ takes_param() {
 # The main event
 #------------------------------------------------------------------------------
 main() {
-    local SHORT_STACK="abCdDhiklLmnqstvVZ"
+    local SHORT_STACK="abCdDhikKlLmnqstuvVZ"
     local KERNEL_DIR  BOOTLOAD_DIR  ISO_DIR  SQFS_DIR
-    local SHIFT  VERBOSITY=0  CORE_PREFIX  STRICT TEMPLATE_DIR
-    local SET_LANG
+    local SHIFT  VERBOSITY=0  CORE_PREFIX  SINGLE_PREFIX
+    local STRICT  TEMPLATE_DIR  SET_LANG
 
     # Read and process command line parameters
     local orig_args="$*"
@@ -248,6 +263,14 @@ main() {
             *) fatal "Unrecognized step %s" "$(pqw $step)"
         esac
     done
+
+    # Reconcile undo mode
+    if undo_mode; then
+        shout "Undo mode enabled"
+        SINGLE_PREFIX="single-"
+    else
+        [[ -n $KEEP_VERSION ]] && fatal "Cannot specify %s without %s" "$(pqw --keep)" "$(pwq --undo)"
+    fi
 
     # Find the template directory and load its config file if it has one ASAP
 
@@ -360,7 +383,10 @@ main() {
 
     if do_step initrd add modules; then
         local initrd="$KERNEL_DIR/$INITRD_NAME"
-        update_initrd "$SQFS_DIR" "$initrd" "$WORK_DIR" $KERNEL_VERSION_0 $KERNEL_VERSION_1
+        local k_versions="$KERNEL_VERSION_0 $KERNEL_VERSION_1"
+        undo_mode && k_versions=$KEEP_VERSION
+
+        update_initrd "$SQFS_DIR" "$initrd" "$WORK_DIR" $k_versions
     fi
 }
 
@@ -390,24 +416,73 @@ find_kernels() {
 
     # Find kernel files by name
     local files=$(ls "$dir" | grep -E "$KERNEL_REGEX")
+
+    # Now ensure they are kernels and get their version numbers
+    local vm_info=$(cd "$dir" && vmlinuz-version -nt $files | LC_ALL=C sort)
+
+    # Find which kernel has the lowest version number
+    # We call vmlinuz-version again.  Oh well.
+    local k_low=$(cd "$dir" && vmlinuz-version -ntr "$files" | sort -V | cut -f2 | head -n1)
+
+    #==============================================================================
+    # Undo mode
+    #==============================================================================
+    if undo_mode; then
+        local tab=$(printf '\t')
+        local first  version  cnt=$(echo "$vm_info" | grep . | wc -l)
+
+        if [[ $cnt -eq 1 ]]; then
+
+            first=$(echo "$vm_info")
+            version=$(echo "$vm_info" | cut -f2)
+            msg "Found one kernel with version %s" "$(pq $version)"
+            [[ -n $KEEP_VERSION && $version !=  $KEEP_VERSION ]] \
+                && fatal "--keep version %s does not match kernel version" "$(pqw $KEEP_VERSION)"
+
+            KEEP_VERSION=$version
+        else
+            echo
+            msg "Found multiple kernels:"
+            (cd "$dir" && vmlinuz-version "$files")
+            echo
+            [[ -z "$KEEP_VERSION" ]] && fatal "Multiple kernels but no %s version was specified" "$(pqw --keep)"
+
+            first=$(echo "$vm_info" | grep "$tab$KEEP_VERSION$tab")
+
+            case $(echo "$first" | grep . | wc -l) in
+                0) fatal "No kernel with version %s was found" "$(pqw $KEEP_VERSION)" ;;
+                1) ;;
+                *) fatal "More than one kernel with version %s was found" "$(pqw $KEEP_VERSION)" ;;
+            esac
+        fi
+
+        # Assign "Legacy" and "Modern" labels according to the sort -V order
+        # Not strictly needed but let's go with the existing flow
+        if [[ $(echo "$first" | cut -f1) = $k_low ]]; then
+            KERNEL_LAB_0=$KERNEL_LAB_LOW
+        else
+            KERNEL_LAB_0=$KERNEL_LAB_HIGH
+        fi
+
+        # Note: we use KERNEL_FILE_0 in single kernel, undo mode
+        set_kernel "Keeping" 0 "$first" "$KERNEL_LAB_0"
+
+        return
+    fi
+    #==============================================================================
+
     case $(echo "$files" | grep . | wc -l) in
         2) ;;
         1) maybe_fatal "Only one vmlinuz file found in %s" "$dir/" ;;
         *) maybe_fatal "More than 2 vmlinuz files found in %s: %s" "$dir/" "$files"
     esac
 
-    # Now ensure they are kernels and get their version numbers
-    local vm_info=$(cd "$dir" && vmlinuz-version -nt $files | LC_ALL=C sort)
-
+    # Count how many kernels we have
     case $(echo "$vm_info" | grep . | wc -l) in
         2) ;;
         1) maybe_fatal "Only one real kernel was found"      ;;
         *) maybe_fatal "More that 2 real kernels were found" ;;
     esac
-
-    # Find which kernel has the lowest version number
-    # We call vmlinuz-version again.  Oh well.
-    local k_low=$(cd "$dir" && vmlinuz-version -ntr "$files" | sort -V | cut -f2 | head -n1)
 
     # Split the vmlinuz-version output into 2 lines, one for each kernel
     local  first=$(echo "$vm_info" | head -n1)
@@ -442,9 +517,11 @@ set_kernel() {
     local file=$(echo "$data" | cut -f1)
     local version=$(echo "$data" | cut -f2)
 
-    # Abbreviated verison number (xx.yy) for putting into menus
+    # Abbreviated version number (xx.yy) for putting into menus
     local vers=$(echo "${version%%-*}" | cut -d. -f1,2)
-    Msg "%10s kernel is %s$quest_co %-8s$m_co version %s" "$lab" "$(pq $type)" "$file" "$(pq $vers)"
+    local last_col=$vers
+    undo_mode && last_col=$version
+    Msg "%10s kernel is %s$quest_co %-8s$m_co version %s" "$lab" "$(pq $type)" "$file" "$(pq $last_col)"
     eval KERNEL_FILE_$index=\$file
     eval KERNEL_VERS_$index=\$vers
     eval KERNEL_VERSION_$index=\$version
@@ -540,6 +617,50 @@ do_syslinux() {
     # Make a copy of the original gfxboot.cfg file
     cmd_cp $orig_cpio_dir/gfxboot.cfg "$orig_gfx_boot"
 
+    # Prepare a few things now ...
+    local bg_image
+    need_template_file bg_image "$BG_IMAGE"
+
+    # Define some variables that will be used in the config files
+    ISO_OR_SYS=$type
+    case $type in
+        syslinux) BACK_TO_TOP="fs nohand exit"
+                  FIRST_HD=hd1                                   ;;
+        isolinux) BACK_TO_TOP="file=/boot/isolinux/isolinux.bin"
+                  FIRST_HD=hd0                                   ;;
+    esac
+
+    # Save this information and the kernel information in our data-file
+    local my_data_file=$WORK_DIR/data-file
+    write_my_data_file $my_data_file
+
+    #====================================================================
+    # UNDO MODE
+    # FIXME perhaps do this after munging coordinates for consistency
+    #====================================================================
+    if undo_mode; then
+
+        vmsg "%s %s" "$(bq "  >>")" "undo $type bootloader"
+
+        # Remove things added for multi-kernel
+        cmd rm -f $(find "$targ_dir" -maxdepth 1 -name "kernel*.cfg")
+
+        # Don't remove the gfx-cpio archive just in case we get interrupted
+        cmd rm -f $(find "$targ_dir" -maxdepth 1 -name "-cpio" | grep -v "/gfx-cpio")
+
+        draw_img_help "$bg_image" "$cpio_dir/$BG_IMAGE" "$F1_HELP_STRING"
+        cmd unpack-gfx-cpio -d "$cpio_dir" -f $targ_dir/gfx-cpio -r || fatal "Error repacking %s" "$(pqw gfx-cpio)"
+
+        template_copy  "single-isolinux.cfg"  "$targ_dir/$type.cfg"
+
+        # Remove vbox entry in syslinux cfg files (if needed)
+        [[ $type = syslinux ]] && sed -i "/^LABEL vbox/,/^$/d" $f $targ_dir/$type.cfg
+
+        cmd bootloader-template -s -i --data="$DATA_FILE" --data=$my_data_file "$targ_dir"/$type.cfg
+        return
+    fi
+    #====================================================================
+
     # Munge the menu position to jive with bg image title and sub-title
     # all the cpio files we create want this same positioning so we
     # do this once in the copy of the original directory.
@@ -555,9 +676,6 @@ do_syslinux() {
     # First make the cpio archive files
     #--------------------------------------------------------------------
     vmsg "%s %s" "$(bq "  >>")" "$type cpio archives"
-
-    local bg_image
-    need_template_file bg_image "$BG_IMAGE"
 
     local title="$FULL_DISTRO_NAME ($CODE_NAME)"
     local sub_title=$(printf "$SUB_TITLE_FORMAT" "$RELEASE_DATE")
@@ -588,19 +706,6 @@ do_syslinux() {
     #--------------------------------------------------------------------
     vmsg "%s %s" "$(bq "  >>")" "$type config files"
 
-    # Define some variables that will be used in the config files
-    ISO_OR_SYS=$type
-    case $type in
-        syslinux) BACK_TO_TOP="fs nohand exit"
-                  FIRST_HD=hd1                                   ;;
-        isolinux) BACK_TO_TOP="file=/boot/isolinux/isolinux.bin"
-                  FIRST_HD=hd0                                   ;;
-    esac
-
-    # Save this information and the kernel information in our data-file
-    local my_data_file=$WORK_DIR/data-file
-    write_my_data_file $my_data_file
-
     # Copy in the template files
 
     template_copy  "isolinux.cfg"               "$targ_dir/$type.cfg"
@@ -608,15 +713,9 @@ do_syslinux() {
     template_copy  "${CORE_PREFIX}kernel1.cfg"  "$targ_dir/kernel1.cfg"
 
     # Remove vbox entry in syslinux cfg files (if needed)
-    local f
-    case $type in
-        syslinux)
-            for f in $targ_dir/*kernel*.cfg; do
-                sed -i "/^LABEL vbox/,/^$/d" $f
-            done ;;
-    esac
+    [[ $type = syslinux ]] && sed -i "/^LABEL vbox/,/^$/d" $f $targ_dir/kernel*.cfg
 
-    # Do string substition on all 3 template files using bootloader-data and my data-file created above
+    # Do string substitution on all 3 template files using bootloader-data and my data-file created above
     cmd bootloader-template -s -i --data="$DATA_FILE" --data=$my_data_file "$targ_dir"/kernel[01].cfg "$targ_dir"/$type.cfg
 }
 
@@ -627,10 +726,11 @@ do_grub() {
     local targ_dir=$1/grub
     local my_data_file=$WORK_DIR/data-file
     test -e "$my_data_file" || write_my_data_file $my_data_file
-    template_copy ${CORE_PREFIX}grub.cfg "$targ_dir/grub.cfg"
-    template_copy theme.txt               "$targ_dir/theme/"
 
-    cmd bootloader-template -s -i --data="$DATA_FILE" --data=$my_data_file "$targ_dir"/grub.cfg "$targ_dir"/theme/theme.txt
+    template_copy ${SINGLE_PREFIX}${CORE_PREFIX}grub.cfg "$targ_dir/grub.cfg"
+    template_copy theme.txt  "$targ_dir/theme/"
+
+    cmd bootloader-template -s -i --data="$DATA_FILE" --data=$my_data_file "$targ_dir"/{grub.cfg,/theme/theme.txt}
 }
 
 #------------------------------------------------------------------------------
@@ -666,8 +766,18 @@ draw_img_text() {
         "text $ABS_TITLE_POS '$title'" \
         -pointsize $SUB_TITLE_FONT_SIZE -draw \
         "text $ABS_SUB_TITLE_POS '$sub_title'" \
-        -fill $COLOR "$src" "$dest"
+        -fill $TITLE_COLOR "$src" "$dest"
 }
+
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+draw_img_help() {
+    local src=$1 dest=$2 string=$3
+    cmd convert -pointsize $HELP_FONT_SIZE -draw \
+        "text $ABS_HELP_POS '$string'" \
+        -fill $HELP_COLOR "$src" "$dest"
+}
+
 
 #------------------------------------------------------------------------------
 # Change x,y values in the 800x600 section of gfxboot.cfg.  Adjust the area of
@@ -825,6 +935,12 @@ template_copy() {
    need_template_file full_name "$fname"
    cmd_cp "$full_name" "$dest"
 }
+
+
+#------------------------------------------------------------------------------
+# Convenience routine to tell is if we are in undo-mode
+#------------------------------------------------------------------------------
+undo_mode() { [[ -n $UNDO_MODE ]] ; return $?; }
 
 #------------------------------------------------------------------------------
 # Exit gracefully after printing the message unless $STRICT is set in which
