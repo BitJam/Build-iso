@@ -754,6 +754,8 @@ KERNEL_VERS_1="$KERNEL_VERS_1"
 LC_KERNEL_LAB_0="$(echo $KERNEL_LAB_0 | tr 'A-Z' 'a-z')"
 LC_KERNEL_LAB_1="$(echo $KERNEL_LAB_1 | tr 'A-Z' 'a-z')"
 My_Data_File
+
+    [[ $FLAV = core ]] && echo "OPTIONS=\"${CORE_OPTIONS:-$OPTIOINS}\"" >> "$file"
 }
 
 #------------------------------------------------------------------------------
