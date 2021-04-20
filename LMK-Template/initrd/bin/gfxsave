@@ -71,8 +71,8 @@ main() {
     #--------------------------------------------------------------------------
     # See if this is a multi-kernel bootloader by looking for kernel*.cfg files
     #--------------------------------------------------------------------------
-    local multi_kernel
-    local ker_configs=$(find $syslinux_dir -name "kernel*.cfg")
+    local multi_kernel  FIRST_LABEL="live"
+    local ker_configs=$(find $syslinux_dir -maxdepth 1 -name "kernel*.cfg")
     if [[ -n $ker_configs ]]; then
 
         # Get path to kernels from one of kernel*.cfg files
@@ -94,6 +94,8 @@ main() {
         cpio_file=$(sed -rn "0,/^UI/ s/^UI\s+gfxboot\s+([a-z0-9_-]+)\s+.*/\1/p" "$conf_file")
         [[ -z $cpio_file ]] && fatal "Could not find gfx-cpio file in config file"
         vmsg 7 "    gfx cpio file: %s" "$(pq $cpio_file)"
+
+        FIRST_LABEL="normal"
         multi_kernel=true
     fi
 
@@ -106,10 +108,10 @@ main() {
     # Clean out so we don't confuse ourselves while testing
     rm -rf $WORK_DIR/*
 
-    if [[ -n $DO_RESET ]]; then
+    if [[ -n $DO_RESET && -n $multi_kernel ]]; then
         local ker
         for ker in $ker_configs; do
-            reset_conf_file "$ker" normal
+            reset_conf_file "$ker" $FIRST_LABEL
         done
 
         local cpio  full
@@ -119,6 +121,12 @@ main() {
         done
 
         reset_conf_file  "$top_conf_file"  none
+
+        exit 0
+
+    elif [[ -n $DO_RESET ]]; then
+        reset_cpio_file  "$syslinux_dir/$cpio_file"
+        reset_conf_file  "$conf_file"
 
         exit 0
     fi
@@ -142,7 +150,7 @@ main() {
 
     customize_conf_file "$conf_file" "$main_params"
 
-    reset_conf_file "$top_conf_file" "$USE_LAB"
+    [[ -n $multi_kernel ]] && reset_conf_file "$top_conf_file" "$USE_LAB"
 }
 
 #------------------------------------------------------------------------------
@@ -362,7 +370,7 @@ write_gfx_menu_defaults() {
 #------------------------------------------------------------------------------
 normal_entry() {
     local file=$1
-    sed -n "/^\s*LABEL normal/,/^\s*INITRD/p" "$file"
+    sed -n "/^\s*LABEL $FIRST_LABEL/,/^\s*INITRD/p" "$file"
 }
 
 #------------------------------------------------------------------------------
@@ -427,7 +435,7 @@ customize_conf_file() {
     local entry_string=$(echo "$custom_entry"  | sed "s/$/\\\\n/" | tr -d "\n")
     vmsg 10 "\nentry string:\n%s" "$(pq "$entry_string")"
 
-    sed -i -r "/^\s*LABEL normal/Ii $entry_string" "$temp"
+    sed -i -r "/^\s*LABEL $FIRST_LABEL/Ii $entry_string" "$temp"
 
     cat -s "$temp" > "$file"
 }
