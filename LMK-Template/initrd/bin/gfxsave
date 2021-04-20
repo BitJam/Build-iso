@@ -370,7 +370,7 @@ write_gfx_menu_defaults() {
 #------------------------------------------------------------------------------
 normal_entry() {
     local file=$1
-    sed -n "/^\s*LABEL $FIRST_LABEL/,/^\s*INITRD/p" "$file"
+    sed -n -r "/^\s*LABEL (live|normal)$/I,/^\s*INITRD/I p" "$file"
 }
 
 #------------------------------------------------------------------------------
