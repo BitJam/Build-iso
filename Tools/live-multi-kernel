@@ -936,7 +936,7 @@ template_copy() {
    if [[ $FLAV = "core" ]]; then
         local core_name=$(get_template_file core-$fname)
         if [[ -n $core_name ]]; then
-            cmd_cp "$full_name" "$dest"
+            cmd_cp "$core_name" "$dest"
             return 0
         fi
    fi
