@@ -78,6 +78,7 @@ main() {
         # Get path to kernels from one of kernel*.cfg files
         local k1_config=$(echo "$ker_configs" | head -n1)
         [[ -z $k1_config ]] && fatal "First kernel config file is missing???"
+        vmsg 9 "Normal entry: %s" "$(pq "$(normal_entry "$k1_config")")"
         local k_path=$(normal_entry "$k1_config" | sed -n "s/^\s*KERNEL\s*//p")
         local kernel_dir=$top_dir$(dirname $k_path)
         vmsg 8 "       kernel_dir: %s" "$(pq $kernel_dir)"
@@ -126,7 +127,7 @@ main() {
 
     elif [[ -n $DO_RESET ]]; then
         reset_cpio_file  "$syslinux_dir/$cpio_file"
-        reset_conf_file  "$conf_file"
+        reset_conf_file  "$conf_file" none
 
         exit 0
     fi
@@ -181,7 +182,7 @@ find_kernel() {
     case $(echo "$using_kernel" | grep . | wc -l) in
         0) fatal "Kernel $UNAME_R was not found"        ;;
         1)                                              ;;
-        *) warn "More than one kernel version $UNAME_R" ;;
+        *) fatal "More than one kernel version $UNAME_R" ;;
     esac
 
     VMLINUZ_NAME=$(echo "$using_kernel" | cut -f2)
@@ -319,7 +320,7 @@ write_gfx_menu_defaults() {
         local fname=$(echo "$m_config" | cut -d"|" -f2)
         local out=
         local fields=$(echo $m_config | cut -d"|" -f3-30)
-        for field in $(echo $fields | sed 's/|/ /g'); do
+        for field in ${fields//|/ }; do
             eval local nam="\$GFX_P_$field"
             [[ -n $nam ]] && out="$out${out:+ }$field=$nam"
             eval local cmd="\$GFX_F_$field"
@@ -335,10 +336,10 @@ write_gfx_menu_defaults() {
         [[ -n $out ]] || continue
         local menu_file=$dir/$fname.men
         if [[ -r $menu_file ]]; then
-            vmsg 8 " Found menu file: %s" "$(pq $(basename $menu_file))"
+            vmsg 8 "  found menu file: %s" "$(pq $(basename $menu_file))"
             if ! grep -q '`'"$entry$" $menu_file; then
                 local found=
-                while [ -n "$entry" -a -z "${entry##* *}" ]; do
+                while [[ $entry =~ " " ]]; do
                     # Strip off params from the end of the string
                     entry=${entry% *}
                     out=${out% *}
@@ -346,7 +347,6 @@ write_gfx_menu_defaults() {
                     found=true
                     break
                 done
-                    msg "Menu file %s does not contain <%s>.  Skipping." "$(pq $fname.men)"  "$(pq $entry)"
                 if [[ -z $found ]]; then
                     msg "Menu file %s does not contain <%s>.  Skipping." "$(pq $fname.men)"  "$(pq $entry)"
                     continue
@@ -522,7 +522,7 @@ extra_cmdline_params() {
 # Utilities for displaying colored strings
 #------------------------------------------------------------------------------
 set_colors() {
-    local noco=$1 loco=$2
+    local noco=$1  loco=$2
 
     [[ -n $noco ]] && return
 
@@ -540,7 +540,7 @@ set_colors() {
       cmd_co=$white;     from_co=$lt_green;  mp_co=$magenta;   num_co=$lt_red;
       dev_co=$magenta;   head_co=$yellow;     m_co=$lt_cyan;    ok_co=$lt_green;
 
-    [ "$loco" ] || return
+    [[ -z $loco ]] && return
 
     from_co=$brown
       hi_co=$white
