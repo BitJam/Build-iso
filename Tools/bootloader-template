@@ -1,8 +1,8 @@
 #!/bin/bash
 ME=${0##*/}
 
-VERSION="2.00.02"
-VERSION_DATE="Mon Apr 19 08:34:53 PM MDT 2021"
+VERSION="2.00.03"
+VERSION_DATE="Mon Apr 19 09:56:23 PM MDT 2021"
 
 SEP="|"
 
