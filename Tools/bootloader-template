@@ -41,7 +41,7 @@ Options:
   -f  --flavour=<flav>     Use <flav> as the flavour
   -h  --help               Show this usage
   -i  --in-place<=SUFFIX>  Change files in-place
-                           Make backup of suffix is supplied
+                           Make backup if suffix is supplied
   -m  -MX                  Use MX-data data file
   -p  --pretend            Don't Change the files, just show the new lines
   -r  --release=<date>     Use <date> as the release date
