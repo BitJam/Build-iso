@@ -450,7 +450,7 @@ customize_conf_file() {
     local entry_string=$(echo "$custom_entry"  | sed "s/$/\\\\n/" | tr -d "\n")
     vmsg 10 "\nentry string:\n%s" "$(pq "$entry_string")"
 
-    sed -i -r "/^\s*LABEL $FIRST_LABEL/Ii $entry_string" "$temp"
+    sed -i -r "/^\s*LABEL\s+(live|normal)/Ii $entry_string" "$temp"
 
     cat -s "$temp" > "$file"
 }
