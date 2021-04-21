@@ -655,6 +655,24 @@ do_syslinux() {
     local my_data_file=$WORK_DIR/data-file
     write_my_data_file $my_data_file
 
+    # Munge the menu position to jive with bg image title and sub-title
+    # all the cpio files we create want this same positioning so we
+    # do this once in the copy of the original directory.
+    munge_gfx_boot "$orig_gfx_boot" mainmenu.pos "$ABS_MENU_POS"
+    munge_gfx_boot "$orig_gfx_boot" bootopt.pos  "$ABS_BOOT_OPT_POS"
+
+    local title="$FULL_DISTRO_NAME ($CODE_NAME)"
+    local sub_title=$(printf "$SUB_TITLE_FORMAT" "$RELEASE_DATE")
+    draw_img_text "$bg_image" "$cpio_dir/$BG_IMAGE" "$title" "$sub_title"
+
+    # Add new nobootoptions if we haven't done so already
+    if ! grep -q "^nobootoptions=.*Use_Legacy" "$orig_gfx_boot"; then
+        cmd sed -i -r "s/^(nobootoptions=.*)/\1,$NEW_NO_BOOT_OPTIONS/" "$orig_gfx_boot"
+    fi
+
+    local gfx_boot_cfg="$cpio_dir/gfxboot.cfg"
+    cmd_cp "$orig_gfx_boot" "$gfx_boot_cfg"
+
     #====================================================================
     # UNDO MODE
     # FIXME perhaps do this after munging coordinates for consistency
@@ -681,29 +699,10 @@ do_syslinux() {
         return
     fi
     #====================================================================
-
-    # Munge the menu position to jive with bg image title and sub-title
-    # all the cpio files we create want this same positioning so we
-    # do this once in the copy of the original directory.
-    munge_gfx_boot "$orig_gfx_boot" mainmenu.pos "$ABS_MENU_POS"
-    munge_gfx_boot "$orig_gfx_boot" bootopt.pos  "${ABS_MENU_POS%%,*},"
-
-    # Add new nobootoptions if we haven't done so already
-    if ! grep -q "^nobootions=.*Use_Legacy" "$orig_gfx_boot"; then
-        cmd sed -i -r "s/^(nobootoptions=.*)/\1,$NEW_NO_BOOT_OPTIONS/" "$orig_gfx_boot"
-    fi
-
     #--------------------------------------------------------------------
     # First make the cpio archive files
     #--------------------------------------------------------------------
     vmsg "%s %s" "$(bq "  >>")" "$type cpio archives"
-
-    local title="$FULL_DISTRO_NAME ($CODE_NAME)"
-    local sub_title=$(printf "$SUB_TITLE_FORMAT" "$RELEASE_DATE")
-    draw_img_text "$bg_image" "$cpio_dir/$BG_IMAGE" "$title" "$sub_title"
-
-    local gfx_boot_cfg="$cpio_dir/gfxboot.cfg"
-    cmd_cp "$orig_gfx_boot" "$gfx_boot_cfg"
 
     #----- top-cpio -----
     cmd sed -i -r "s/^(key\.F[3-9])/;-LMK \1/" "$gfx_boot_cfg"
