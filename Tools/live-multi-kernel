@@ -45,7 +45,7 @@ export TEXTDOMAIN="$ME"
 
     BOOTLOAD_SUB_DIR="boot"
     KERNEL_SUB_DIR="antiX"
-    KERNEL_REGEX="^vmlinuz(|-?[0-9]|-modern|-legacy)$"
+    VMLINUZ_REGEX="^vmlinuz(|-?[0-9]|-modern|-legacy)$"
     KERNEL_LAB_LOW="Legacy"
     KERNEL_LAB_HIGH="Modern"
 
@@ -442,7 +442,7 @@ find_kernels() {
     local dir=${1%/}
 
     # Find kernel files by name
-    local files=$(ls "$dir" | grep -E "$KERNEL_REGEX")
+    local files=$(ls "$dir" | grep -E "$VMLINUZ_REGEX")
 
     # Now ensure they are kernels and get their version numbers
     local vm_info=$(cd "$dir" && vmlinuz-version -nt $files | LC_ALL=C sort)
