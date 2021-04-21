@@ -45,7 +45,7 @@ export TEXTDOMAIN="$ME"
 
     BOOTLOAD_SUB_DIR="boot"
     KERNEL_SUB_DIR="antiX"
-    KERNEL_REGEX="^vmlinuz([0-9]?|-modern|-legacy|-[0-9])$"
+    KERNEL_REGEX="^vmlinuz(|-?[0-9]|-modern|-legacy)$"
     KERNEL_LAB_LOW="Legacy"
     KERNEL_LAB_HIGH="Modern"
 
