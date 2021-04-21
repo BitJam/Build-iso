@@ -41,7 +41,9 @@ main() {
     set_colors "$NO_COLOR" "$LO_COLOR"
     bold "Update bootloader menu defaults (%s) cmd=%s" "$(pb v-$VERSION)" "$(pb $gfx_cmd)"
 
+    # mostly NOT USED
     case $gfx_cmd in
+          save) DO_SAVE=true                         ;;
          menus) DO_MENUS=true                        ;;
         custom) DO_CUSTOM=true                       ;;
           both) DO_MENUS=true ; DO_CUSTOM=true       ;;
