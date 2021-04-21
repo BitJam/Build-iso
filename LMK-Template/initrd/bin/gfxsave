@@ -98,13 +98,13 @@ main() {
         [[ -z $cpio_file ]] && fatal "Could not find gfx-cpio file in config file"
         vmsg 7 "    gfx cpio file: %s" "$(pq $cpio_file)"
 
-        FIRST_LABEL="normal"
         multi_kernel=true
     fi
 
     local GFX_CONFIG_FILE="$syslinux_dir/gfxsave.cfg"
     [[ -r $GFX_CONFIG_FILE ]] || fatal "Could not find gfxsave config file %s"  "$GFX_CONFIG_FILE"
 
+    trap clean_up EXIT
     local full_cpio="$syslinux_dir/$cpio_file"
     mkdir -p "$WORK_DIR"
 
@@ -601,5 +601,12 @@ nq() { echo "$num_co$*$m_co"     ; }
 pb() { echo "$m_co$*$hi_co"      ; }
 pe() { echo "$m_co$*$err_co"     ; }
 pq() { echo "$cheat_co$*$m_co"   ; }
+
+clean_up() {
+    local dir=$WORK_DIR
+    [[ $dir =~ .. && -d $dir ]] || return
+    du -sh "$dir"
+    [[ $VERBOSE -le 5 ]] && rm -rf "$dir"
+}
 
 main "$@"
