@@ -252,9 +252,10 @@ main() {
 
     shout "Starting %s at %s" "$(pqb $ME)" "$(pqb $(date))"
 
-    # Read in the CONF_DISTRO from /etc/initrd-release if it exists
-    # and if it contains DISTRO=xxxxx
-    [[ -z $CONF_DISTRO ]] && get_conf_distro /etc/initrd-release
+    # Read in the CONF_DISTRO from /usr/share/antiX/bootloader-data or from
+    # /etc/initrd-release
+    [[ -z $CONF_DISTRO ]] && get_conf_distro /usr/share/antiX/bootloader-data DISTRO_NAME
+    [[ -z $CONF_DISTRO ]] && get_conf_distro /etc/initrd-release              NAME
 
     : ${CONF_DISTRO:=$DEF_CONF_DISTRO}
 
@@ -408,14 +409,15 @@ main() {
 #==============================================================================
 
 #------------------------------------------------------------------------------
-#
+# Try to guess the CONF_DISTRO based on the contents of /etc/initrd-release
+# Perhaps switch to /usr/share/antiX/bootloader-data when that's availabe.
 #------------------------------------------------------------------------------
 get_conf_distro() {
-    local file=$1 vname=${2:-NAME}
+    local file=$1 vname=${2:-DISTRO_NAME}
     test -r "$file" || return
     local distro=$(sed -n "s/^\s*$vname=//Ip" "$file" | tail -n1 | sed 's/"//g' )
     [[ -z $distro ]]  && return
-    vmsg "Setting CONF_DISTRO to %s" "$(pq $distro)"
+    msg "Setting CONF_DISTRO to %s (from file %s)" "$(pq $distro)" "$(pq $file)"
     CONF_DISTRO=$distro
 }
 
