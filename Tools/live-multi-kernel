@@ -58,6 +58,7 @@ export TEXTDOMAIN="$ME"
               TITLE_POS="250,125"
           SUB_TITLE_POS="+0,+30"
                MENU_POS="+0,+30"
+           BOOT_OPT_POS="+0,450"
         TITLE_FONT_SIZE=20
     SUB_TITLE_FONT_SIZE=18
             TITLE_COLOR="#FFFFFF"
@@ -67,7 +68,7 @@ export TEXTDOMAIN="$ME"
 
     F1_HELP_STRING="press F1 for help"
     HELP_FONT_SIZE=20
-      ABS_HELP_POS="322,490"
+      ABS_HELP_POS="322,510"
        HELP_COLOR="#888888"
 
     BG_IMAGE="back800.jpg"
@@ -379,7 +380,8 @@ main() {
     # Convert relative positions to absolute
     local ABS_TITLE_POS=$TITLE_POS
     local ABS_SUB_TITLE_POS=$(rel_to_abs_pos "$ABS_TITLE_POS" "$SUB_TITLE_POS")
-    local ABS_MENU_POS=$(rel_to_abs_pos "$ABS_SUB_TITLE_POS" "$MENU_POS")
+    local ABS_MENU_POS=$(rel_to_abs_pos "$ABS_SUB_TITLE_POS"  "$MENU_POS")
+    local ABS_BOOT_OPT_POS=$(rel_to_abs_pos "$ABS_MENU_POS"   "$BOOT_OPT_POS")
 
     #--------------------------------------------------------------------
     # Now do the actual work after ducks are lined up
