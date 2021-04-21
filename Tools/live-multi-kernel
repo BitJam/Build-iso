@@ -23,7 +23,7 @@ export TEXTDOMAIN="$ME"
 
     # We already use "DISTRO" in substitutions so we use CONF_DISTRO for selecting the
     # sub-directory of the template directory.
-    CONF_DISTRO="antiX"
+    DEF_CONF_DISTRO="antiX"
 
     # The other modes are "live" and "live-usb"
     MODE="build-iso"
@@ -247,6 +247,13 @@ main() {
     esac
 
     shout "Starting %s at %s" "$(pqb $ME)" "$(pqb $(date))"
+
+    # Read in the CONF_DISTRO from /etc/initrd-release if it exists
+    # and if it contains DISTRO=xxxxx
+    [[ -z $CONF_DISTRO ]] && get_conf_distro /etc/initrd-release
+
+    : ${CONF_DISTRO:=$DEF_CONF_DISTRO}
+
     start_log "$THE_LOG_FILE" "$orig_args"
 
     # Add the ./Tools/ directory to the path.
@@ -393,6 +400,18 @@ main() {
 #==============================================================================
 #===== Here come the subroutines ==============================================
 #==============================================================================
+
+#------------------------------------------------------------------------------
+#
+#------------------------------------------------------------------------------
+get_conf_distro() {
+    local file=$1 vname=${2:-NAME}
+    test -r "$file" || return
+    local distro=$(sed -n "s/^\s*$vname=//Ip" "$file" | tail -n1 | sed 's/"//g' )
+    [[ -z $distro ]]  && return
+    vmsg "Setting CONF_DISTRO to %s" "$(pq $distro)"
+    CONF_DISTRO=$distro
+}
 
 #------------------------------------------------------------------------------
 # Find kernels.  Makes sure everything is kosher and then set the variables:
