@@ -61,7 +61,7 @@ export TEXTDOMAIN="$ME"
            BOOT_OPT_POS="+0,450"
         TITLE_FONT_SIZE=20
     SUB_TITLE_FONT_SIZE=18
-            TITLE_COLOR="#888888"
+            TITLE_COLOR="#CCCCCC"
 
     SUB_TITLE_FORMAT="released %s  (legacy boot)"
          DATE_FORMAT="%-e %B %Y"
