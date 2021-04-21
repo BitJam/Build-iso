@@ -687,11 +687,12 @@ do_syslinux() {
         # Don't remove the gfx-cpio archive just in case we get interrupted
         cmd rm -f $(find "$targ_dir" -maxdepth 1 -name "-cpio" | grep -v "/gfx-cpio")
 
+        # copy back output file to retain titles that were just added
+        cmd_cp "$cpio_dir/$BG_IMAGE" "$bg_image"
         draw_img_help "$bg_image" "$cpio_dir/$BG_IMAGE" "$F1_HELP_STRING"
         cmd unpack-gfx-cpio -d "$cpio_dir" -f $targ_dir/gfx-cpio -r || fatal "Error repacking %s" "$(pqw gfx-cpio)"
 
-        template_copy  "single-isolinux.cfg"  "$targ_dir/$type.cfg"
-
+        template_copy "$targ_dir/$type.cfg"  "single-isolinux.cfg"
         # Remove vbox entry in syslinux cfg files (if needed)
         [[ $type = syslinux ]] && sed -i "/^LABEL vbox/,/^$/d" $f $targ_dir/$type.cfg
 
@@ -728,9 +729,9 @@ do_syslinux() {
 
     # Copy in the template files
 
-    template_copy  "isolinux.cfg" "$targ_dir/$type.cfg"
-    template_copy  "kernel0.cfg"  "$targ_dir/kernel0.cfg"
-    template_copy  "kernel1.cfg"  "$targ_dir/kernel1.cfg"
+    template_copy "$targ_dir/$type.cfg"    "$type.cfg" "isolinux.cfg"
+    template_copy "$targ_dir/kernel0.cfg"  "kernel0.cfg"
+    template_copy "$targ_dir/kernel1.cfg"  "kernel1.cfg"
 
     # Remove vbox entry in syslinux cfg files (if needed)
     [[ $type = syslinux ]] && sed -i "/^LABEL vbox/,/^$/d" $f $targ_dir/kernel*.cfg
@@ -747,8 +748,8 @@ do_grub() {
     local my_data_file=$WORK_DIR/data-file
     test -e "$my_data_file" || write_my_data_file $my_data_file
 
-    template_copy ${SINGLE_PREFIX}grub.cfg "$targ_dir/grub.cfg"
-    template_copy theme.txt  "$targ_dir/theme/"
+    template_copy "$targ_dir/grub.cfg" ${SINGLE_PREFIX}grub.cfg
+    template_copy "$targ_dir/theme/"   theme.txt
 
     cmd bootloader-template -s -i --data="$DATA_FILE" --data=$my_data_file "$targ_dir"/{grub.cfg,/theme/theme.txt}
 }
@@ -949,21 +950,42 @@ need_template_file() {
 }
 
 #------------------------------------------------------------------------------
+# template_copy DEST  fname1 fname2 ...
+#
 # Copy a file out of the template directory to a destination.  Error out if
 # file is not found in the template.  If the FLAV is core then we will first
 # look for a core-$fname template file and use it if it exists.
+# Multiple fnames are allowed.  We stop as soon as one finds a match
 #------------------------------------------------------------------------------
 template_copy() {
-   local fname=$1  dest=$2  full_name
-   if [[ $FLAV = "core" ]]; then
-        local core_name=$(get_template_file core-$fname)
-        if [[ -n $core_name ]]; then
-            cmd_cp "$core_name" "$dest"
-            return 0
+    local  dest=$1  ; shift
+    local params=$*
+    local fname full_name  core_name prev
+
+    # search all template filenames given in order
+    while [[ $# -gt 0 ]]; do
+        fname=$1 ; shift
+
+        # skip repeats
+        [[ $fname = $prev ]] && continue
+        prev=$fname
+
+        # Allow optional "core-" prefix on core systems
+        if [[ $FLAV = "core" ]]; then
+            local core_name=$(get_template_file core-$fname)
+            if [[ -n $core_name ]]; then
+                cmd_cp "$core_name" "$dest"
+                return 0
+            fi
         fi
-   fi
-   need_template_file full_name "$fname"
-   cmd_cp "$full_name" "$dest"
+        full_name=$(get_template_file $fname)
+        [[ -z $full_name ]] && continue
+
+        cmd_cp "$full_name" "$dest"
+        return 0
+    done
+
+    fatal "Could not find template file(s) %s" "$(pqe $params)"
 }
 
 
