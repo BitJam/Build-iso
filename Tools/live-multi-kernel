@@ -6,8 +6,8 @@
 # We source the bootloader-data file and the distro config file.  I have safer
 # ways of doing this.
 
-VERSION="0.02.17"
-VERSION_DATE="Wed Apr 21 12:07:56 AM MDT 2021"
+VERSION="0.02.18"
+VERSION_DATE="Wed Apr 21 01:47:43 AM MDT 2021"
 
         ME=${0##*/}
     MY_DIR=$(dirname "$(readlink -f $0)")
