@@ -122,6 +122,8 @@ you must specify which kernel we use with the --keep=<version> option.
 
 Options:
   -a  --antiX                 Set distro to antiX
+  -A  --auto                  Automatically select single-kernel (undo) or multi-kernel mode 
+                                based on the number of kernels found
   -b  --bootload-dir=<dir>    Directory under which we find bootloaders,
                                ignoring <iso-dir>
   -c  --color                 Set color scheme to: off|low|low2|bw|dark|high
@@ -171,6 +173,7 @@ eval_argument() {
     local arg=$1  val=$2
     case $arg in
                -antiX|a) CONF_DISTRO=antiX                   ;;
+                -auto|A) AUTO_MODE=true                      ;;
         -bootload-dir|b) BOOTLOAD_DIR=$val                   ;;
         -bootload-dir=*) BOOTLOAD_DIR=$val                   ;;
                -color|C) COLOR_SCHEME=$val                   ;;
@@ -231,7 +234,7 @@ takes_param() {
 # The main event
 #------------------------------------------------------------------------------
 main() {
-    local SHORT_STACK="abCdDhikKlLmnqstuvVZ"
+    local SHORT_STACK="aAbCdDhikKlLmnqstuvVZ"
     local KERNEL_DIR  BOOTLOAD_DIR  ISO_DIR  SQFS_DIR
     local SHIFT  VERBOSITY=0  SINGLE_PREFIX
     local STRICT  TEMPLATE_DIR  SET_LANG
@@ -274,6 +277,7 @@ main() {
 
     # Reconcile undo mode
     if undo_mode; then
+        [[ -n $AUTO_MODE ]] && fatal "Cannot use both %s and %s" "$(pqe --undo)" "$(pqe --auto)"
         shout "Undo mode enabled"
         SINGLE_PREFIX="single-"
     else
@@ -445,12 +449,23 @@ find_kernels() {
     # We call vmlinuz-version again.  Oh well.
     local k_low=$(cd "$dir" && vmlinuz-version -ntr "$files" | sort -V | cut -f2 | head -n1)
 
+    local cnt=$(echo "$vm_info" | grep . | wc -l)
+
+    #===== auto-mode ==============================================================
+    if [[ -n $AUTO_MODE ]]; then
+        case $cnt in
+            1) UNDO_MODE=true
+               shout "Selecting %s mode" "$(pqb single-kernel)" ;;
+            *) shout "Selecting %s mode" "$(pqb multi-kernel)"  ;;
+        esac
+    fi
+
     #==============================================================================
     # Undo mode
     #==============================================================================
     if undo_mode; then
         local tab=$(printf '\t')
-        local first  version  cnt=$(echo "$vm_info" | grep . | wc -l)
+        local first  version
 
         if [[ $cnt -eq 1 ]]; then
 
