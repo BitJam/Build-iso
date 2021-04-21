@@ -12,7 +12,7 @@ VERSION_DATE="Tue Apr 20 08:58:54 PM MDT 2021"
 
          GFX_SUFFIX=".def"
 
-KERNEL_REGEX="^vmlinuz(-?|[0-9]|-legacy|-modern)$"
+KERNEL_REGEX="^vmlinuz(|-?[0-9]|-legacy|-modern)$"
 
 KERNEL_LAB_LOW="Legacy"
 KERNEL_LAB_HIGH="Modern"
