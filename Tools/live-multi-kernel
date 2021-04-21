@@ -675,7 +675,6 @@ do_syslinux() {
 
     #====================================================================
     # UNDO MODE
-    # FIXME perhaps do this after munging coordinates for consistency
     #====================================================================
     if undo_mode; then
 
@@ -687,9 +686,9 @@ do_syslinux() {
         # Don't remove the gfx-cpio archive just in case we get interrupted
         cmd rm -f $(find "$targ_dir" -maxdepth 1 -name "-cpio" | grep -v "/gfx-cpio")
 
-        # copy back output file to retain titles that were just added
-        cmd_cp "$cpio_dir/$BG_IMAGE" "$bg_image"
-        draw_img_help "$bg_image" "$cpio_dir/$BG_IMAGE" "$F1_HELP_STRING"
+        # copy previously output file to retain titles that were just added
+        cmd_cp "$cpio_dir/$BG_IMAGE" $WORK_DIR/$BG_IMAGE
+        draw_img_help "$WORK_DIR/$BG_IMAGE" "$cpio_dir/$BG_IMAGE" "$F1_HELP_STRING"
         cmd unpack-gfx-cpio -d "$cpio_dir" -f $targ_dir/gfx-cpio -r || fatal "Error repacking %s" "$(pqw gfx-cpio)"
 
         template_copy "$targ_dir/$type.cfg"  "single-isolinux.cfg"
