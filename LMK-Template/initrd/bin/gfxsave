@@ -10,9 +10,9 @@ ME=${0##*/}
 VERSION="2.00.06"
 VERSION_DATE="Wed Apr 21 03:58:17 AM MDT 2021"
 
-         GFX_SUFFIX=".def"
+GFX_SUFFIX=".def"
 
-KERNEL_REGEX="^vmlinuz(|-?[0-9]|-legacy|-modern)$"
+VMLINUZ_REGEX="^vmlinuz(|-?[0-9]|-legacy|-modern)$"
 
 KERNEL_LAB_LOW="Legacy"
 KERNEL_LAB_HIGH="Modern"
@@ -80,7 +80,7 @@ main() {
         # Get path to kernels from one of kernel*.cfg files
         local k1_config=$(echo "$ker_configs" | head -n1)
         [[ -z $k1_config ]] && fatal "First kernel config file is missing???"
-        vmsg 9 "Normal entry: %s" "$(pq "$(normal_entry "$k1_config")")"
+        vmsg 9 "Normal entry:\n%s" "$(pq "$(normal_entry "$k1_config")")"
         local k_path=$(normal_entry "$k1_config" | sed -n "s/^\s*KERNEL\s*//p")
         local kernel_dir=$top_dir$(dirname $k_path)
         vmsg 8 "       kernel_dir: %s" "$(pq $kernel_dir)"
@@ -119,7 +119,7 @@ main() {
 
         local cpio  full
         for cpio in $CPIO_LIST; do
-            full=$syslinux_dir/$cpio
+            full="$syslinux_dir/$cpio"
             reset_cpio_file "$full"
         done
 
@@ -145,7 +145,7 @@ main() {
     vmsg 5 "     popup params: %s" "$(gq $ALL_MENU_PARAMS)"
     vmsg 5 " main menu params: %s" "$(gq "$main_params")"
 
-    [[ -n $multi_kernel ]] && update_lang "$CMD_LANG" $CPIO_LIST
+    [[ -n $multi_kernel ]] && update_lang "$CMD_LINE_LANG" $CPIO_LIST
 
     update_gfxmenus "$menu_dir"
 
@@ -165,7 +165,7 @@ find_kernel() {
 
     [[ -d $dir ]] || fatal "Could not find kernel directory $dir"
 
-    local files=$(ls "$dir" | grep -E "$KERNEL_REGEX")
+    local files=$(ls "$dir" | grep -E "$VMLINUZ_REGEX")
     case $(echo "$files" | grep . | wc -l) in
         0) fatal "No vmlinuz files found in $dir"       ;;
         1)  warn "Only one vmlinuz file found in $dir/" ;;
@@ -214,7 +214,10 @@ update_lang() {
     local fname  full  dir
     for fname; do
         full=$syslinux_dir/$fname
+
+        # silently ignore missing files
         test -f $full || continue
+
         dir=$WORK_DIR/$fname.dir
         test -d $dir && continue
         unpack_cpio "$full" "$dir"
@@ -267,7 +270,7 @@ create_boot_param_hash() {
     local param
     for param in $CMD_LINE; do
         case $param in
-            lang=*) CMD_LANG=${param#*=} ;;
+            lang=*) CMD_LINE_LANG=${param#*=} ;;
         esac
         param=${param//./_DOT_/}
         param=${param//-/_DASH_}
@@ -457,6 +460,9 @@ customize_conf_file() {
 #------------------------------------------------------------------------------
 reset_cpio_file() {
     local file=$1
+
+    # Silently ignore missing files
+    [[ -e $file ]] || return
     local dir=$WORK_DIR/$(basename "$file").dir
     unpack_cpio "$file" "$dir"
     reset_cpio_dir "$dir"
