@@ -143,7 +143,7 @@ main() {
     vmsg 5 "     popup params: %s" "$(gq $ALL_MENU_PARAMS)"
     vmsg 5 " main menu params: %s" "$(gq "$main_params")"
 
-    [[ -n $multi_kernel && -n $CMD_LANG ]] && update_lang $CMD_LANG $CPIO_LIST
+    [[ -n $multi_kernel ]] && update_lang "$CMD_LANG" $CPIO_LIST
 
     update_gfxmenus "$menu_dir"
 
@@ -204,7 +204,11 @@ find_kernel() {
 update_lang() {
     local lang=$1 ; shift
 
-    vbold 6 "Setting language to %s in all menus" "$(pb $lang)"
+    if [[ -n $lang ]]; then
+        vbold 6 "Setting language to %s in all menus" "$(pb $lang)"
+    else
+        vbold 6 "Resetting  language in all menus"
+    fi
     local fname  full  dir
     for fname; do
         full=$syslinux_dir/$fname
@@ -212,7 +216,13 @@ update_lang() {
         dir=$WORK_DIR/$fname.dir
         test -d $dir && continue
         unpack_cpio "$full" "$dir"
-        echo "$lang" > $dir/lang.def
+
+        if [[ -n $lang ]]; then
+            echo "$lang" > $dir/lang.def
+        else
+            rm -f $dir/lang.def
+        fi
+
         repack_cpio "$full" "$dir"
     done
 }
