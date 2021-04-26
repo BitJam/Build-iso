@@ -72,9 +72,9 @@ eval_argument() {
          -flavour|f)  FLAVOUR=$val                             ;;
      -flavour=*|f=*)  FLAVOUR=$val                             ;;
             -help|h)  usage                                    ;;
-         -inplace|i)  IN_PLACE=--in-place                      ;;
+        -in-place|i)  IN_PLACE=--in-place                      ;;
                  i*)  IN_PLACE=${arg#i}                        ;;
-         -inplace=*)  IN_PLACE=$val                            ;;
+        -in-place=*)  IN_PLACE=$val                            ;;
               -MX|m)  DATA_FILES+=(MX-data)                    ;;
          -pretend|p)  PRETEND=true                             ;;
          -release|r)  RELEASE_DATE=$val                        ;;
