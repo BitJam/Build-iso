@@ -183,9 +183,21 @@ build_sed_exprs() {
     local name val
     for name in $VAR_NAMES; do
         eval val=\$$name
-        SED="$SED -e \"s$SEP%$name%$SEP$val${SEP}g\""
-        SED_P="$SED_P -e \"s$SEP%$name%$SEP$val${SEP}gp\""
+        SED="$SED -e \"s$SEP%\(=\?\)$name\1%$SEP$val${SEP}g\""
+        SED_P="$SED_P -e \"s$SEP%\(=\?\)$name\1%$SEP$val${SEP}gp\""
     done
+}
+
+#------------------------------------------------------------------------------
+# Read in variable assignments from a file, like sourcing the file but safer
+# and with built-in error checks so we only have to write them once
+#------------------------------------------------------------------------------
+read_data() {
+    local file=$1
+    test -e "$file" || fatal "Could not find file $file"
+    test -r "$file" || fatal "Can not read file $file"
+    bash -n "$file" || fatal "Bash errors in file $file"
+    eval $(sed -r -n 's/^\s*([A-Z0-9_]+=[^$`;]+)$/\1/p' "$file")
 }
 
 #------------------------------------------------------------------------------
