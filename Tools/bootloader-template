@@ -100,7 +100,7 @@ main() {
         shift $SHIFT
 
         while [[ $# -gt 0 && ! $1 =~ ^- ]]; do
-            echo "file $1"
+            #echo "file $1"
             IN_FILES+=($1)
             shift
         done
@@ -267,13 +267,13 @@ read_params() {
 
 loop_warn() {
     [[ -n $STRICT ]] && fatal "$@"
-    echo "$ME warning: $*" >&2
+    echo -e "$ME warning: $*" >&2
     return 1
 }
 
 
 fatal() {
-    echo "$ME fatal error: $*" >&2
+    echo -e "$ME error: $*" >&2
     exit 2
 }
 
