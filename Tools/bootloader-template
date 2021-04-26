@@ -49,7 +49,8 @@ Options:
   -m  -MX                  Use MX-data data file
   -p  --pretend            Don't Change the files, just show the new lines
   -r  --release=<date>     Use <date> as the release date
-  -s  --strict             Error out if a file is not found
+  -s  --strict             Error out if a file is not found or if
+                             there seems to be a problem with substitution
   -V  --vars               Just show the variable names then exit
 
 If a directory is specified then we operate on these files under that
@@ -156,14 +157,23 @@ main() {
 
         if [[ -n $PRETEND ]]; then
             echo "FILE $file:"
-            eval "sed -n $SED_P \"$file\"" | egrep -v "%[A-Z_]+%"
+            eval "sed -n $SED_P \"$file\"" | grep -E -v "%=$CHARS=%"
             echo
         else
-            eval "sed $IN_PLACE $SED $file"
+            eval "sed $IN_PLACE $SED '$file'"
+
+            # Check for %=...=% placeholders
+            if [[ -n $IN_PLACE ]]; then
+                local oops=$(grep -E -o \
+                    -e "%=$CHARS=%"     \
+                    -e "%=$CHARS"       \
+                     -e "$CHARS=%" "$file" | sort -u)
+                [[ -z $oops ]] && continue
+                loop_warn "\nUnmatched pattern(s) in $file\n$(echo $oops)"
+            fi
         fi
 
     done
-
 }
 
 #------------------------------------------------------------------------------
