@@ -76,7 +76,7 @@ do_start() {
     if [ -n "$gfx_cmd" ]; then
         local script=/live/bin/gfxsave
         local dir=$BOOT_LOADER_MP/boot
-        local env="GFX_LOG_FILE=/var/log/live/gfxsave.log VERBOSE=5"
+        local env="GFX_LOG_FILE=/var/log/live/gfxsave.log VERBOSE=7"
         #echo $script $dir $gfx_cmd
         env $env $script "$dir" $gfx_cmd
     fi
