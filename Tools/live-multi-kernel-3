@@ -659,7 +659,6 @@ do_syslinux() {
     local top_template  one_menu
     need_template_file top_template $SINGLE_PREFIX$type.cfg ${SINGLE_PREFIX}isolinux.cfg
     grep -q KERNEL_FILE_0 "$top_template" && grep -q KERNEL_FILE_1 "$top_template" && one_menu=true
-
     #====================================================================
     # ONE KERNEL MODE (and single-menu dual-kernel mode)
     #====================================================================
@@ -699,7 +698,7 @@ do_syslinux() {
     #--------------------------------------------------------------------
     # First make the cpio archive files
     #--------------------------------------------------------------------
-    vmsg "%s %s" "$(bq "  >>")" "$type cpio archives"
+    vmsg "%s %s" "$(bq "  >>")" "multi-menu $type cpio archives"
 
     #----- top-cpio -----
     # Disable display of most Fn key menus
