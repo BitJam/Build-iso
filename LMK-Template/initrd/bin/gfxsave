@@ -49,11 +49,11 @@ main() {
           both) DO_MENUS=true ; DO_CUSTOM=true       ;;
          reset) DO_RESET=true                        ;;
              *)  fatal "Bad gfxsave parameter %s\nExpected %s" \
-            "$(pe $gfx_cmd)" "$(ec menus custom both reset)" ;;
+            "$(pe $gfx_cmd)" "$(ec save menus custom both reset)" ;;
     esac
 
     case $gfx_cmd in
-        menus|custom|both) vmsg 6 "Current bootcodes:\n %s" "$(pq $CMD_LINE)" ;;
+        save|menus|custom|both) vmsg 6 "Current bootcodes:\n %s" "$(pq $CMD_LINE)" ;;
     esac
 
     # Do this once
@@ -70,10 +70,14 @@ main() {
     local top_conf_file=$conf_file
     local top_cpio_file=$syslinux_dir/top-cpio
 
+    # Marker is the label for the new entry.
+    # Normal_lab is the label for the entry above which we add the custom entry
+    local marker="custom"  normal_lab="live"  m_label="Custom_Boot"
+
     #--------------------------------------------------------------------------
     # See if this is a multi-kernel bootloader by looking for kernel*.cfg files
     #--------------------------------------------------------------------------
-    local multi_kernel  FIRST_LABEL="live"
+    local multi_kernel  multi_kernel_single_file  FIRST_LABEL="live"
     local ker_configs=$(find $syslinux_dir -maxdepth 1 -name "kernel*.cfg")
     if [[ -n $ker_configs ]]; then
 
@@ -99,6 +103,26 @@ main() {
         vmsg 7 "    gfx cpio file: %s" "$(pq $cpio_file)"
 
         multi_kernel=true
+
+    #----- see if this is single-menu multi-kernel -----
+    elif grep -Eqi "^\s*LABEL\s+legacy" "$conf_file" && grep -Eqi "^\s*LABEL\s+modern" "$conf_file"; then
+
+        msg "single-menu multi-kernel"
+
+        local kernels=$(sed -rn "s/^\s*KERNEL\s+//Ip" "$conf_file" | sort -u)
+
+        local k_path=$(echo "$kernels" | head -n1)
+        local kernel_dir=$top_dir$(dirname $k_path)
+        vmsg 8 "       kernel_dir: %s" "$(pq $kernel_dir)"
+
+        # Find the kernels there so we know which kernel*.cfg to modify
+        find_kernel "$kernel_dir"
+        vmsg 6 "   kernel version: %s  name: %s" "$(pq $UNAME_R)" "$(pq $VMLINUZ_NAME)"
+
+        marker=$CUSTOM_LAB
+        normal_lab=$NORMAL_LAB
+        multi_kernel_single_file=true
+        m_label=$M_LABEL
     fi
 
     local GFX_CONFIG_FILE="$syslinux_dir/gfxsave.cfg"
@@ -145,13 +169,19 @@ main() {
     vmsg 5 "     popup params: %s" "$(gq $ALL_MENU_PARAMS)"
     vmsg 5 " main menu params: %s" "$(gq "$main_params")"
 
+    local desktop=$(echo "$CMD_LINE" | grep -Eo "\bdesktop=[^ ]+\b")
+    if [[ -n $desktop ]] && ! echo "$main_params $ALL_MENU_PARAMS" \
+        | grep -Eq "(^ )desktop=[^ ]*\b"; then
+        vmsg 5 "    skipped param: %s" "$(gq $desktop)"
+    fi
+
     [[ -n $multi_kernel ]] && update_lang "$CMD_LINE_LANG" $CPIO_LIST
 
     update_gfxmenus "$menu_dir"
 
     repack_cpio "$full_cpio" "$menu_dir"
 
-    customize_conf_file "$conf_file" "$main_params"
+    customize_conf_file "$conf_file" "$marker" "$m_label" "$normal_lab"  "$main_params"
 
     [[ -n $multi_kernel ]] && reset_conf_file "$top_conf_file" "$USE_LAB"
 }
@@ -166,7 +196,7 @@ find_kernel() {
     [[ -d $dir ]] || fatal "Could not find kernel directory $dir"
 
     local files=$(ls "$dir" | grep -E "$VMLINUZ_REGEX")
-    case $(echo "$files" | grep . | wc -l) in
+    case $(echo "$files" | grep -c .) in
         0) fatal "No vmlinuz files found in $dir"       ;;
         1)  warn "Only one vmlinuz file found in $dir/" ;;
     esac
@@ -174,14 +204,14 @@ find_kernel() {
     # Now ensure they are kernels and get their version numbers
     local vm_info=$(cd "$dir" && vmlinuz-version -nrt $files | sort -V)
 
-    case $(echo "$vm_info" | grep . | wc -l) in
+    case $(echo "$vm_info" | grep -c .) in
         0) fatal "No kernels were found"       ;;
         1) warn  "Only one kernel was found"   ;;
     esac
 
     local using_kernel=$(echo "$vm_info" | grep "^$UNAME_R\>" | cut -f2)
 
-    case $(echo "$using_kernel" | grep . | wc -l) in
+    case $(echo "$using_kernel" | grep -c .) in
         0) fatal "Kernel $UNAME_R was not found"        ;;
         1)                                              ;;
         *) fatal "More than one kernel version $UNAME_R" ;;
@@ -189,14 +219,16 @@ find_kernel() {
 
     VMLINUZ_NAME=$(echo "$using_kernel" | cut -f2)
 
-    if echo "$vm_info" | head -n1 | grep -q "^UNAME_R\>"; then
+    if echo "$vm_info" | head -n1 | grep -q "^$UNAME_R\>"; then
         KERNEL_LAB=$KERNEL_LAB_LOW
     else
         KERNEL_LAB=$KERNEL_LAB_HIGH
     fi
-    local lc_k_lab=$(echo $KERNEL_LAB | tr 'A-Z' 'a-z')
-    CUSTOM_LAB="custom_$lc_k_lab"
-    USE_LAB="$lc_k_lab"
+    LC_K_LAB=$(echo $KERNEL_LAB | tr 'A-Z' 'a-z')
+    CUSTOM_LAB="custom_$LC_K_LAB"
+    M_LABEL="Custom_${KERNEL_LAB}_Boot"
+    NORMAL_LAB=$LC_K_LAB
+    USE_LAB=$LC_K_LAB
 }
 
 #------------------------------------------------------------------------------
@@ -272,20 +304,20 @@ create_boot_param_hash() {
         case $param in
             lang=*) CMD_LINE_LANG=${param#*=} ;;
         esac
-        param=${param//./_DOT_/}
-        param=${param//-/_DASH_}
-
         # only let through parameter names made of word chars so we can turn
         # them into variables names.  This is a poor man's ash hash.
 
         local nam=${param%%=*}  val=${param#*=}
 
+        nam=${nam//./_DOT_/}
+        nam=${nam//-/_DASH_}
+
         # skip parameter names with non-word characters
         [[ $nam =~ [^a-zA-Z0-9_] ]] && continue
 
         case $param in
-            *=*) eval GFX_P_$nam=$val;;
-              *) eval GFX_F_$param=true;;
+            *=*) eval GFX_P_$nam=\$val  ;;
+              *) eval GFX_F_$param=true ;;
         esac
     done
 }
@@ -381,15 +413,15 @@ write_gfx_menu_defaults() {
 }
 
 #------------------------------------------------------------------------------
-# print out the "normal" entry from a syslinxu .cfg file
+# print out the "normal" entry from a syslinxu .cfg file.
 #------------------------------------------------------------------------------
 normal_entry() {
-    local file=$1
-    sed -n -r "/^\s*LABEL (live|normal)$/I,/^\s*INITRD/I p" "$file"
+    local file=$1  label=${2:-live}
+    sed -n -r "/^\s*LABEL $label\s*$/I,/^\s*INITRD/I p" "$file"
 }
 
 #------------------------------------------------------------------------------
-# Set the "default $DEFAULT" and remove a custom entry if it exists.
+# Set the "default $DEFAULT" and remove all custom entries if they exists.
 # if cmd_temp is given then we work directly on that file.
 #------------------------------------------------------------------------------
 reset_conf_file() {
@@ -405,42 +437,63 @@ reset_conf_file() {
     sed -i -r "/^\s*default\>/Id" "$temp"
 
     # Add a new default line if asked to
-    if [[ -n $default && $default != none ]]; then
-        sed -i -r "/^\s*MENU\s+TITLE/i default $default\n" "$temp"
-        vmsg 7 "   set default to: %s" "$(pq $default)"
-    fi
+    set_conf_default "$temp" "$default"
 
-    # Remove custom entry if it exists
-    local marker="LABEL custom"
-    if grep -i -q "^\s*$marker" "$temp"; then
-        vmsg 7 "  removing custom entry"
-        sed -i -r "/^\s*$marker/I,/^\s*INITRD/Id" "$temp"
-    fi
+    local marker
+    for marker in custom_legacy custom_modern custom; do
+        # Remove custom entry if it exists
+        grep -Eiq "^\s*LABEL\s+$marker\s*$" "$temp" || continue
+        vmsg 7 "  removing custom entry %s" "$(pq $marker)"
+        sed -i -r "/^\s*LABEL\s+$marker\s*$/I,/^\s*INITRD/Id" "$temp"
+    done
+
     [[ -z $cmd_tmp ]] && cat -s "$temp" > "$file"
 }
 
 #------------------------------------------------------------------------------
+#
+#------------------------------------------------------------------------------
+set_conf_default() {
+    local file=$1  default=$2
+    sed -i -r "/^default/I d" "$file"
+    if [[ -n $default && $default != none ]]; then
+        sed -i -r "/^\s*MENU\s+TITLE/i default $default\n" "$file"
+        vmsg 7 "   set default to: %s" "$(pq $default)"
+    fi
+}
+
+#------------------------------------------------------------------------------
 # Clear out existing custom entry (if it exists) then add a new custom entry
-# and set the default to "custom"
+# and set the default to $marker.
 #------------------------------------------------------------------------------
 customize_conf_file() {
-    local file=$1  ; shift
-    local params=$*
-
+    local file=$1  marker=$2  m_label=$3  normal_lab=$4 ; shift 4
+    local params=$*  basename=$(basename "$file")
     vmsg 7 "   customize file: %s" "$(pq $(basename "$file"))"
     [[ -f $file ]] || fatal "Could not find conf file %s to reset" "$(pe $file)"
 
     local temp=$WORK_DIR/$(basename "$file")
     cp "$file" "$temp"
 
-    reset_conf_file "$file" custom "$temp"
+    # Set the default entry
+    set_conf_default "$temp" "$marker"
 
-    local normal_entry=$(normal_entry "$file")
+    # Remove the previous custom entry if it exists
+    if grep -Eiq "^\s*LABEL\s+$marker\s*$" "$temp"; then
+        vmsg 7 "  removing custom entry %s" "$(pq $marker)"
+        sed -i -r "/^\s*LABEL\s+$marker\s*$/I,/^\s*INITRD/Id" "$temp"
+    fi
+
+    # make a copy of the "normal" entry, munge it, and then put it back into
+    # the file as a custom entry, directly above the "normal" entry
+    local normal_entry=$(normal_entry "$file" "$normal_lab")
+    [[ -z "$normal_entry" ]] && fatal "could not find <%s> label in %s" "$normal_lab" "$basename"
+
     vmsg 9 "\nnormal entry:\n%s" "$(pq "$normal_entry")"
 
     local custom_entry=$(echo "$normal_entry" | sed -r \
-        -e "s/^(\s*LABEL\s+).*/\1custom/I" \
-        -e "s/^(\s*MENU LABEL\s+).*/\1Custom_Boot/I" \
+        -e "s/^(\s*LABEL\s+).*/\1$marker/I" \
+        -e "s/^(\s*MENU LABEL\s+).*/\1$m_label/I" \
         -e "s|^(\s*APPEND\s+).*|\1$params|I")
 
     vmsg 8 "\ncustom entry:\n%s" "$(pq "$custom_entry")"
@@ -450,7 +503,7 @@ customize_conf_file() {
     local entry_string=$(echo "$custom_entry"  | sed "s/$/\\\\n/" | tr -d "\n")
     vmsg 10 "\nentry string:\n%s" "$(pq "$entry_string")"
 
-    sed -i -r "/^\s*LABEL\s+(live|normal)/Ii $entry_string" "$temp"
+    sed -i -r "/^\s*LABEL\s+($normal_lab)/Ii $entry_string" "$temp"
 
     cat -s "$temp" > "$file"
 }
@@ -605,7 +658,6 @@ pq() { echo "$cheat_co$*$m_co"   ; }
 clean_up() {
     local dir=$WORK_DIR
     [[ $dir =~ .. && -d $dir ]] || return
-    du -sh "$dir"
     [[ $VERBOSE -le 5 ]] && rm -rf "$dir"
 }
 
