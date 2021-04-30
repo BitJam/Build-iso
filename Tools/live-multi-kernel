@@ -6,8 +6,8 @@
 # We source the bootloader-data file and the distro config file.  I have safer
 # ways of doing this.
 
-VERSION="0.02.21"
-VERSION_DATE="Wed Apr 21 12:19:41 PM MDT 2021"
+VERSION="0.03.01"
+VERSION_DATE="Fri Apr 30 02:48:37 PM MDT 2021"
 
         ME=${0##*/}
     MY_DIR=$(dirname "$(readlink -f $0)")
@@ -63,7 +63,9 @@ export TEXTDOMAIN="$ME"
     SUB_TITLE_FONT_SIZE=18
             TITLE_COLOR="#CCCCCC"
 
-    SUB_TITLE_FORMAT="released %s  (legacy boot)"
+    SUB_TITLE_FORMAT="released %s  (bios boot)"
+    SUB_TITLE_FORMAT_1K="released %s"
+
          DATE_FORMAT="%-e %B %Y"
 
     F1_HELP_STRING="press F1 for help"
@@ -117,12 +119,9 @@ You can update a mounted live-usb with the --live-usb=<dir> option where
 You can also specify individual directories.  This will, of course,
 over-ride defaults and defaults set by --live and --live-usb options.
 
-In undo mode if there is only one kernel then we will use it.  Otherwise
-you must specify which kernel we use with the --keep=<version> option.
-
 Options:
   -a  --antiX                 Set distro to antiX
-  -A  --auto                  Automatically select single-kernel (undo) or multi-kernel mode 
+  -A  --auto                  Automatically select one-kernel or multi-kernel mode
                                 based on the number of kernels found
   -b  --bootload-dir=<dir>    Directory under which we find bootloaders,
                                ignoring <iso-dir>
@@ -134,20 +133,21 @@ Options:
                               Bootloaders under <iso-dir>/boot/
   -k  --kernel-dir=<dir>      Explicitly set directory to find kernels in
                                ignoring <iso-dir>
-  -K  --keep=<version>        When reverting to single kernel, keep this kernel
-                               default is current "uname -r"
       --lang=<lang-code>      Set default language
   -l  --live                  Assume we are updating a running live system
   -L  --live-usb=<dir>        Modify a live-usb mounted at <dir>
   -m  --MX                    Set distro to MX
   -n  --no=<list>             Skip steps:
                                initrd rm-modules isolinux syslinux grub cleanup delete
+  -o --one-kernel             Make single-kernel bootloaders
+  -o --one-kernel=<kernel>    Make single-kernel bootloaders using then kernel specified
+                               by the filename or version <kernel>
   -q  --quiet                 Print much less
+  -r  --reverse               Reverse the order of the two kernels
   -s  --sqfs-dir-<dir>        Directory under which we get kernel modules
   -S  --strict                Throw an error if 2 kernels aren't found.  Otherwise
                                we just report this to stdut and exit normally.
   -t  --template-dir=<dir>    Directory containing template files
-  -u  --undo                  Revert tp single kernel bootloaders
   -v  --version               Show version info then exit
   -V  --verbose               Print more
   -VV                         Be very verbose, print most commands
@@ -184,8 +184,6 @@ eval_argument() {
               -distro=*) CONF_DISTRO=$val                    ;;
                 -help|h) usage                               ;;
              -iso-dir|i) ISO_DIR=$val                        ;;
-                -keep|K) KEEP_VERSION=$val                   ;;
-                -keep=*) KEEP_VERSION=$val                   ;;
           -kernel-dir|k) KERNEL_DIR=$val                     ;;
           -kernel-dir=*) KERNEL_DIR=$val                     ;;
                   -lang) SET_LANG=$val                       ;;
@@ -196,13 +194,15 @@ eval_argument() {
                   -MX|m) CONF_DISTRO=MX                      ;;
                   -no|n) SKIP=${SKIP:+,}$val                 ;;
                   -no=*) SKIP=${SKIP:+,}$val                 ;;
+          -one-kernel|o) ONE_KERNEL=true                     ;;
+          -one-kernel=*) ONE_KERNEL=true ; SINGLE_KERNEL=$val;;
                -quiet|q) QUIET="--quiet" ; SILENT="--silent" ;;
+             -reverse|r) REVERSE="-r"                        ;;
             -sqfs-dir|s) SQFS_DIR=$val                       ;;
             -sqfs-dir=*) SQFS_DIR=$val                       ;;
               -strict|S) STRICT=true                         ;;
         -template-dir|t) TEMPLATE_DIR=$val                   ;;
         -template-dir=*) TEMPLATE_DIR=$val                   ;;
-                -undo|u) UNDO_MODE=true                      ;;
              -version|v) show_version                        ;;
              -verbose|V) : $((VERBOSITY += 1))               ;;
             -last-log|Z) last_log_session "$THE_LOG_FILE"    ;;
@@ -234,10 +234,11 @@ takes_param() {
 # The main event
 #------------------------------------------------------------------------------
 main() {
-    local SHORT_STACK="aAbCdDhikKlLmnqstuvVZ"
+    local SHORT_STACK="aAbCdDhiklLmnoqstvVZ"
     local KERNEL_DIR  BOOTLOAD_DIR  ISO_DIR  SQFS_DIR
     local SHIFT  VERBOSITY=0  SINGLE_PREFIX
     local STRICT  TEMPLATE_DIR  SET_LANG
+    local ONE_KERNEL  ONE_VERSION  SINGLE_KERNEL  REVERSE
 
     # Read and process command line parameters
     local orig_args="$*"
@@ -247,7 +248,7 @@ main() {
     case $VERBOSITY in
         0) ;;
         1) BE_VERBOSE=true                     ;;
-        *) BE_VERBOSE=true ; VERY_VERBOSE=true ;;
+        *) VERY_VERBOSE=true ;;
     esac
 
     shout "Starting %s at %s" "$(pqb $ME)" "$(pqb $(date))"
@@ -276,13 +277,11 @@ main() {
         esac
     done
 
-    # Reconcile undo mode
-    if undo_mode; then
-        [[ -n $AUTO_MODE ]] && fatal "Cannot use both %s and %s" "$(pqe --undo)" "$(pqe --auto)"
-        shout "Undo mode enabled"
+    # Reconcile --one-kernel
+    if one_kernel; then
+        [[ -n $AUTO_MODE ]] && fatal "Cannot use both %s and %s" "$(pqw --one-kernel)" "$(pqw --auto)"
+        shout "One kernel mode enabled"
         SINGLE_PREFIX="single-"
-    else
-        [[ -n $KEEP_VERSION ]] && fatal "Cannot specify %s without %s" "$(pqw --keep)" "$(pwq --undo)"
     fi
 
     # Find the template directory and load its config file if it has one ASAP
@@ -295,7 +294,7 @@ main() {
         test -d "$distro_template" || fatal "Could not find distro template directory %s" "$distro_template"
     fi
 
-    local distro_config=$(get_template_file "config")
+    local distro_config=$(find_template_file config)
     if test -e "$distro_config"; then
         msg "Sourcing config at %s" "$(pq "$distro_config")"
         read_data "$distro_config" "distro config file"
@@ -398,7 +397,7 @@ main() {
     if do_step initrd add modules; then
         local initrd="$KERNEL_DIR/$INITRD_NAME"
         local k_versions="$KERNEL_VERSION_0 $KERNEL_VERSION_1"
-        undo_mode && k_versions=$KEEP_VERSION
+        one_kernel && k_versions=$ONE_VERSION
 
         update_initrd "$SQFS_DIR" "$initrd" "$WORK_DIR" $k_versions
     fi
@@ -424,8 +423,9 @@ get_conf_distro() {
 #------------------------------------------------------------------------------
 # Find kernels.  Makes sure everything is kosher and then set the variables:
 #
-#    KERNEL_LAB_[01]
 #    KERNEL_FILE_[01]
+#    KERNEL_LAB_[01]
+#    KERNEL_VERSION_[01]
 #    KERNEL_VERS_[01]
 #
 # The order of the kernels (in menus) follows alphabetic order of the vmlinuz
@@ -444,55 +444,60 @@ find_kernels() {
     # Find kernel files by name
     local files=$(ls "$dir" | grep -E "$VMLINUZ_REGEX")
 
-    # Now ensure they are kernels and get their version numbers
+    # ensure they are kernels and get their version numbers
     local vm_info=$(cd "$dir" && vmlinuz-version -nt $files | LC_ALL=C sort)
+    local cnt=$(echo "$vm_info" | grep -c .)
 
-    # Find which kernel has the lowest version number
+    [[ $cnt -eq 0 ]] && fatal "no kernels found in directory %s" "$(pqe $dir)"
+
+    # Find which kernel has the lowest version number using sort -V
     # We call vmlinuz-version again.  Oh well.
-    local k_low=$(cd "$dir" && vmlinuz-version -ntr "$files" | sort -V | cut -f2 | head -n1)
+    local k_low=$(cd "$dir" && vmlinuz-version -ntr "$files" | sort -V $REVERSE | cut -f2 | head -n1)
 
-    local cnt=$(echo "$vm_info" | grep . | wc -l)
+    vmsg "Found %s total kernel(s) that match" "$(pq $cnt)"
+
+    # Filter kernels by filename *or* version
+    if [[ -n $SINGLE_KERNEL ]]; then
+        local new_vm_info=$(echo "$vm_info" | grep "\b$SINGLE_KERNEL\b");
+        local new_cnt=$(echo "$new_vm_info" | grep -c .)
+
+        # FIXME clean up displays
+        case $new_cnt in
+            0)  Msg "found kernels:\n%s" "$(pq "$(vmlinuz-version -s "$dir")")"
+                fatal "No kernels found that match  <%s>"  "$(pqw $SINGLE_KERNEL)" ;;
+            1)  msg "found matching kernel: %s" "$(pq $new_vm_info)";;
+            *)  Msg "matching kernels:\n%s" "$(pq "$new_vm_info")"
+                fatal "more than one kernel matches <%s>" "$(pqw $SINGLE_KERNEL)" ;;
+        esac
+        vm_info=$new_vm_info
+        cnt=$new_cnt
+    fi
 
     #===== auto-mode ==============================================================
+    # Automatically select one-kernel mode if only one kernel
     if [[ -n $AUTO_MODE ]]; then
         case $cnt in
-            1) UNDO_MODE=true
+            1) ONE_KERNEL=true
                shout "Selecting %s mode" "$(pqb single-kernel)" ;;
             *) shout "Selecting %s mode" "$(pqb multi-kernel)"  ;;
         esac
     fi
 
     #==============================================================================
-    # Undo mode
+    # One kernel mode
     #==============================================================================
-    if undo_mode; then
-        local tab=$(printf '\t')
+    if one_kernel; then
         local first  version
 
-        if [[ $cnt -eq 1 ]]; then
-
-            first=$(echo "$vm_info")
-            version=$(echo "$vm_info" | cut -f2)
-            msg "Found one kernel with version %s" "$(pq $version)"
-            [[ -n $KEEP_VERSION && $version !=  $KEEP_VERSION ]] \
-                && fatal "--keep version %s does not match kernel version" "$(pqw $KEEP_VERSION)"
-
-            KEEP_VERSION=$version
-        else
-            echo
-            msg "Found multiple kernels:"
-            (cd "$dir" && vmlinuz-version "$files")
-            echo
-            [[ -z "$KEEP_VERSION" ]] && fatal "Multiple kernels but no %s version was specified" "$(pqw --keep)"
-
-            first=$(echo "$vm_info" | grep "$tab$KEEP_VERSION$tab")
-
-            case $(echo "$first" | grep . | wc -l) in
-                0) fatal "No kernel with version %s was found" "$(pqw $KEEP_VERSION)" ;;
-                1) ;;
-                *) fatal "More than one kernel with version %s was found" "$(pqw $KEEP_VERSION)" ;;
-            esac
+        if [[ $cnt -gt 1 ]]; then
+            Msg "Found kernels:\n%s" "$(pq "$vm_info")"
+            fatal "Found more than one kernel"
         fi
+
+        first=$(echo "$vm_info")
+        version=$(echo "$vm_info" | cut -f2)
+        msg "Found one kernel with version %s" "$(pq $version)"
+        ONE_VERSION=$version
 
         # Assign "Legacy" and "Modern" labels according to the sort -V order
         # Not strictly needed but let's go with the existing flow
@@ -502,21 +507,22 @@ find_kernels() {
             KERNEL_LAB_0=$KERNEL_LAB_HIGH
         fi
 
-        # Note: we use KERNEL_FILE_0 in single kernel, undo mode
-        set_kernel "Keeping" 0 "$first" "$KERNEL_LAB_0"
+        set_kernel "Keeping" 0 "$first" "$KERNEL_LAB_0" quiet
+        # FIXME print out something here
+        msg fixme
 
         return
     fi
     #==============================================================================
 
-    case $(echo "$files" | grep . | wc -l) in
+    case $(echo "$files" | grep -c .) in
         2) ;;
         1) maybe_fatal "Only one vmlinuz file found in %s" "$dir/" ;;
-        *) maybe_fatal "More than 2 vmlinuz files found in %s: %s" "$dir/" "$files"
+        *) maybe_fatal "More than 2 vmlinuz files found in %s: %s" "$dir/" "$files" ;;
     esac
 
     # Count how many kernels we have
-    case $(echo "$vm_info" | grep . | wc -l) in
+    case $(echo "$vm_info" | grep -c .) in
         2) ;;
         1) maybe_fatal "Only one real kernel was found"      ;;
         *) maybe_fatal "More that 2 real kernels were found" ;;
@@ -558,56 +564,13 @@ set_kernel() {
     # Abbreviated version number (xx.yy) for putting into menus
     local vers=$(echo "${version%%-*}" | cut -d. -f1,2)
     local last_col=$vers
-    undo_mode && last_col=$version
-    Msg "%10s kernel is %s$quest_co %-8s$m_co version %s" "$lab" "$(pq $type)" "$file" "$(pq $last_col)"
+    one_kernel && last_col=$version
+     [[ $# -lt 5 ]] && Msg "%10s kernel is %s$quest_co %-8s$m_co version %s" \
+         "$lab" "$(pq $type)" "$file" "$(pq $last_col)"
+
     eval KERNEL_FILE_$index=\$file
     eval KERNEL_VERS_$index=\$vers
     eval KERNEL_VERSION_$index=\$version
-}
-
-#------------------------------------------------------------------------------
-# Unpack initrd.  Remove all module directories.  Add module directories for
-# our kernels.  Repack initrd
-#------------------------------------------------------------------------------
-update_initrd() {
-    local root=${1%/}  file=$2  dir="$3/initrd"  ; shift 3
-    local mdir=$dir/lib/modules
-
-    # Lots of sanity checks ...
-    ! test -e "$file" && warn "Could not find %s file %s"   "$INITRD_NAME" "$file"  && return 1
-    ! test -r "$file" && warn "Can not read %s file %s"     "$INITRD_NAME" "$file"  && return 1
-    ! test -w "$file" && warn "Can not write to %s file %s" "$INITRD_NAME" "$file"  && return 1
-    ! test -d "$root" && warn "Sqfs directory %s does not exist" "$root"            && return 1
-
-    cmd unpack-initrd -d "$dir" -f "$file" $SILENT || fatal "Could not unpack initrd file %s" "$file"
-
-    # Remove existing module trees
-    if do_step_q rm-modules first; then
-        local k
-        for k in $(ls "$mdir") ; do
-            msg "%s" "$(bq "Removing modules for kernel" $k)"
-            cmd rm -r $mdir/$k || warn "Could not remove directory %s" "$mdir/$k"
-        done
-    fi
-
-    # Add in modules for our kernels
-    local version
-    for version; do
-        if ! test -d "$root/lib/modules/$version"; then
-            warn "Could not find modules for %s under %s" "$version" "$root"
-            continue
-        fi
-        msg "  Adding modules for kernel %s" "$(pq $version)"
-        cmd copy-initrd-modules --kernel=$version --from="$root" --to="$dir" --quiet $ENCRYPT \
-            || warn "Could not copy modules for kernel %s" "$version"
-    done
-
-    local initrd_template=$(get_template_file initrd)
-    if [[ -n $initrd_template ]]; then
-        msg "  Copying files from %s" "$(pq $initrd_template)"
-        cmd cp -r "$initrd_template"/* "$dir/"
-    fi
-    cmd unpack-initrd -d "$dir" -f "$file" -r $SILENT || fatal "Could not repack initrd file %s" "$file"
 }
 
 #------------------------------------------------------------------------------
@@ -655,6 +618,9 @@ do_syslinux() {
     # Make a copy of the original gfxboot.cfg file
     cmd_cp $orig_cpio_dir/gfxboot.cfg "$orig_gfx_boot"
 
+    local template_gfxboot=$(find_template_file gfxboot.cfg)
+    [[ -n $template_gfxboot ]] && cmd_cp $template_gfxboot "$orig_gfx_boot"
+
     # Prepare a few things now ...
     local bg_image
     need_template_file bg_image "$BG_IMAGE"
@@ -680,7 +646,7 @@ do_syslinux() {
 
     local title="$FULL_DISTRO_NAME ($CODE_NAME)"
     local sub_title=$(printf "$SUB_TITLE_FORMAT" "$RELEASE_DATE")
-    draw_img_text "$bg_image" "$cpio_dir/$BG_IMAGE" "$title" "$sub_title"
+    draw_image_titles "$bg_image" "$cpio_dir/$BG_IMAGE" "$title" "$sub_title"
 
     # Add new nobootoptions if we haven't done so already
     if ! grep -q "^nobootoptions=.*Use_Legacy" "$orig_gfx_boot"; then
@@ -690,12 +656,19 @@ do_syslinux() {
     local gfx_boot_cfg="$cpio_dir/gfxboot.cfg"
     cmd_cp "$orig_gfx_boot" "$gfx_boot_cfg"
 
+    local top_template  one_menu
+    need_template_file top_template $SINGLE_PREFIX$type.cfg ${SINGLE_PREFIX}isolinux.cfg
+    grep -q KERNEL_FILE_0 "$top_template" && grep -q KERNEL_FILE_1 "$top_template" && one_menu=true
     #====================================================================
-    # UNDO MODE
+    # ONE KERNEL MODE (and single-menu dual-kernel mode)
     #====================================================================
-    if undo_mode; then
+    if one_kernel || [[ -n $one_menu ]]; then
 
-        vmsg "%s %s" "$(bq "  >>")" "undo $type bootloader"
+        if one_kernel; then
+            vmsg "%s %s" "$(bq "  >>")" "one-kernel $type bootloader"
+        else
+            vmsg "%s %s" "$(bq "  >>")" "one-menu $type bootloader"
+        fi
 
         # Remove things added for multi-kernel
         cmd rm -f $(find "$targ_dir" -maxdepth 1 -name "kernel*.cfg")
@@ -703,43 +676,48 @@ do_syslinux() {
         # Don't remove the gfx-cpio archive just in case we get interrupted
         cmd rm -f $(find "$targ_dir" -maxdepth 1 -name "-cpio" | grep -v "/gfx-cpio")
 
-        # Only add F1 help text in syslinux
-        if [[ $type = syslinux ]]; then
+        # Only add F1 help text if no "F1 Help" is shown
+        if ! grep -iq "^\s*key.F1=help" "$gfx_boot_cfg" ; then
             # copy previously output file to retain titles that were just added
             cmd_cp "$cpio_dir/$BG_IMAGE" $WORK_DIR/$BG_IMAGE
-            draw_img_help "$WORK_DIR/$BG_IMAGE" "$cpio_dir/$BG_IMAGE" "$F1_HELP_STRING"
+            draw_image_help "$WORK_DIR/$BG_IMAGE" "$cpio_dir/$BG_IMAGE" "$F1_HELP_STRING"
         fi
 
         cmd unpack-gfx-cpio -d "$cpio_dir" -f $targ_dir/gfx-cpio -r || fatal "Error repacking %s" "$(pqw gfx-cpio)"
 
-        template_copy "$targ_dir/$type.cfg"  "single-isolinux.cfg"
+        template_copy "$targ_dir/$type.cfg" $SINGLE_PREFIX$type.cfg ${SINGLE_PREFIX}isolinux.cfg
+
         # Remove vbox entry in syslinux cfg files (if needed)
         [[ $type = syslinux ]] && sed -i "/^LABEL vbox/,/^$/d" $f $targ_dir/$type.cfg
 
-        cmd bootloader-template -s -i --data="$DATA_FILE" --data=$my_data_file "$targ_dir"/$type.cfg
+        bootloader_template --data=$my_data_file "$targ_dir"/$type.cfg
         return
     fi
     #====================================================================
+    # back to multi-kernel, multi-menu
     #--------------------------------------------------------------------
     # First make the cpio archive files
     #--------------------------------------------------------------------
-    vmsg "%s %s" "$(bq "  >>")" "$type cpio archives"
+    vmsg "%s %s" "$(bq "  >>")" "multi-menu $type cpio archives"
 
     #----- top-cpio -----
+    # Disable display of most Fn key menus
     cmd sed -i -r "s/^(key\.F[3-9])/;-LMK \1/" "$gfx_boot_cfg"
-    cmd sed -i -r "/^key.F2=lang/i key.F1=help" "$gfx_boot_cfg"
 
+    # display "F1 help" if we are not already
+    grep -q "^\s*key.F1=help" "$gfx_boot_cfg" \
+        && cmd sed -i -r "/^key.F2=lang/i key.F1=help" "$gfx_boot_cfg"
     cmd unpack-gfx-cpio -d "$cpio_dir" -f $targ_dir/top-cpio -r || fatal "Error packing %s" "$(pqw top-cpio)"
 
     #----- gfx-cpio -----
     # reset the gfxboot.cfg file and make a new bg image
     cmd_cp "$orig_gfx_boot" "$gfx_boot_cfg"
-    draw_img_text "$bg_image" "$cpio_dir/$BG_IMAGE" "$title" "$KERNEL_LAB_0 $KERNEL_VERS_0 kernel"
+    draw_image_titles "$bg_image" "$cpio_dir/$BG_IMAGE" "$title" "$KERNEL_LAB_0 $KERNEL_VERS_0 kernel"
     cmd unpack-gfx-cpio -d "$cpio_dir" -f $targ_dir/gfx-cpio -r || fatal "Error repacking %s" "$(pqw gfx-cpio)"
 
     #----- gfx1-cpio -----
     # make a new bg image (the kernel menus use the same gfxboot.cfg file)
-    draw_img_text "$bg_image" "$cpio_dir/$BG_IMAGE" "$title" "$KERNEL_LAB_1 $KERNEL_VERS_1 kernel"
+    draw_image_titles "$bg_image" "$cpio_dir/$BG_IMAGE" "$title" "$KERNEL_LAB_1 $KERNEL_VERS_1 kernel"
     cmd unpack-gfx-cpio -d "$cpio_dir" -f $targ_dir/gfx1-cpio -r || fatal "Error repacking %s" "$(pqw gfx-cpio)"
 
     #--------------------------------------------------------------------
@@ -757,7 +735,7 @@ do_syslinux() {
     [[ $type = syslinux ]] && sed -i "/^LABEL vbox/,/^$/d" $f $targ_dir/kernel*.cfg
 
     # Do string substitution on all 3 template files using bootloader-data and my data-file created above
-    cmd bootloader-template -s -i --data="$DATA_FILE" --data=$my_data_file "$targ_dir"/kernel[01].cfg "$targ_dir"/$type.cfg
+    bootloader_template "$targ_dir"/kernel[01].cfg "$targ_dir"/$type.cfg
 }
 
 #------------------------------------------------------------------------------
@@ -771,7 +749,7 @@ do_grub() {
     template_copy "$targ_dir/grub.cfg" ${SINGLE_PREFIX}grub.cfg
     template_copy "$targ_dir/theme/"   theme.txt
 
-    cmd bootloader-template -s -i --data="$DATA_FILE" --data=$my_data_file "$targ_dir"/{grub.cfg,/theme/theme.txt}
+    bootloader_template "$targ_dir"/{grub.cfg,/theme/theme.txt}
 }
 
 #------------------------------------------------------------------------------
@@ -794,16 +772,88 @@ KERNEL_VERS_0="$KERNEL_VERS_0"
 KERNEL_VERS_1="$KERNEL_VERS_1"
 LC_KERNEL_LAB_0="$(echo $KERNEL_LAB_0 | tr 'A-Z' 'a-z')"
 LC_KERNEL_LAB_1="$(echo $KERNEL_LAB_1 | tr 'A-Z' 'a-z')"
+KERNEL_BOOT_0="${KERNEL_LAB_0}_Kernel_Boot"
+KERNEL_BOOT_1="${KERNEL_LAB_1}_Kernel_Boot"
 My_Data_File
 
-    [[ $FLAV = core ]] && echo "OPTIONS=\"${CORE_OPTIONS:-$OPTIOINS}\"" >> "$file"
+    # This allows us to use a non "core-" template file for core systems if
+    # the only change is the boot options.
+    [[ $FLAV = core ]] && echo "OPTIONS=\"${CORE_OPTIONS:-$OPTIONS}\"" >> "$file"
+}
+
+#------------------------------------------------------------------------------
+# Unpack initrd.  Remove all module directories.  Add module directories for
+# our kernels.  Repack initrd.  Also add initrd files from the template.  This
+# should be only temporary.  Otherwise we will need to compare version numbers
+# of the programs we maybe copy which will get complicated.
+#------------------------------------------------------------------------------
+update_initrd() {
+    local root=${1%/}  file=$2  dir="$3/initrd"  ; shift 3
+    local mdir=$dir/lib/modules
+
+    # Lots of sanity checks ...
+    ! test -e "$file" && warn "Could not find %s file %s"   "$INITRD_NAME" "$file"  && return 1
+    ! test -r "$file" && warn "Can not read %s file %s"     "$INITRD_NAME" "$file"  && return 1
+    ! test -w "$file" && warn "Can not write to %s file %s" "$INITRD_NAME" "$file"  && return 1
+    ! test -d "$root" && warn "Sqfs directory %s does not exist" "$root"            && return 1
+
+    cmd unpack-initrd -d "$dir" -f "$file" $SILENT || fatal "Could not unpack initrd file %s" "$file"
+
+    # Remove existing module trees
+    if do_step_q rm-modules first; then
+        local k
+        for k in $(ls "$mdir") ; do
+            msg "%s" "$(bq "Removing modules for kernel" $k)"
+            cmd rm -r $mdir/$k || warn "Could not remove directory %s" "$mdir/$k"
+        done
+    fi
+
+    # Add in modules for our kernels
+    local version
+    for version; do
+        if ! test -d "$root/lib/modules/$version"; then
+            # FIXME: should this be a fatal error instead???
+            warn "Could not find modules for %s under %s" "$version" "$root"
+            continue
+        fi
+        msg "  Adding modules for kernel %s" "$(pq $version)"
+        cmd copy-initrd-modules --kernel=$version --from="$root" --to="$dir" --quiet $ENCRYPT \
+            || warn "Could not copy modules for kernel %s" "$version"
+    done
+
+    local initrd_template=$(find_template_file initrd)
+    if [[ -n $initrd_template ]]; then
+        msg "  Copying files from %s" "$(pq $initrd_template)"
+        cmd_cp -r "$initrd_template"/* "$dir/"
+    fi
+    cmd unpack-initrd -d "$dir" -f "$file" -r $SILENT || fatal "Could not repack initrd file %s" "$file"
+}
+
+#------------------------------------------------------------------------------
+# A wrapper for bootloader-template.  We emulate a lot of what cmd() does but
+# since this is a key step and errors here are important we do it ourselvs so
+# we get the non-colored output in the log file and put colored output on the
+# screen. Note this works partly because BT normally produces no output so I
+# am free to combine stderr with stdout.
+
+# Note: BT needs to read my_data_file last because we use it to override
+# the OPTIONS value in core systems.
+#------------------------------------------------------------------------------
+bootloader_template() {
+    local cmd="bootloader-template --in-place --strict"
+    echo  $cmd --data="$DATA_FILE" --data=$my_data_file "$@" >> $LOG_FILE
+
+    $cmd --data="$DATA_FILE" --data=$my_data_file "$@" 2>&1 \
+        | tee -a "$LOG_FILE" | sed -e "s/^/$err_co/" -e "s/$/$nc_co/"
+
+    [[ ${PIPESTATUS[0]} -ne 0 ]] && fatal "bootloader-template failed"
 }
 
 #------------------------------------------------------------------------------
 # Add title text and subtitle text to a background image.  For simplicity we
 # assume the image is 600x800
 #------------------------------------------------------------------------------
-draw_img_text() {
+draw_image_titles() {
     local src=$1 dest=$2 title=$3 sub_title=$4
     cmd convert -pointsize $TITLE_FONT_SIZE -draw \
         "text $ABS_TITLE_POS '$title'" \
@@ -813,14 +863,14 @@ draw_img_text() {
 }
 
 #------------------------------------------------------------------------------
+# Add "press F1 for help" to an image
 #------------------------------------------------------------------------------
-draw_img_help() {
+draw_image_help() {
     local src=$1 dest=$2 string=$3
     cmd convert -pointsize $HELP_FONT_SIZE -draw \
         "text $ABS_HELP_POS '$string'" \
         -fill $HELP_COLOR "$src" "$dest"
 }
-
 
 #------------------------------------------------------------------------------
 # Change x,y values in the 800x600 section of gfxboot.cfg.  Adjust the area of
@@ -843,7 +893,7 @@ munge_gfx_boot() {
 }
 
 #------------------------------------------------------------------------------
-# Resolve relative positions.
+# Resolve relative positions (for gfxboot.cfg file)
 #------------------------------------------------------------------------------
 rel_to_abs_pos() {
     local prev_x=${1%%,*}  prev_y=${1##*,}
@@ -904,11 +954,13 @@ my_mount_sudo() {
 # short hand for "cmd cp ...".  Throws a generic fatal error if the cp fails.
 #------------------------------------------------------------------------------
 cmd_cp() {
-    cmd cp "$@" || fatal "Copy command failed: %s" "$(pqw $*)"
+    cmd cp "$@" || fatal "Copy command failed: %s" "$(pqw cp $*)"
 }
 
 #------------------------------------------------------------------------------
 # Only print message if we are in verbose or very verbose mode
+# Note the message does not go into the log if it goes to the screen.
+# I could fix this with redirect shenanigans but maybe it's not worth it.
 #------------------------------------------------------------------------------
 vmsg() {
     if [[ $VERBOSITY -ge 1 ]]; then
@@ -923,48 +975,67 @@ vmsg() {
 # Read in variable assignments from a file, like sourcing the file but safer
 # and with built-in error checks so we only have to write them once
 #------------------------------------------------------------------------------
-
 read_data() {
     local file=$1  type=$2
-    test -e "$file" || fatal "Could not find %s %s" "$type" "$(pqw $DATA_FILE)"
-    test -r "$file" || fatal "Can not read %s %s"   "$type" "$(pqw $DATA_FILE)"
-    bash -n "$file" || fatal "Bash errors in %s %s" "$type" "$(pqw $DATA_FILE)"
+    test -e "$file" || fatal "Could not find %s %s" "$type" "$(pqw $file)"
+    test -r "$file" || fatal "Can not read %s %s"   "$type" "$(pqw $file)"
+    bash -n "$file" || fatal "Bash errors in %s %s" "$type" "$(pqw $file)"
     eval $(sed -r -n 's/^\s*([A-Z0-9_]+=[^$`;]+)$/\1/p' "$file")
 }
 
 #------------------------------------------------------------------------------
-# Get the full path to a template file based the given base name.  We search
-# through the TEMPLATE_PATH for the file and stop at the first match.
-# After we try the distro directory we look above it for non-distro specfic
-# files
+# Get the full path to a template file based one or more given base names.
+# We search through the TEMPLATE_PATH for the file and stop at the first match.
+#
+# If FLAV is "core" then we first look for core-$fname.  In addition, after we
+# try the distro directory we look above it for non-distro specfic files.
+#
+# If a template file is not found we produce no output but we don't throw an
+# error so this routine should be used directly if the file we are looking for
+# is not requrired
+#
+# This routine is probably way way overkill. Also, I'm not sure if we should
+# search all places for core-$fname or search each place for core-$fname and
+# then $fname which is what we do now.
 #------------------------------------------------------------------------------
-get_template_file() {
-    local fname=$1
-    local p  file
-    for p in "$TEMPLATE_DIR" "${TEMPLATE_PATH[@]}"; do
-        [[ -z $p ]] && continue
-        file="$p/$TEMPLATE_NAME/$CONF_DISTRO/$fname"
-        test -e "$file" && break
+find_template_file() {
+    local fname  prev
+    for fname; do
 
-        file="$p/$TEMPLATE_NAME/$fname"
-        test -e "$file" && break
+        # skip repeats
+        [[ $fname = $prev ]] && continue
+        prev=$fname
 
+        local f  p  file  core_name
+        [[ $FLAV = core ]] && core_name="core-$fname"
+        for f in $core_name $fname; do
+            for p in "$TEMPLATE_DIR" "${TEMPLATE_PATH[@]}"; do
+                [[ -z $p ]] && continue
+                file="$p/$TEMPLATE_NAME/$CONF_DISTRO/$fname"
+                test -e "$file" && break
+
+                file="$p/$TEMPLATE_NAME/$fname"
+                test -e "$file" && break
+            done
+            test -e "$file" && break
+        done
+        test -e "$file" && break
     done
-    test -e "$file"  || return 1
+    test -e "$file" || return 1
     echo "$file"
     return 0
 }
 
 #------------------------------------------------------------------------------
-# Get the name of a template file via get_template_file().  Error out if we
+# Get the name of a template file via find_template_file().  Error out if we
 # can't find the file.  Also report where we found the file when in verbose
 # mode.
 #------------------------------------------------------------------------------
 need_template_file() {
-    local var=$1  fname=$2
-    local found=$(get_template_file "$fname")
-    [[ -z $found ]] && fatal "Could not find template file %s"  "$(pqw $fname)"
-    test -r "$found"  || fatal "Could not read template file %s"  "$(pqw $found)"
+    local var=$1  ; shift
+    local found=$(find_template_file "$@")
+    [[ -z $found ]]   && fatal "Could not find template file(s) %s" "$(pqw "$@")"
+    test -r "$found"  || fatal "Could not read template file %s"    "$(pqw $found)"
     vmsg "Using template file %s" "$(pq $found)"
     eval $var=\$found
 }
@@ -978,41 +1049,17 @@ need_template_file() {
 # Multiple fnames are allowed.  We stop as soon as one finds a match
 #------------------------------------------------------------------------------
 template_copy() {
-    local  dest=$1  ; shift
-    local params=$*
-    local fname full_name  core_name prev
+    local dest=$1  ; shift
+    local full_name
+    need_template_file full_name "$@"
 
-    # search all template filenames given in order
-    while [[ $# -gt 0 ]]; do
-        fname=$1 ; shift
-
-        # skip repeats
-        [[ $fname = $prev ]] && continue
-        prev=$fname
-
-        # Allow optional "core-" prefix on core systems
-        if [[ $FLAV = "core" ]]; then
-            local core_name=$(get_template_file core-$fname)
-            if [[ -n $core_name ]]; then
-                cmd_cp "$core_name" "$dest"
-                return 0
-            fi
-        fi
-        full_name=$(get_template_file $fname)
-        [[ -z $full_name ]] && continue
-
-        cmd_cp "$full_name" "$dest"
-        return 0
-    done
-
-    fatal "Could not find template file(s) %s" "$(pqe $params)"
+    cmd_cp "$full_name" "$dest"
 }
 
-
 #------------------------------------------------------------------------------
-# Convenience routine to tell is if we are in undo-mode
+# Convenience routine to tell is if we are in one-kernel mode
 #------------------------------------------------------------------------------
-undo_mode() { [[ -n $UNDO_MODE ]] ; return $?; }
+one_kernel() { [[ -n $ONE_KERNEL ]] ; return $?; }
 
 #------------------------------------------------------------------------------
 # Exit gracefully after printing the message unless $STRICT is set in which
@@ -1028,6 +1075,7 @@ maybe_fatal() {
 # Print out the last session from the log file then exit.
 #------------------------------------------------------------------------------
 last_log_session() {
+    echo got here
     local file=$1
     tac "$file" | sed "/^=\{60\}=*$/q" | tac
     exit 0
